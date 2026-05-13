@@ -23,6 +23,8 @@ export type TurnResult = {
       ac: number;
       features: GameState['player']['features'];
       spellSlots: GameState['player']['spellSlots'];
+      gold: number;
+      inventory: string[];
     };
     monsters: { id: string; name: string; hp: number; maxHp: number; ac: number }[];
     npcs: GameState['npcs'];
