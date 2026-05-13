@@ -13,11 +13,17 @@ const engineRequestSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('start_combat') }),
   z.object({ kind: z.literal('player_attack'), targetId: z.string() }),
   z.object({ kind: z.literal('monster_turn') }),
-  z.object({ kind: z.literal('use_feature'), featureId: z.literal('second_wind') }),
+  z.object({ kind: z.literal('use_feature'), featureId: z.string() }),
+  z.object({ kind: z.literal('cast_spell'), spellName: z.string(), level: z.number().int().min(0).max(9), targetId: z.string().optional() }),
+  z.object({ kind: z.literal('short_rest') }),
+  z.object({ kind: z.literal('long_rest') }),
+  z.object({ kind: z.literal('update_npc'), npcId: z.string(), disposition: z.enum(['friendly', 'neutral', 'hostile']).optional(), knowledge: z.string().optional() }),
+  z.object({ kind: z.literal('add_canon_fact'), content: z.string(), importance: z.enum(['low', 'medium', 'high']) }),
+  z.object({ kind: z.literal('update_inventory'), add: z.array(z.string()).optional(), remove: z.array(z.string()).optional(), goldDelta: z.number().optional() }),
 ]);
 
 export const dmTurnSchema = z.object({
-  engineRequests: z.array(engineRequestSchema).max(2),
+  engineRequests: z.array(engineRequestSchema).max(5),
   narration: z.string().min(1).max(2000),
   needsResultBeforeNarrating: z.boolean(),
 });

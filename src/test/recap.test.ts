@@ -8,6 +8,7 @@ describe('recap schema', () => {
     const recap = buildRecap({
       state,
       turnNumber: 1,
+      narration: 'You convinced Mira.',
       outcome: 'You convinced Mira.',
       mode: 'table_rules',
       aiUsed: false,

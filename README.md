@@ -22,10 +22,13 @@ Initial scaffold for the PartyQuest V0 prototype.
 OPENAI_API_KEY=...
 OPENAI_MODEL=gpt-5.4-mini
 GROQ_API_KEY=...
-GROQ_MODEL=llama-3.3-70b-versatile
+GROQ_MODEL=llama-3.3-70b-versatile # optional override for Groq
 PARTYQUEST_LLM_PROVIDER=groq
+PARTYQUEST_LLM_MODE=light # set to light for Groq light-mode defaults
 PARTYQUEST_DEV_LOGS=true
 ```
+
+When `PARTYQUEST_LLM_MODE=light` and `GROQ_MODEL` is unset, PartyQuest defaults to `llama-3.3-mini` for faster, lower-cost Groq inference.
 
 ## Run
 ```bash

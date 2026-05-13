@@ -4,7 +4,7 @@ import { buildSystemPrompt } from '@/lib/llm/system-prompt';
 import { buildRecap } from '@/lib/game/recap';
 import { deriveDmTurnFromInput } from '@/lib/orchestrator/mock-dm';
 import { runTurn } from '@/lib/orchestrator/run-turn';
-import { getOrCreateSession, nextTurnNumber, saveRecap, saveSession } from '@/lib/orchestrator/session-store';
+import { getOrCreateSession, nextTurnNumber, saveRecap, saveSession, getRecaps } from '@/lib/orchestrator/session-store';
 import { writeDevLog } from '@/lib/logging/dev-log';
 
 export async function POST(req: Request) {
@@ -13,8 +13,12 @@ export async function POST(req: Request) {
   const playerInput = typeof body?.playerInput === 'string' ? body.playerInput.slice(0, 800) : '';
 
   let state = getOrCreateSession(sessionId);
+  const recentRecaps = getRecaps(sessionId).slice(-5);
+  const systemPrompt = buildSystemPrompt(state) + 
+    (recentRecaps.length > 0 ? `\n\n## RECENT CONVERSATION HISTORY\n${recentRecaps.map(r => `Turn ${r.turnNumber} Narration: ${r.narration}`).join('\n')}` : '');
+
   const aiTurn = await generateDmTurn({
-      systemPrompt: buildSystemPrompt(state),
+      systemPrompt,
       playerInput,
     });
   const fallbackUsed = !aiTurn;
@@ -28,9 +32,15 @@ export async function POST(req: Request) {
 
   saveSession(state);
   const turnNumber = nextTurnNumber(sessionId);
+  
+  const narration = fallbackUsed
+    ? `The wind shifts and the tale steadies itself. ${turn.response.narration}`
+    : turn.response.narration;
+
   const recap = buildRecap({
     state,
     turnNumber,
+    narration,
     outcome: turn.response.engineResults[0]?.summary ?? turn.response.narration,
     consequences: turn.response.engineResults.map((r) => r.summary),
     nextChoices: turn.response.nextChoices,
@@ -40,10 +50,6 @@ export async function POST(req: Request) {
     fallbackUsed: turn.response.fallbackUsed,
   });
   saveRecap(sessionId, recap);
-
-  const narration = fallbackUsed
-    ? `The wind shifts and the tale steadies itself. ${turn.response.narration}`
-    : turn.response.narration;
 
   const response = { ...turn.response, narration, sessionId, recap };
 

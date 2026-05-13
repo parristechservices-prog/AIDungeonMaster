@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 type TurnResponse = {
   ok: boolean;
@@ -14,15 +14,26 @@ type TurnResponse = {
   narration: string;
   engineResults: { kind: string; summary: string; ok: boolean }[];
   state: {
-    player: { name: string; hp: number; maxHp: number; ac: number; features: { id: string; name: string; usesRemaining: number }[] };
+    player: { 
+      name: string; 
+      hp: number; 
+      maxHp: number; 
+      ac: number; 
+      features: { id: string; name: string; usesRemaining: number }[];
+      spellSlots: Record<number, { max: number; remaining: number }>;
+      gold: number;
+      inventory: string[];
+    };
     monsters: { id: string; name: string; hp: number; maxHp: number; ac: number }[];
+    npcs: { id: string; name: string; disposition: string; description: string }[];
+    canonLog: { id: string; content: string }[];
     log: string[];
   };
   recap: { turnNumber: number };
 };
 
 export default function PlayPage() {
-  const [sessionId] = useState(() => `sess-${crypto.randomUUID().slice(0, 8)}`);
+  const [sessionId, setSessionId] = useState('');
   const [input, setInput] = useState('');
   const [history, setHistory] = useState<string[]>(['Welcome to PartyQuest.']);
   const [state, setState] = useState<TurnResponse['state'] | null>(null);
@@ -31,6 +42,22 @@ export default function PlayPage() {
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<'ai_director' | 'table_rules'>('table_rules');
   const [choices, setChoices] = useState<string[]>([]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('partyquest-session-id');
+      if (saved) {
+        setSessionId(saved);
+      } else {
+        const next = `sess-${crypto.randomUUID().slice(0, 8)}`;
+        setSessionId(next);
+        localStorage.setItem('partyquest-session-id', next);
+      }
+    } catch (e) {
+      // Fallback for restricted environments
+      setSessionId(`sess-${crypto.randomUUID().slice(0, 8)}`);
+    }
+  }, []);
 
   async function sendTurn() {
     if (!input.trim() || busy) return;
@@ -50,9 +77,13 @@ export default function PlayPage() {
 
       setSceneId(data.sceneId);
       setSceneGoal(data.sceneGoal);
-      setState(data.state);
       setMode(data.mode);
       setChoices(data.nextChoices);
+
+      // If state is available, update it
+      if (data.state) {
+        setState(data.state);
+      }
 
       const lines = [
         ...(data.sceneStarter ? [`Scene shift: ${data.sceneStarter}`] : []),
@@ -109,10 +140,45 @@ export default function PlayPage() {
             <p className="mt-2">{state.player.name}</p>
             <p>HP: {state.player.hp}/{state.player.maxHp}</p>
             <p>AC: {state.player.ac}</p>
+            <p>Gold: {state.player.gold}gp</p>
+            
+            <p className="mt-2 font-semibold">Inventory</p>
+            <div className="max-h-32 overflow-y-auto text-xs">
+              {state.player.inventory.length > 0 ? (
+                <ul className="list-inside list-disc">
+                  {state.player.inventory.map((item, i) => <li key={i}>{item}</li>)}
+                </ul>
+              ) : <p className="text-zinc-500 italic">Empty.</p>}
+            </div>
+            
             <p className="mt-2 font-semibold">Features</p>
             {state.player.features.map((f) => <p key={f.id}>{f.name}: {f.usesRemaining} use(s)</p>)}
+            
+            {Object.keys(state.player.spellSlots).length > 0 && (
+              <>
+                <p className="mt-2 font-semibold">Spell Slots</p>
+                {Object.entries(state.player.spellSlots).map(([lvl, s]) => (
+                  <p key={lvl}>Level {lvl}: {s.remaining}/{s.max}</p>
+                ))}
+              </>
+            )}
+
             <p className="mt-3 font-semibold">Enemies</p>
-            {state.monsters.map((m) => <p key={m.id}>{m.name}: {m.hp}/{m.maxHp} HP</p>)}
+            {state.monsters.length > 0 ? state.monsters.map((m) => (
+              <p key={m.id}>{m.name}: {m.hp}/{m.maxHp} HP</p>
+            )) : <p className="text-zinc-500 italic">None visible.</p>}
+
+            <p className="mt-3 font-semibold">NPCs</p>
+            {state.npcs.length > 0 ? state.npcs.map((n) => (
+              <p key={n.id} title={n.description}>{n.name} ({n.disposition})</p>
+            )) : <p className="text-zinc-500 italic">None nearby.</p>}
+
+            <p className="mt-3 font-semibold">Canon Facts</p>
+            <div className="max-h-40 overflow-y-auto">
+              {state.canonLog.length > 0 ? state.canonLog.map((f, i) => (
+                <p key={`${f.id}-${i}`} className="mb-1 text-xs">• {f.content}</p>
+              )) : <p className="text-zinc-500 italic">No facts established.</p>}
+            </div>
           </>
         )}
       </aside>

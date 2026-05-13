@@ -1,0 +1,175 @@
+{
+  "sessionId": "sess-8a8ee9b8",
+  "sceneId": "social",
+  "log": [],
+  "canonLog": [
+    {
+      "id": "fact-1778672696611",
+      "content": "The adventure begins at Brindlehook Inn.",
+      "importance": "medium"
+    },
+    {
+      "id": "fact-1778672696612",
+      "content": "Mira is the sharp-eyed innkeeper of Brindlehook Inn.",
+      "importance": "medium"
+    },
+    {
+      "id": "fact-1778672703490",
+      "content": "The adventure begins at Brindlehook Inn",
+      "importance": "medium"
+    },
+    {
+      "id": "fact-1778672703490",
+      "content": "Mira is the sharp-eyed innkeeper of Brindlehook Inn",
+      "importance": "medium"
+    },
+    {
+      "id": "fact-1778672807989",
+      "content": "The scene begins with a greeting.",
+      "importance": "low"
+    },
+    {
+      "id": "fact-1778672824430",
+      "content": "The bar at Brindlehook Inn is made of polished oak, adorned with intricate carvings of sea serpents and other mythical creatures.",
+      "importance": "medium"
+    },
+    {
+      "id": "fact-1778672824430",
+      "content": "The bar is well-stocked with an assortment of ales, wines, and spirits, with several wooden kegs and barrels stacked behind it.",
+      "importance": "medium"
+    },
+    {
+      "id": "fact-1778672833475",
+      "content": "The adventure takes place in a world with a coastal region, as indicated by the presence of sea serpents in the carvings at the Brindlehook Inn.",
+      "importance": "medium"
+    },
+    {
+      "id": "fact-1778672833475",
+      "content": "The world has a system of inns and taverns, such as the Brindlehook Inn, where travelers and locals gather to socialize and share information.",
+      "importance": "medium"
+    },
+    {
+      "id": "fact-1778672992671",
+      "content": "The room is dimly lit, with only a few candles and the fireplace providing light.",
+      "importance": "medium"
+    },
+    {
+      "id": "fact-1778672992671",
+      "content": "The room has a few tables and chairs, with some patrons sitting and talking.",
+      "importance": "medium"
+    },
+    {
+      "id": "fact-1778673044555-udak0i0",
+      "content": "The room has a warm and cozy atmosphere",
+      "importance": "low"
+    },
+    {
+      "id": "fact-1778673044555-6nw0004",
+      "content": "The air is thick with the smell of smoke, ale, and roasting meat",
+      "importance": "low"
+    },
+    {
+      "id": "fact-1778673144311-lnsnq6d",
+      "content": "The patrons of the Brindlehook Inn are a mix of travelers and locals, all gathered to socialize and share information.",
+      "importance": "medium"
+    },
+    {
+      "id": "fact-1778673163133-xh24c8x",
+      "content": "The tables at the Brindlehook Inn are made of a sturdy wood, possibly oak, with a warm and rustic finish.",
+      "importance": "low"
+    },
+    {
+      "id": "fact-1778673252990-6o8w8wp",
+      "content": "The innkeeper of Brindlehook Inn is Mira",
+      "importance": "medium"
+    }
+  ],
+  "player": {
+    "id": "pc-fighter-1",
+    "name": "Seren Ashfall",
+    "level": 3,
+    "className": "Fighter",
+    "ac": 17,
+    "maxHp": 28,
+    "hp": 28,
+    "proficiencyBonus": 2,
+    "abilities": {
+      "str": 16,
+      "dex": 12,
+      "con": 14,
+      "int": 10,
+      "wis": 11,
+      "cha": 13
+    },
+    "skills": {
+      "athletics": 5,
+      "perception": 2,
+      "intimidation": 3,
+      "history": 2
+    },
+    "features": [
+      {
+        "id": "second_wind",
+        "name": "Second Wind",
+        "usesMax": 1,
+        "usesRemaining": 1,
+        "rechargeOn": "short_rest"
+      }
+    ],
+    "spellSlots": {},
+    "weapon": {
+      "name": "Longsword",
+      "attackBonus": 5,
+      "damage": "1d8+3"
+    },
+    "gold": 15,
+    "inventory": [
+      "Leather Armor",
+      "Backpack",
+      "Bedroll",
+      "Mess Kit",
+      "Tinderbox",
+      "10 Torches",
+      "10 Days Rations",
+      "Waterskin",
+      "Signet Ring"
+    ]
+  },
+  "monsters": [
+    {
+      "id": "bandit-1",
+      "name": "Dockside Ruffian",
+      "ac": 12,
+      "maxHp": 11,
+      "hp": 11,
+      "attackBonus": 3,
+      "damage": "1d6+1"
+    },
+    {
+      "id": "bandit-2",
+      "name": "Lantern Thug",
+      "ac": 12,
+      "maxHp": 11,
+      "hp": 11,
+      "attackBonus": 3,
+      "damage": "1d6+1"
+    }
+  ],
+  "npcs": [
+    {
+      "id": "npc-mira",
+      "name": "Mira",
+      "description": "The sharp-eyed innkeeper of Brindlehook Inn. She sees everything that happens on the docks.",
+      "disposition": "neutral",
+      "knowledge": [
+        "The courier was last seen heading toward the old boathouse.",
+        "Two men in dark cloaks were following him."
+      ]
+    }
+  ],
+  "combat": {
+    "active": false,
+    "initiative": [],
+    "turnIndex": 0
+  }
+}

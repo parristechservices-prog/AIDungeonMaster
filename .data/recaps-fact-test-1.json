@@ -1,0 +1,75 @@
+[
+  {
+    "sessionId": "fact-test-1",
+    "turnNumber": 1,
+    "timestamp": "2026-05-13T11:47:26.495Z",
+    "partyName": "Seren Ashfall's party",
+    "characters": [
+      {
+        "id": "pc-fighter-1",
+        "name": "Seren Ashfall",
+        "role": "Fighter",
+        "hp": 28,
+        "maxHp": 28,
+        "status": []
+      }
+    ],
+    "sceneId": "social",
+    "narration": "As you sit in the warm glow of the Brindlehook Inn, the murmur of conversations and the clinking of glasses fill the air. You've never really spoken about your family or background to anyone here, and it seems like a part of your life you've kept closely guarded. Mira, the innkeeper, looks at you with a curious eye, as if wondering what stories you might tell if you ever decided to share them.",
+    "outcome": "Added canon fact.",
+    "consequences": [
+      "Added canon fact."
+    ],
+    "keyEvents": [],
+    "openThreads": [
+      "Unresolved danger ahead"
+    ],
+    "nextChoices": [
+      "Question Mira about the courier",
+      "Offer coin for information",
+      "Inspect the inn patrons"
+    ],
+    "nextHook": "Choose your next action.",
+    "mode": "ai_director",
+    "aiUsed": true,
+    "fallbackUsed": false
+  },
+  {
+    "sessionId": "fact-test-1",
+    "turnNumber": 2,
+    "timestamp": "2026-05-13T11:47:32.546Z",
+    "partyName": "Seren Ashfall's party",
+    "characters": [
+      {
+        "id": "pc-fighter-1",
+        "name": "Seren Ashfall",
+        "role": "Fighter",
+        "hp": 28,
+        "maxHp": 28,
+        "status": []
+      }
+    ],
+    "sceneId": "social",
+    "narration": "The wind shifts and the tale steadies itself. Mira just shakes her head. \"I don't want any trouble, stranger. Buy a drink or move on.\"",
+    "outcome": "Convince Mira to share what she knows.: failure",
+    "consequences": [
+      "Convince Mira to share what she knows.: failure",
+      "Updated NPC npc-mira"
+    ],
+    "keyEvents": [
+      "persuasion check failed (9 vs DC 12)"
+    ],
+    "openThreads": [
+      "Unresolved danger ahead"
+    ],
+    "nextChoices": [
+      "Question Mira about the courier",
+      "Offer coin for information",
+      "Inspect the inn patrons"
+    ],
+    "nextHook": "Choose your next action.",
+    "mode": "table_rules",
+    "aiUsed": false,
+    "fallbackUsed": true
+  }
+]

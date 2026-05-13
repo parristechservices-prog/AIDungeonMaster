@@ -5,25 +5,36 @@ import { useEffect, useState } from 'react';
 type Theme = 'light' | 'dark';
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window === 'undefined') return 'light';
+  const [mounted, setMounted] = useState(false);
+  const [theme, setTheme] = useState<Theme>('light');
+
+  useEffect(() => {
+    setMounted(true);
     const saved = localStorage.getItem('partyquest-theme') as Theme | null;
-    return saved ?? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-  });
+    const initial = saved ?? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    setTheme(initial);
+  }, []);
 
   const applyTheme = (next: Theme) => {
+    if (typeof window === 'undefined') return;
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.classList.add(next);
     localStorage.setItem('partyquest-theme', next);
   };
 
   useEffect(() => {
-    applyTheme(theme);
-  }, [theme]);
+    if (mounted) {
+      applyTheme(theme);
+    }
+  }, [theme, mounted]);
 
   function toggle() {
     const next: Theme = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
+  }
+
+  if (!mounted) {
+    return null;
   }
 
   return (

@@ -14,6 +14,7 @@ export type PartyQuestRecap = {
     status: string[];
   }>;
   sceneId: string;
+  narration: string;
   outcome: string;
   consequences: string[];
   keyEvents: string[];
@@ -28,6 +29,7 @@ export type PartyQuestRecap = {
 export function buildRecap(input: {
   state: GameState;
   turnNumber: number;
+  narration: string;
   outcome: string;
   consequences?: string[];
   keyEvents?: string[];
@@ -53,6 +55,7 @@ export function buildRecap(input: {
       },
     ],
     sceneId: input.state.sceneId,
+    narration: input.narration,
     outcome: input.outcome,
     consequences: input.consequences ?? [],
     keyEvents: input.keyEvents ?? input.state.log.slice(-3),

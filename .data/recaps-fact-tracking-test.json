@@ -1,0 +1,38 @@
+[
+  {
+    "sessionId": "fact-tracking-test",
+    "turnNumber": 1,
+    "timestamp": "2026-05-13T11:47:18.090Z",
+    "partyName": "Seren Ashfall's party",
+    "characters": [
+      {
+        "id": "pc-fighter-1",
+        "name": "Seren Ashfall",
+        "role": "Fighter",
+        "hp": 28,
+        "maxHp": 28,
+        "status": []
+      }
+    ],
+    "sceneId": "social",
+    "narration": "You were born into a military family with a long history of service. Your parents, Thrain and Elara Ashfall, were both veterans of a long and brutal war. They met while serving in the same unit and settled down after the war, passing on their values of duty, honor, and loyalty to you. As a child, you listened to their stories of battles fought and won, and of the camaraderie that formed between soldiers. Their experiences shaped your desire to follow in their footsteps and make a name for yourself as a warrior.",
+    "outcome": "Added canon fact.",
+    "consequences": [
+      "Added canon fact.",
+      "Added canon fact."
+    ],
+    "keyEvents": [],
+    "openThreads": [
+      "Unresolved danger ahead"
+    ],
+    "nextChoices": [
+      "Question Mira about the courier",
+      "Offer coin for information",
+      "Inspect the inn patrons"
+    ],
+    "nextHook": "Choose your next action.",
+    "mode": "ai_director",
+    "aiUsed": true,
+    "fallbackUsed": false
+  }
+]

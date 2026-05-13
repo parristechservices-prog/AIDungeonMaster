@@ -12,7 +12,10 @@ export type Character = {
   abilities: Record<'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha', number>;
   skills: Partial<Record<string, number>>;
   features: { id: string; name: string; usesMax: number; usesRemaining: number; rechargeOn: 'short_rest' | 'long_rest' }[];
+  spellSlots: Record<number, { max: number; remaining: number }>;
   weapon: { name: string; attackBonus: number; damage: string };
+  gold: number;
+  inventory: string[];
 };
 
 export type Monster = {
@@ -25,6 +28,21 @@ export type Monster = {
   damage: string;
 };
 
+export type NPC = {
+  id: string;
+  name: string;
+  description: string;
+  disposition: 'friendly' | 'neutral' | 'hostile';
+  knowledge: string[];
+  lastInteraction?: string;
+};
+
+export type CanonFact = {
+  id: string;
+  content: string;
+  importance: 'low' | 'medium' | 'high';
+};
+
 export type CombatState = {
   active: boolean;
   initiative: { actorId: string; roll: number }[];
@@ -35,7 +53,9 @@ export type GameState = {
   sessionId: string;
   sceneId: SceneId;
   log: string[];
+  canonLog: CanonFact[];
   player: Character;
   monsters: Monster[];
+  npcs: NPC[];
   combat: CombatState;
 };

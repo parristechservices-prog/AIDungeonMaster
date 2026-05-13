@@ -54,14 +54,93 @@ export function resolveEngineRequest(state: GameState, request: EngineRequest): 
     }
     case 'use_feature': {
       const idx = state.player.features.findIndex((f) => f.id === request.featureId);
-      if (idx < 0) return { state, result: { ok: false, summary: 'Feature not found.' } };
+      if (idx < 0) return { state, result: { ok: false, summary: `Feature ${request.featureId} not found.` } };
       const feature = state.player.features[idx];
-      if (feature.usesRemaining <= 0) return { state, result: { ok: false, summary: 'No uses remaining.' } };
-      const heal = rollFormula('1d10', state.player.level);
-      const hp = Math.min(state.player.maxHp, state.player.hp + heal.total);
-      const features = state.player.features.map((f, i) => i === idx ? { ...f, usesRemaining: f.usesRemaining - 1 } : f);
-      const next = { ...state, player: { ...state.player, hp, features } };
-      return { state: appendLog(next, `Second Wind restored ${heal.total} HP.`), result: { ok: true, summary: 'Second Wind used.', breakdown: heal } };
+      if (feature.usesRemaining <= 0) return { state, result: { ok: false, summary: `No uses of ${feature.name} remaining.` } };
+      
+      let next = state;
+      let summary = `${feature.name} used.`;
+      let breakdown: RollBreakdown | undefined;
+
+      // Logic for specific features
+      if (feature.id === 'second_wind') {
+        breakdown = rollFormula('1d10', state.player.level);
+        const hp = Math.min(state.player.maxHp, state.player.hp + breakdown.total);
+        next = { ...state, player: { ...state.player, hp } };
+        summary = `Second Wind restored ${breakdown.total} HP.`;
+      }
+
+      const features = next.player.features.map((f, i) => i === idx ? { ...f, usesRemaining: f.usesRemaining - 1 } : f);
+      next = { ...next, player: { ...next.player, features } };
+      
+      return { state: appendLog(next, summary), result: { ok: true, summary, breakdown } };
+    }
+    case 'cast_spell': {
+      const level = request.level;
+      const slot = state.player.spellSlots[level];
+      if (level > 0) { // Cantrips don't use slots
+        if (!slot || slot.remaining <= 0) {
+          return { state, result: { ok: false, summary: `No level ${level} spell slots remaining.` } };
+        }
+      }
+
+      let next = state;
+      if (level > 0) {
+        const spellSlots = { ...state.player.spellSlots, [level]: { ...slot, remaining: slot.remaining - 1 } };
+        next = { ...state, player: { ...state.player, spellSlots } };
+      }
+
+      const summary = `Cast ${request.spellName} (Level ${level})`;
+      return { state: appendLog(next, summary), result: { ok: true, summary } };
+    }
+    case 'short_rest': {
+      const features = state.player.features.map(f => f.rechargeOn === 'short_rest' ? { ...f, usesRemaining: f.usesMax } : f);
+      const next = { ...state, player: { ...state.player, features } };
+      return { state: appendLog(next, 'Took a short rest. Features recharged.'), result: { ok: true, summary: 'Short rest complete.' } };
+    }
+    case 'long_rest': {
+      const features = state.player.features.map(f => ({ ...f, usesRemaining: f.usesMax }));
+      const spellSlots = Object.fromEntries(
+        Object.entries(state.player.spellSlots).map(([lvl, s]) => [lvl, { ...s, remaining: s.max }])
+      );
+      const next = { ...state, player: { ...state.player, hp: state.player.maxHp, features, spellSlots } };
+      return { state: appendLog(next, 'Took a long rest. HP, features, and slots restored.'), result: { ok: true, summary: 'Long rest complete.' } };
+    }
+    case 'update_npc': {
+      const npcs = state.npcs.map((n) => {
+        if (n.id === request.npcId) {
+          return {
+            ...n,
+            disposition: request.disposition ?? n.disposition,
+            knowledge: request.knowledge ? [...n.knowledge, request.knowledge] : n.knowledge,
+          };
+        }
+        return n;
+      });
+      return { state: { ...state, npcs }, result: { ok: true, summary: `Updated NPC ${request.npcId}` } };
+    }
+    case 'add_canon_fact': {
+      // Check for duplicate content in the existing log to avoid repetition
+      const isDuplicate = state.canonLog.some(f => f.content === request.content);
+      if (isDuplicate) return { state, result: { ok: true, summary: 'Fact already established.' } };
+
+      const fact = { id: `fact-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`, content: request.content, importance: request.importance };
+      return { state: { ...state, canonLog: [...state.canonLog, fact] }, result: { ok: true, summary: 'Added canon fact.' } };
+    }
+    case 'update_inventory': {
+      let gold = state.player.gold + (request.goldDelta ?? 0);
+      let inventory = [...state.player.inventory];
+      
+      if (request.add) {
+        inventory = [...inventory, ...request.add];
+      }
+      
+      if (request.remove) {
+        inventory = inventory.filter(item => !request.remove?.includes(item));
+      }
+
+      const next = { ...state, player: { ...state.player, gold, inventory } };
+      return { state: next, result: { ok: true, summary: 'Inventory updated.' } };
     }
   }
 }

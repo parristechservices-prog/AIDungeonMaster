@@ -1,21 +1,47 @@
 import { createInitialState } from '@/lib/game/state';
 import type { PartyQuestRecap } from '@/lib/game/recap';
 import type { GameState } from '@/lib/game/types';
+import fs from 'fs';
+import path from 'path';
+
+const STORAGE_DIR = path.join(process.cwd(), '.data');
+if (!fs.existsSync(STORAGE_DIR)) fs.mkdirSync(STORAGE_DIR);
 
 const sessions = new Map<string, GameState>();
 const turnCounters = new Map<string, number>();
-const latestRecaps = new Map<string, PartyQuestRecap>();
+const latestRecaps = new Map<string, PartyQuestRecap[]>();
+
+function getSessionPath(sessionId: string) { return path.join(STORAGE_DIR, `session-${sessionId}.json`); }
+function getRecapsPath(sessionId: string) { return path.join(STORAGE_DIR, `recaps-${sessionId}.json`); }
 
 export function getOrCreateSession(sessionId: string): GameState {
-  const current = sessions.get(sessionId);
-  if (current) return current;
+  if (sessions.has(sessionId)) return sessions.get(sessionId)!;
+  
+  const filePath = getSessionPath(sessionId);
+  if (fs.existsSync(filePath)) {
+    try {
+      const state = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      
+      // Migration: Ensure new fields exist in loaded state
+      const defaults = createInitialState(sessionId);
+      if (state.player && state.player.gold === undefined) state.player.gold = defaults.player.gold;
+      if (state.player && !state.player.inventory) state.player.inventory = defaults.player.inventory;
+      if (!state.npcs) state.npcs = defaults.npcs;
+      if (!state.canonLog) state.canonLog = defaults.canonLog;
+      
+      sessions.set(sessionId, state);
+      return state;
+    } catch (e) { console.error('Failed to load session', e); }
+  }
+
   const next = createInitialState(sessionId);
-  sessions.set(sessionId, next);
+  saveSession(next);
   return next;
 }
 
 export function saveSession(state: GameState): void {
   sessions.set(state.sessionId, state);
+  fs.writeFileSync(getSessionPath(state.sessionId), JSON.stringify(state, null, 2));
 }
 
 export function nextTurnNumber(sessionId: string): number {
@@ -26,9 +52,27 @@ export function nextTurnNumber(sessionId: string): number {
 }
 
 export function saveRecap(sessionId: string, recap: PartyQuestRecap): void {
-  latestRecaps.set(sessionId, recap);
+  const recaps = getRecaps(sessionId);
+  recaps.push(recap);
+  latestRecaps.set(sessionId, recaps);
+  fs.writeFileSync(getRecapsPath(sessionId), JSON.stringify(recaps, null, 2));
 }
 
-export function getRecap(sessionId: string): PartyQuestRecap | null {
-  return latestRecaps.get(sessionId) ?? null;
+export function getRecaps(sessionId: string): PartyQuestRecap[] {
+  if (latestRecaps.has(sessionId)) return latestRecaps.get(sessionId)!;
+
+  const filePath = getRecapsPath(sessionId);
+  if (fs.existsSync(filePath)) {
+    try {
+      const recaps = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      latestRecaps.set(sessionId, recaps);
+      return recaps;
+    } catch (e) { console.error('Failed to load recaps', e); }
+  }
+  return [];
+}
+
+export function getLatestRecap(sessionId: string): PartyQuestRecap | null {
+  const recaps = getRecaps(sessionId);
+  return recaps.length > 0 ? recaps[recaps.length - 1] : null;
 }
