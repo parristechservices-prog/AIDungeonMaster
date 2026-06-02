@@ -171,9 +171,10 @@ export default function PlayPage() {
         const res = await fetch('/api/turn', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ 
-            sessionId, 
-            playerInput: nextInput, 
+          body: JSON.stringify({
+            sessionId,
+            adventureId,
+            playerInput: nextInput,
             physicalDice,
             manualRoll
           }),
@@ -222,7 +223,7 @@ export default function PlayPage() {
         setBusy(false);
       }
     },
-    [busy, physicalDice, sessionId],
+    [adventureId, busy, physicalDice, sessionId],
   );
 
   function handleNewGame() {

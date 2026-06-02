@@ -5,6 +5,7 @@ import { buildSystemPrompt } from '@/lib/llm/system-prompt';
 import { validateNarrationAgainstState } from '@/lib/llm/validate-narration';
 import { summarizeCanonLog } from '@/lib/llm/summarizer';
 import { buildRecap } from '@/lib/game/recap';
+import { isValidAdventureId } from '@/lib/game/adventures/registry.server';
 import { deriveDmTurnFromInput } from '@/lib/orchestrator/mock-dm';
 import { runTurn } from '@/lib/orchestrator/run-turn';
 import { 
@@ -15,19 +16,41 @@ import {
   getRecaps,
   getPendingTurn,
   savePendingTurn,
-  clearPendingTurn
+  clearPendingTurn,
+  startNewGame
 } from '@/lib/orchestrator/session-store';
 import { writeDevLog } from '@/lib/logging/dev-log';
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const sessionId = typeof body?.sessionId === 'string' && body.sessionId.length > 0 ? body.sessionId : 'local-default';
+  const requestedAdventureId =
+    typeof body?.adventureId === 'string' && isValidAdventureId(body.adventureId)
+      ? body.adventureId
+      : undefined;
   const playerInput = typeof body?.playerInput === 'string' ? body.playerInput.slice(0, 800) : '';
   const manualRoll = typeof body?.manualRoll === 'number' ? body.manualRoll : undefined;
   const physicalDice = Boolean(body?.physicalDice);
 
   try {
     let state = getOrCreateSession(sessionId);
+    if (requestedAdventureId && state.adventureId !== requestedAdventureId) {
+      writeDevLog({
+        type: 'turn_session_adventure_mismatch',
+        sessionId,
+        requestedAdventureId,
+        sessionAdventureId: state.adventureId,
+      });
+      state = startNewGame(sessionId, {
+        adventureId: requestedAdventureId,
+        characterIds: state.characterTemplateIds,
+        playerNames: state.party.map((p) => p.name),
+        playerLevel: state.party[0]?.level,
+        backgroundId: state.backgroundId,
+        personaId: state.personaId,
+      });
+      clearPendingTurn(sessionId);
+    }
 
     let rawTurn: unknown;
     let aiUsed = false;
