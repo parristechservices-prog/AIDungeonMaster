@@ -1,5 +1,5 @@
 import type { DmTurn } from '@/lib/llm/contracts';
-import { getSceneKind } from '@/lib/game/adventures/helpers';
+import { getPlayableScene, getSceneKind } from '@/lib/game/adventures/helpers';
 import { getAdventure } from '@/lib/game/adventures/registry.server';
 import type { Adventure } from '@/lib/game/adventures/types';
 import type { GameState } from '@/lib/game/types';
@@ -141,6 +141,31 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
   }
 
   if (sceneKind === 'exploration') {
+    const scene = getPlayableScene(adventure, state.sceneId);
+    const abandonedScene =
+      scene?.guidance.toLowerCase().includes('no leader') ||
+      scene?.guidance.toLowerCase().includes('no village leader') ||
+      scene?.guidance.toLowerCase().includes('no guards') ||
+      scene?.guidance.toLowerCase().includes('abandoned');
+
+    if (
+      abandonedScene &&
+      (input.includes('greet') ||
+        input.includes('hello') ||
+        input.includes('hi') ||
+        input.includes('call out') ||
+        input.includes('speak to') ||
+        input.includes('talk to'))
+    ) {
+      return {
+        engineRequests: [],
+        narration:
+          'No one answers. The bell keeps ringing over the empty street, and the silence makes the damaged village feel even more exposed.',
+        needsResultBeforeNarrating: false,
+        ambient,
+      };
+    }
+
     return {
       engineRequests: [
         {
