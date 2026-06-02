@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getOpeningNarration } from '@/lib/game/state';
 import { getAdventure } from '@/lib/game/adventures/registry.server';
 import { getSceneChoices, getSceneGoal } from '@/lib/game/adventures/helpers';
 import { visibleNpcsForScene } from '@/lib/game/adventures/visibility';
@@ -14,11 +15,14 @@ export async function GET(req: Request) {
 
   const state = getOrCreateSession(sessionId);
   const adventure = getAdventure(state.adventureId);
+  const currentSceneStarter = adventure.scenes[state.sceneId]?.starter;
   return NextResponse.json({
     ok: true,
     sessionId,
     adventureId: state.adventureId,
     adventureTitle: adventure.title,
+    opening: getOpeningNarration(state),
+    sceneStarter: currentSceneStarter,
     characterTemplateIds: state.characterTemplateIds,
     backgroundId: state.backgroundId,
     sceneId: state.sceneId,

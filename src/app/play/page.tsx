@@ -56,6 +56,10 @@ export default function PlayPage() {
     setChoices(data.nextChoices ?? []);
     setMode(data.mode ?? 'table_rules');
     setState(data.state);
+    const hydratedOpening = data.sceneStarter ?? data.opening;
+    if (typeof hydratedOpening === 'string' && hydratedOpening.trim()) {
+      setHistory([hydratedOpening]);
+    }
   }
 
   const handleExportRecap = useCallback(() => {
@@ -261,6 +265,8 @@ export default function PlayPage() {
               <OnboardingBanner
                 sceneId={sceneId}
                 adventureId={adventureId}
+                sceneGoal={sceneGoal}
+                choices={choices}
                 onDismiss={() => setShowOnboarding(false)}
               />
             </div>

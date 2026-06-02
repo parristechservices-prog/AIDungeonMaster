@@ -5,14 +5,17 @@ import type { GameState } from '@/lib/game/types';
 type Props = {
   sceneId: GameState['sceneId'];
   adventureId: string;
+  sceneGoal: string;
+  choices: string[];
   onDismiss: () => void;
 };
 
-export function OnboardingBanner({ sceneId, adventureId, onDismiss }: Props) {
+export function OnboardingBanner({ sceneId, adventureId, sceneGoal, choices, onDismiss }: Props) {
   const adventure = getAdventure(adventureId);
   const scene = sceneId !== ENDING_SCENE_ID ? adventure.scenes[sceneId] : null;
   const firstId = getFirstPlayableSceneId(adventure);
-  const starters = (adventure.scenes[firstId]?.choices ?? []).slice(0, 2);
+  const starters = (choices.length > 0 ? choices : adventure.scenes[firstId]?.choices ?? []).slice(0, 2);
+  const goal = scene?.goal ?? sceneGoal;
 
   return (
     <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm dark:border-blue-900 dark:bg-blue-950/40">
@@ -20,9 +23,9 @@ export function OnboardingBanner({ sceneId, adventureId, onDismiss }: Props) {
         <div>
           <p className="font-semibold text-blue-900 dark:text-blue-100">How to play</p>
           <p className="mt-1 text-blue-800 dark:text-blue-200">
-            {scene?.goal ?? 'Your adventure concludes here.'}
+            {goal || 'Choose your next action.'}
           </p>
-          {starters.length > 0 && (sceneId === firstId || scene?.kind === 'social') && (
+          {starters.length > 0 && (sceneId === firstId || scene?.kind === 'social' || !scene) && (
             <p className="mt-2 text-xs text-blue-700 dark:text-blue-300">
               Try: {starters.map((s) => `"${s}"`).join(' · ')}
             </p>
