@@ -46,6 +46,8 @@ Open [http://localhost:3000](http://localhost:3000) → **Create adventure** to 
 | `OPENAI_API_KEY` | Fallback / `PARTYQUEST_LLM_PROVIDER=openai` |
 | `PARTYQUEST_LLM_MODE` | `light` for smaller Groq model when unset |
 | `PARTYQUEST_DEV_LOGS` | `true` writes turn logs under `.data/` |
+| `PARTYQUEST_FORCE_MOCK` | `true` skips LLM calls (table-rules only) |
+| `PARTYQUEST_MOCK_FLAVOR` | `true` adds the legacy fallback narration prefix |
 
 Without API keys, the **table-rules mock DM** runs the full one-shot.
 

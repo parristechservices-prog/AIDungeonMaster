@@ -19,6 +19,7 @@ if (!IS_VERCEL) {
 const sessions = new Map<string, GameState>();
 const turnCounters = new Map<string, number>();
 const latestRecaps = new Map<string, PartyQuestRecap[]>();
+const pendingTurns = new Map<string, any>();
 
 function getSessionPath(sessionId: string) { return path.join(STORAGE_DIR, `session-${sessionId}.json`); }
 function getRecapsPath(sessionId: string) { return path.join(STORAGE_DIR, `recaps-${sessionId}.json`); }
@@ -101,6 +102,18 @@ export function saveRecap(sessionId: string, recap: PartyQuestRecap): void {
       console.warn('Failed to persist recaps to disk', e);
     }
   }
+}
+
+export function savePendingTurn(sessionId: string, turn: any): void {
+  pendingTurns.set(sessionId, turn);
+}
+
+export function getPendingTurn(sessionId: string): any {
+  return pendingTurns.get(sessionId);
+}
+
+export function clearPendingTurn(sessionId: string): void {
+  pendingTurns.delete(sessionId);
 }
 
 export function getRecaps(sessionId: string): PartyQuestRecap[] {

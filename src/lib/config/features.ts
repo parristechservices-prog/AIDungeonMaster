@@ -11,6 +11,7 @@ export const FEATURE_FLAGS = {
   /** Client-side localStorage snapshot of last turn state */
   clientSessionSnapshot: true,
   appealTheDm: true,
+  physicalDice: false,
 } as const;
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;

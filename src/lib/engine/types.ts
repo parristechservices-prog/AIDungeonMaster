@@ -8,9 +8,9 @@ export type Skill =
   | 'stealth' | 'survival';
 
 export type EngineRequest =
-  | { kind: 'skill_check'; skill: Skill; dc: number; reason: string }
+  | { kind: 'skill_check'; skill: Skill; dc: number; reason: string; manualRoll?: number }
   | { kind: 'start_combat' }
-  | { kind: 'player_attack'; targetId: string }
+  | { kind: 'player_attack'; targetId: string; manualRoll?: number }
   | { kind: 'monster_turn' }
   | { kind: 'use_feature'; featureId: string }
   | { kind: 'cast_spell'; spellName: string; level: number; targetId?: string }
@@ -32,4 +32,10 @@ export type EngineResult = {
   summary: string;
   breakdown?: RollBreakdown;
   critical?: boolean;
+  needsManualRoll?: boolean;
+  manualRollContext?: {
+    kind: 'skill_check' | 'player_attack';
+    formula: string;
+    dc?: number;
+  };
 };

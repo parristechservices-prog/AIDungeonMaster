@@ -149,13 +149,14 @@ Not for current sprint; capture intent:
 
 ## Implementation phases
 
-### Phase A — Trust & offline play (current sprint)
+### Phase A — Trust & offline play (shipped 2026-06-02)
 
-- Skip LLM without credentials; force-mock env
-- Engine request cap = 5
-- Mock failure hints + scene nudges
-- Appeal button; mood indicator honesty
-- Tests + doc fixes (`TEN_IMPROVEMENTS.md`)
+- [x] Skip LLM without credentials; `PARTYQUEST_FORCE_MOCK`
+- [x] Engine request cap = 5
+- [x] Mock failure hints + scene nudges
+- [x] Appeal button; mood indicator honesty
+- [x] Tests + doc fixes (`TEN_IMPROVEMENTS.md`)
+- [ ] Onboarding v2 for failed checks (inline toast) — Phase B
 
 ### Phase B — Persistence & polish
 

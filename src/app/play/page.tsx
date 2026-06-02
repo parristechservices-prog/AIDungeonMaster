@@ -11,9 +11,10 @@ import { EndingScreen } from '@/components/play/EndingScreen';
 import { InputBox } from '@/components/play/InputBox';
 import { NarrationPanel } from '@/components/play/NarrationPanel';
 import { OnboardingBanner } from '@/components/play/OnboardingBanner';
+import { AppealButton } from '@/components/play/AppealButton';
 import { AmbientAudio } from '@/components/play/AmbientAudio';
-import { DEFAULT_ADVENTURE_ID, getScenario } from '@/lib/game/scenarios';
 import { isFeatureEnabled } from '@/lib/config/features';
+import { DEFAULT_ADVENTURE_ID, getScenario } from '@/lib/game/scenarios';
 import type { TurnResponse } from '@/lib/play/types';
 import { saveClientSnapshot } from '@/lib/persistence/client-snapshot';
 import type { RollBreakdown } from '@/lib/engine/types';
@@ -179,6 +180,19 @@ export default function PlayPage() {
             onSubmit={() => sendTurn(input)}
             placeholder="Describe what you do…"
           />
+          {isFeatureEnabled('appealTheDm') && (
+            <AppealButton
+              busy={busy}
+              onAppeal={() => {
+                const detail = input.trim();
+                sendTurn(
+                  detail
+                    ? `[APPEAL] ${detail}`
+                    : '[APPEAL] I want to question the last ruling — please explain or reconsider.',
+                );
+              }}
+            />
+          )}
           <ChoiceButtons choices={choices} busy={busy} onPick={(c) => sendTurn(c)} />
         </section>
 

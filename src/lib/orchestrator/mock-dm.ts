@@ -2,10 +2,42 @@ import type { DmTurn } from '@/lib/llm/contracts';
 import { getScenario } from '@/lib/game/scenarios';
 import type { GameState } from '@/lib/game/types';
 
+const EXPLORATION_PHRASES = ['inspect', 'track', 'search', 'scout', 'boathouse', 'quay', 'trail'];
+
+const SOCIAL_RETRY_HINT =
+  ' Try offering coin, using a different approach, or asking Mira again with Insight or Persuasion.';
+
+const EXPLORATION_RETRY_HINT =
+  ' Search again, try Investigation instead, or look for another clue near the quay.';
+
+function mockAmbientForScene(sceneId: GameState['sceneId']): DmTurn['ambient'] {
+  switch (sceneId) {
+    case 'social':
+      return 'tavern';
+    case 'exploration':
+      return 'exploration';
+    case 'combat':
+      return 'combat';
+    default:
+      return 'none';
+  }
+}
+
 export function deriveDmTurnFromInput(state: GameState, playerInput: string): DmTurn {
   const input = playerInput.toLowerCase();
   const scenario = getScenario(state.adventureId);
   const mock = scenario.mock;
+  const ambient = mockAmbientForScene(state.sceneId);
+
+  if (input.startsWith('[appeal]') || input.includes('appeal the dm')) {
+    return {
+      engineRequests: [],
+      narration:
+        'The table pauses. In table-rules mode, describe what felt wrong — a failed roll, a contradiction, or a ruling you want reconsidered — and try the action again. With an AI director, appeals can retcon canon via the engine.',
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
 
   if (input.includes('perception') || input.includes('skill') || input.includes('stat') || input.includes('ability')) {
     const skillName = (
@@ -20,6 +52,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
       engineRequests: [],
       narration: `You take a moment to reflect on your capabilities. ${info}`,
       needsResultBeforeNarrating: false,
+      ambient,
     };
   }
 
@@ -31,10 +64,20 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
       engineRequests: [{ kind: 'use_feature', featureId: feature.id }],
       narration: `You invoke ${feature.name}.`,
       needsResultBeforeNarrating: true,
+      ambient,
     };
   }
 
   if (state.sceneId === 'social') {
+    if (EXPLORATION_PHRASES.some((p) => input.includes(p))) {
+      return {
+        engineRequests: [],
+        narration: `${mock.socialNpcName} is still at the bar. Learn what you can about the courier here before heading to the quay.`,
+        needsResultBeforeNarrating: false,
+        ambient,
+      };
+    }
+
     const isAsking =
       input.includes('ask') ||
       input.includes('question') ||
@@ -64,6 +107,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
         ],
         narration: `${mock.socialNpcName} studies you before answering.`,
         needsResultBeforeNarrating: true,
+        ambient,
       };
     }
 
@@ -72,6 +116,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
         engineRequests: [],
         narration: `${mock.socialNpcName} looks up. "Well? State your business."`,
         needsResultBeforeNarrating: false,
+        ambient,
       };
     }
 
@@ -79,6 +124,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
       engineRequests: [],
       narration: `${mock.socialNpcName} waits for you to speak or act.`,
       needsResultBeforeNarrating: false,
+      ambient,
     };
   }
 
@@ -94,6 +140,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
       ],
       narration: 'You work the scene for anything out of place.',
       needsResultBeforeNarrating: true,
+      ambient,
     };
   }
 
@@ -102,6 +149,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
       engineRequests: [{ kind: 'start_combat' }],
       narration: scenario.scenes.combat.starter,
       needsResultBeforeNarrating: false,
+      ambient: 'combat',
     };
   }
 
@@ -111,6 +159,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
       engineRequests: living ? [{ kind: 'player_attack', targetId: living.id }, { kind: 'monster_turn' }] : [],
       narration: 'You lunge forward.',
       needsResultBeforeNarrating: true,
+      ambient: 'combat',
     };
   }
 
@@ -118,16 +167,17 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
     engineRequests: [],
     narration: 'The moment hangs — what do you do?',
     needsResultBeforeNarrating: false,
+    ambient: 'combat',
   };
 }
 
 export function mockNarrationAfterResult(state: GameState, kind: string, ok: boolean): string | null {
   const mock = getScenario(state.adventureId).mock;
   if (state.sceneId === 'social' && kind === 'skill_check') {
-    return ok ? mock.socialSuccess : mock.socialFailure;
+    return ok ? mock.socialSuccess : `${mock.socialFailure}${SOCIAL_RETRY_HINT}`;
   }
   if (state.sceneId === 'exploration' && kind === 'skill_check') {
-    return ok ? mock.explorationSuccess : mock.explorationFailure;
+    return ok ? mock.explorationSuccess : `${mock.explorationFailure}${EXPLORATION_RETRY_HINT}`;
   }
   return null;
 }

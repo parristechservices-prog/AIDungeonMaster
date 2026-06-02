@@ -2,11 +2,31 @@ import type { GameState } from '@/lib/game/types';
 import { advanceScene } from '@/lib/game/state';
 import type { EngineRequest, EngineResult, RollBreakdown } from './types';
 
-export function resolveEngineRequest(state: GameState, request: EngineRequest): { state: GameState; result: EngineResult } {
+export function resolveEngineRequest(
+  state: GameState,
+  request: EngineRequest,
+  options?: { physicalDice?: boolean }
+): { state: GameState; result: EngineResult } {
   switch (request.kind) {
     case 'skill_check': {
       const mod = state.player.skills[request.skill] ?? 0;
-      const breakdown = rollFormula('1d20', mod);
+      
+      if (options?.physicalDice && request.manualRoll === undefined) {
+        return {
+          state,
+          result: {
+            ok: false,
+            summary: `Waiting for manual ${request.skill} roll...`,
+            needsManualRoll: true,
+            manualRollContext: { kind: 'skill_check', formula: `1d20+${mod}`, dc: request.dc },
+          },
+        };
+      }
+
+      const breakdown = request.manualRoll !== undefined 
+        ? { formula: `1d20+${mod}`, rolls: [request.manualRoll], modifier: mod, total: request.manualRoll + mod }
+        : rollFormula('1d20', mod);
+      
       const ok = breakdown.total >= request.dc;
       const next = ok && state.sceneId !== 'combat' ? advanceScene(state) : state;
       return {
@@ -25,7 +45,25 @@ export function resolveEngineRequest(state: GameState, request: EngineRequest): 
     case 'player_attack': {
       const target = state.monsters.find((m) => m.id === request.targetId && m.hp > 0);
       if (!target) return { state, result: { ok: false, summary: 'No valid target.' } };
-      const toHit = rollFormula('1d20', state.player.weapon.attackBonus);
+
+      const attackMod = state.player.weapon.attackBonus;
+
+      if (options?.physicalDice && request.manualRoll === undefined) {
+        return {
+          state,
+          result: {
+            ok: false,
+            summary: `Waiting for manual attack roll against ${target.name}...`,
+            needsManualRoll: true,
+            manualRollContext: { kind: 'player_attack', formula: `1d20+${attackMod}`, dc: target.ac },
+          },
+        };
+      }
+
+      const toHit = request.manualRoll !== undefined
+        ? { formula: `1d20+${attackMod}`, rolls: [request.manualRoll], modifier: attackMod, total: request.manualRoll + attackMod }
+        : rollFormula('1d20', attackMod);
+      
       const critical = toHit.rolls[0] === 20;
       if (toHit.total < target.ac && !critical) {
         return { state: appendLog(state, `Attack missed ${target.name}.`), result: { ok: false, summary: 'Attack missed.', breakdown: toHit } };

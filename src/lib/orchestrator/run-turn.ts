@@ -4,6 +4,9 @@ import { getScenario } from '@/lib/game/scenarios';
 import type { GameState } from '@/lib/game/types';
 import { mockNarrationAfterResult } from '@/lib/orchestrator/mock-dm';
 
+/** Matches `engineRequests` max in `dmTurnSchema`. */
+export const MAX_ENGINE_REQUESTS_PER_TURN = 5;
+
 export type TurnResult = {
   ok: boolean;
   mode: 'ai_director' | 'table_rules';
@@ -18,6 +21,12 @@ export type TurnResult = {
   nextHook: string;
   narration: string;
   ambient?: 'none' | 'tavern' | 'dungeon' | 'combat' | 'exploration' | 'boss_fight';
+  needsManualRoll?: boolean;
+  manualRollContext?: {
+    kind: 'skill_check' | 'player_attack';
+    formula: string;
+    dc?: number;
+  };
   engineResults: Array<{ kind: string; summary: string; ok: boolean; breakdown?: import('@/lib/engine/types').RollBreakdown; critical?: boolean }>;
   recentRolls: import('@/lib/engine/types').RollBreakdown[];
   narrationWarnings?: string[];
@@ -43,7 +52,7 @@ export type TurnResult = {
 export function runTurn(
   state: GameState,
   rawTurn: unknown,
-  context: { mode: 'ai_director' | 'table_rules'; aiUsed: boolean; fallbackUsed: boolean },
+  context: { mode: 'ai_director' | 'table_rules'; aiUsed: boolean; fallbackUsed: boolean; physicalDice?: boolean; manualRoll?: number },
 ): { state: GameState; response: TurnResult } {
   const prevScene = state.sceneId;
   const parsed = dmTurnSchema.safeParse(rawTurn);
@@ -55,12 +64,26 @@ export function runTurn(
   const turn = parsed.success ? parsed.data : fallback;
 
   const engineResults = [] as TurnResult['engineResults'];
-  const limitedRequests = turn.engineRequests.slice(0, 2);
+  const limitedRequests = turn.engineRequests.slice(0, MAX_ENGINE_REQUESTS_PER_TURN);
+
+  let needsManualRoll = false;
+  let manualRollContext: TurnResult['manualRollContext'] | undefined;
 
   for (const request of limitedRequests) {
-    const resolved = resolveEngineRequest(state, request);
+    // Inject manual roll if provided and relevant
+    if (context.manualRoll !== undefined && (request.kind === 'skill_check' || request.kind === 'player_attack')) {
+      request.manualRoll = context.manualRoll;
+    }
+
+    const resolved = resolveEngineRequest(state, request, { physicalDice: context.physicalDice });
     state = resolved.state;
     engineResults.push({ kind: request.kind, ...resolved.result });
+
+    if (resolved.result.needsManualRoll) {
+      needsManualRoll = true;
+      manualRollContext = resolved.result.manualRollContext;
+      break; // Stop processing further requests if we need a roll
+    }
   }
 
   // Handle post-resolution narration for fallback/mock DM
@@ -122,6 +145,8 @@ export function runTurn(
       nextHook,
       narration: finalNarration,
       ambient: turn.ambient,
+      needsManualRoll,
+      manualRollContext,
       engineResults,
       recentRolls,
       state: {

@@ -1,8 +1,13 @@
 import { dmTurnSchema, type DmTurn } from './contracts';
+import { hasLlmCredentials } from './credentials';
 
 type Input = { systemPrompt: string; playerInput: string };
 
 export async function generateDmTurn(input: Input): Promise<DmTurn | null> {
+  if (!hasLlmCredentials()) {
+    return null;
+  }
+
   const provider = (process.env.PARTYQUEST_LLM_PROVIDER ?? 'groq').toLowerCase();
 
   if (provider === 'openai') {
