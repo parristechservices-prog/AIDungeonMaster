@@ -63,6 +63,27 @@ describe('mock DM hints', () => {
     expect(turn.narration.toLowerCase()).not.toContain('60 feet');
   });
 
+  it('recognizes the temple-graveyard-inn route as a valid stealth route', () => {
+    const atDrawbridge = advanceScene(createInitialState('hint-combat-route', {
+      adventureId: 'skt-nightstone-starter',
+      characterIds: ['fighter'],
+    }));
+    const inSquare = advanceScene(atDrawbridge);
+
+    const turn = deriveDmTurnFromInput(inSquare, 'i sneak behind the temple through 6a toward the inn');
+
+    expect(turn.engineRequests).toEqual([
+      expect.objectContaining({
+        kind: 'skill_check',
+        skill: 'stealth',
+        reason: expect.stringContaining('behind the temple, through the graveyard route, toward the inn'),
+      }),
+    ]);
+    expect(turn.narration.toLowerCase()).toContain('behind the temple');
+    expect(turn.narration.toLowerCase()).toContain('graveyard');
+    expect(turn.narration.toLowerCase()).toContain('inn');
+  });
+
   it('offers tactical movement options instead of a generic combat wall', () => {
     const atDrawbridge = advanceScene(createInitialState('hint-combat-move', {
       adventureId: 'skt-nightstone-starter',

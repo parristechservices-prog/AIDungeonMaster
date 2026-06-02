@@ -133,7 +133,7 @@ export function runTurn(
     const mainResult = engineResults[0];
     if (mainResult) {
       if (context.fallbackUsed) {
-        const scripted = mockNarrationAfterResult(state, mainResult.kind, mainResult.ok);
+        const scripted = mockNarrationAfterResult(state, mainResult.kind, mainResult.ok, mainResult.summary);
         if (scripted) {
           finalNarration = scripted;
         } else if (mainResult.kind === 'player_attack') {

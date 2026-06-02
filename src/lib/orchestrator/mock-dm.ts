@@ -108,6 +108,29 @@ function isCoverIntent(input: string): boolean {
   return includesAny(input, COVER_PHRASES);
 }
 
+function sneakingRouteTarget(input: string): string {
+  const wantsInn = input.includes('inn') || input.includes('area 8') || input.includes('building 8');
+  const wantsGraveyard =
+    input.includes('graveyard') ||
+    input.includes('grave') ||
+    input.includes('crypt') ||
+    input.includes('area 6') ||
+    input.includes('6a');
+  const wantsTemple =
+    input.includes('temple') ||
+    input.includes('bell') ||
+    input.includes('steeple') ||
+    input.includes('belltower') ||
+    input.includes('bell tower') ||
+    input.includes('area 5');
+
+  if (wantsInn && wantsGraveyard) return 'behind the temple, through the graveyard route, toward the inn';
+  if (wantsInn) return 'east toward the inn';
+  if (wantsGraveyard) return 'behind the temple into the graveyard and Nandar crypt area';
+  if (wantsTemple) return 'toward the temple and its ringing steeple';
+  return 'toward cover or the bell';
+}
+
 type DistanceHint = {
   target: string;
   feet: number;
@@ -504,6 +527,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
   const livingNames = living.map((m) => m.name).join(' and ');
 
   if (isStealthIntent(input)) {
+    const routeTarget = sneakingRouteTarget(input);
     return {
       engineRequests:
         living.length > 0
@@ -513,13 +537,13 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
                 characterId: activeChar.id,
                 skill: 'stealth',
                 dc: 13,
-                reason: `Slip toward cover or the bell without drawing the ${livingNames}'s full attention.`,
+                reason: `Slip ${routeTarget} without drawing the ${livingNames}'s full attention.`,
               },
             ]
           : [{ kind: 'advance_scene' }],
       narration:
         living.length > 0
-          ? `You slow down, use the fallen stones and broken buildings as cover, and try to slip around the ${livingNames} rather than charge through the square.`
+          ? `You slow down, use the fallen stones and broken buildings as cover, and try to slip ${routeTarget} rather than charge through the square.`
           : 'With no active enemy blocking you, you move quietly toward the next landmark.',
       needsResultBeforeNarrating: true,
       ambient: 'combat',
@@ -611,7 +635,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
   };
 }
 
-export function mockNarrationAfterResult(state: GameState, kind: string, ok: boolean): string | null {
+export function mockNarrationAfterResult(state: GameState, kind: string, ok: boolean, summary = ''): string | null {
   const adventure = getAdventure(state.adventureId);
   const mock = adventure.mock;
   const sceneKind = getSceneKind(adventure, state.sceneId);
@@ -623,6 +647,22 @@ export function mockNarrationAfterResult(state: GameState, kind: string, ok: boo
     return ok ? mock.explorationSuccess : `${mock.explorationFailure}${EXPLORATION_RETRY_HINT}`;
   }
   if (sceneKind === 'combat' && kind === 'skill_check') {
+    const loweredSummary = summary.toLowerCase();
+    if (loweredSummary.includes('graveyard') || loweredSummary.includes('crypt')) {
+      return ok
+        ? 'You make the route work, slipping behind the temple into the graveyard path near the Nandar crypt without giving the worgs a clean opening.'
+        : 'The graveyard route is there, but your movement is not quiet enough; the worgs keep pressure on you before you can use it safely.';
+    }
+    if (loweredSummary.includes('inn')) {
+      return ok
+        ? 'You make the route work, keeping low behind the temple and graveyard line as you angle east toward the damaged inn.'
+        : 'You spot the line toward the inn, but the worgs track your movement before you can slip across cleanly.';
+    }
+    if (loweredSummary.includes('temple') || loweredSummary.includes('bell') || loweredSummary.includes('steeple')) {
+      return ok
+        ? 'You make the route work, reaching the temple side of the square near the ringing steeple without giving the worgs a clean opening.'
+        : 'You can see the temple route, but the worgs keep you pinned before you can reach the bell safely.';
+    }
     return ok
       ? 'You make the tactical move work, gaining a better position without giving the enemy a clean opening.'
       : 'The attempt does not come off cleanly; the enemy keeps you pressured and you need to choose your next move fast.';
