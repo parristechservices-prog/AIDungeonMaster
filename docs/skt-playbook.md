@@ -9,10 +9,10 @@ You own *Storm King's Thunder*. This app runs **5e mechanics + your notes** — 
 
 ## One-time setup (15 min)
 
-```bash
-cd Projects/AIDungeonMaster
-npm install
-npm run module:scaffold -- skt-nightstone-starter skt-nightstone
+```powershell
+cd C:\Users\Josh\aidm\AIDungeonMaster
+pnpm install
+pnpm run module:scaffold -- skt-nightstone-starter skt-nightstone
 ```
 
 1. Open `content/private/skt-nightstone/module.json` (gitignored).
@@ -20,7 +20,7 @@ npm run module:scaffold -- skt-nightstone-starter skt-nightstone
 3. Fill `campaignGuide` with 5–15 bullets the AI should treat as truth.
 4. Validate:
    ```bash
-   npm run module:validate -- content/private/skt-nightstone/module.json
+   pnpm run module:validate -- content/private/skt-nightstone/module.json
    ```
 5. Add API keys to `.env.local` for AI narration, or play in **table-rules** mode without keys.
 
@@ -29,7 +29,7 @@ Keep `docs/__Storm King's Thunder*.pdf` **out of git**.
 ## Start a session
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 Open [http://localhost:3000/start?adventureId=skt-nightstone](http://localhost:3000/start?adventureId=skt-nightstone)
@@ -79,7 +79,7 @@ Use **Appeal the DM** if a ruling feels wrong.
 ## After Chapter 1
 
 ```bash
-npm run module:scaffold -- skt-nightstone-starter skt-ch02
+pnpm run module:scaffold -- skt-nightstone-starter skt-ch02
 ```
 
 Copy structure, new `sceneOrder`, new `campaignGuide` bullets. One `module.json` per chapter keeps load times sane.

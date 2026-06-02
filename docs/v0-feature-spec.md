@@ -1,13 +1,15 @@
 ---
 doc: V0 Feature Spec
 project: PartyQuest / DM-in-a-Box
-status: draft v0.1
+status: historical draft v0.1
 owner: Josh Parris
 date: 2026-05-12
 audience: developers, coding agents, future Josh
 ---
 
 # V0 Feature Spec — DM-in-a-Box
+
+> **Accuracy note (2026-06-02):** This is the original V0 scope document, not a current implementation inventory. The current app has expanded beyond this spec: Next.js 16, Groq by default with optional comma-separated provider/key failover, multiple character templates, optional multi-character party setup on one device, backgrounds, DM personas, private module loading/import, local `.data` persistence, client snapshots, physical dice entry, tutorial scenario, recap export, and partial encounter balancing/canon summarization. Use `docs/todo.md` for the current "what remains" list.
 
 ## Purpose
 
@@ -22,7 +24,7 @@ If V0 is fun, the larger product is worth building. If it isn't, no amount of vo
 
 ## In scope
 
-- **Platform:** Browser only. Desktop or mobile web. Next.js 14 PWA.
+- **Platform:** Browser only. Desktop or mobile web. Original target was Next.js 14 PWA; the current app uses Next.js 16.
 - **Players:** Solo, single device. No accounts. No multiplayer.
 - **Input/output:** Text only. No voice (no STT, no TTS).
 - **Character:** One hand-built pre-generated level-3 Fighter. No character creation.
@@ -49,7 +51,7 @@ If V0 is fun, the larger product is worth building. If it isn't, no amount of vo
   - Side panel: HP, AC, basic inventory, spell slots if any
   - Visible dice roller with results + breakdown
   - Combat HUD when initiative is active (turn order, current turn)
-- **Session state:** In-memory only. Refresh = new game.
+- **Session state:** Original target was in-memory only. Current implementation persists session JSON under `.data/` locally, uses process memory on Vercel, and stores a client snapshot in `localStorage`.
 - **Content:** SRD 5.2.1-compatible. Original setting flavour only. No D&D trademarks anywhere.
 - **Quality:**
   - Regression test suite for engine functions (dice, attack, damage, skill check)
@@ -92,7 +94,7 @@ The engine never writes prose. The LLM never invents numbers.
 - **Hardcoded adventure** because adventure generation is its own hard problem; not the bet being tested.
 - **Pre-generated Fighter** because character creation is months of work that doesn't answer the V0 question.
 - **In-memory state** because persistence adds complexity without testing the bet.
-- **One LLM provider at a time** (OpenAI or Anthropic). Configurable but not both at once.
+- **One LLM provider at a time** was the original decision. Current implementation defaults to Groq and can try a comma-separated provider list such as `groq,openai`; Anthropic is not wired.
 
 ## Assumptions
 

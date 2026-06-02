@@ -12,11 +12,11 @@ status: current guide
 ## Quick start (SKT or any owned book)
 
 ```bash
-npm install
-npm run module:scaffold -- skt-nightstone-starter skt-nightstone
+pnpm install
+pnpm run module:scaffold -- skt-nightstone-starter skt-nightstone
 # Edit content/private/skt-nightstone/module.json — replace YOUR NOTE fields
-npm run module:validate -- content/private/skt-nightstone/module.json
-npm run dev
+pnpm run module:validate -- content/private/skt-nightstone/module.json
+pnpm dev
 ```
 
 Open `/start` → choose your **Private module**.
@@ -46,8 +46,8 @@ Use SRD-compatible names and stats you have rights to ship. For private modules,
 
 | Command | Description |
 |---------|-------------|
-| `npm run module:validate -- <path>` | Zod-check a module file |
-| `npm run module:scaffold -- <template> [private-id]` | Copy template → `content/private/` |
+| `pnpm run module:validate -- <path>` | Zod-check a module file |
+| `pnpm run module:scaffold -- <template> [private-id]` | Copy template to `content/private/` |
 | `POST /api/modules/validate` | Dev-only JSON body validation |
 
 ## See also

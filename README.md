@@ -24,15 +24,28 @@ Narration is checked against engine state (`validate-narration.ts`); warnings ar
 - Next.js 16 (App Router) + TypeScript
 - Tailwind CSS 4
 - Zod + Vitest
-- Groq-first LLM (OpenAI fallback)
+- Groq by default; `PARTYQUEST_LLM_PROVIDER` can select `openai` or a comma-separated failover list such as `groq,openai`
 
 ## Setup
 
 ```bash
 pnpm install
 cp env.example .env.local
-# Add GROQ_API_KEY and/or OPENAI_API_KEY
 pnpm dev
+```
+
+Then open `.env.local` and enter your keys:
+
+```env
+GROQ_API_KEY=your-primary-groq-key
+GROQ_API_KEYS=backup-groq-key-1,backup-groq-key-2
+```
+
+If you also use OpenAI:
+
+```env
+OPENAI_API_KEY=your-primary-openai-key
+OPENAI_API_KEYS=backup-openai-key-1,backup-openai-key-2
 ```
 
 Open [http://localhost:3000](http://localhost:3000) → **Create adventure** to pick class, background, DM persona, and scenario.
@@ -41,10 +54,13 @@ Open [http://localhost:3000](http://localhost:3000) → **Create adventure** to 
 
 | Variable | Description |
 |----------|-------------|
-| `GROQ_API_KEY` | Primary LLM (recommended) |
+| `PARTYQUEST_LLM_PROVIDER` | Provider order, default `groq`; supports comma-separated failover such as `groq,openai` |
+| `GROQ_API_KEY` | Primary Groq key (recommended) |
+| `GROQ_API_KEYS` | Comma-separated backup Groq keys for failover |
 | `GROQ_MODEL` | Default `llama-3.3-70b-versatile` |
-| `OPENAI_API_KEY` | Fallback / `PARTYQUEST_LLM_PROVIDER=openai` |
-| `PARTYQUEST_LLM_MODE` | `light` for smaller Groq model when unset |
+| `OPENAI_API_KEY` | Primary OpenAI key, used when provider order includes `openai` |
+| `OPENAI_API_KEYS` | Comma-separated backup OpenAI keys for failover |
+| `PARTYQUEST_LLM_MODE` | Set to `light` to use the smaller Groq model |
 | `PARTYQUEST_DEV_LOGS` | `true` writes turn logs under `.data/` |
 | `PARTYQUEST_FORCE_MOCK` | `true` skips LLM calls (table-rules only) |
 | `PARTYQUEST_MOCK_FLAVOR` | `true` adds the legacy fallback narration prefix |
@@ -81,8 +97,8 @@ Add more entries in `src/lib/game/characters/templates.ts` and `src/lib/game/sce
 ### Private campaign modules (owned books)
 
 ```bash
-npm run module:scaffold -- skt-nightstone-starter skt-nightstone
-npm run module:validate -- content/private/skt-nightstone/module.json
+pnpm run module:scaffold -- skt-nightstone-starter skt-nightstone
+pnpm run module:validate -- content/private/skt-nightstone/module.json
 ```
 
 Edit the private `module.json` with **your** scene notes (do not commit PDFs or book text). See `docs/skt-playbook.md`, `docs/published-adventures-guide.md`, and `docs/scenario-authoring.md`. Modules appear on `/start` when present locally.

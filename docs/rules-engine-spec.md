@@ -1,7 +1,7 @@
 ---
 doc: Rules Engine Technical Spec
 project: PartyQuest / DM-in-a-Box
-status: draft v0.1
+status: target design v0.1; partially implemented
 owner: Josh Parris
 date: 2026-05-12
 audience: developers, coding agents, future Josh
@@ -9,6 +9,8 @@ companion: v0-feature-spec.md
 ---
 
 # Rules Engine Technical Spec — DM-in-a-Box
+
+> **Accuracy note (2026-06-02):** This document is the intended rules-engine contract, not a complete description of current code. The current engine has a narrower `EngineRequest` union in `src/lib/engine/types.ts`, resolves requests through `resolveEngineRequest` in `src/lib/engine/index.ts`, uses `Math.random()` rather than a seedable PRNG, and implements partial conditions, spells, rests, features, physical dice, and encounter balancing. Use `docs/todo.md` for current implementation gaps.
 
 ## Purpose
 

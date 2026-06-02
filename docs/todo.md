@@ -1,21 +1,44 @@
-After the recent round of implementations, here is the prioritized list of what is still left to do to complete the vision outlined in the documentation:
+# Current TODO
 
-**Core Game Mechanics (High Priority)**
-- **Tactical Spatial Combat Grid**: The biggest missing mechanical piece. Currently, combat is "theater of the mind." We need a 2D grid to track positioning, movement, and area-of-effect spells (like *Fireball*).
-- **Conditions & Status Effects**: While narrated, we need the [rules engine](file:///c%3A/Users/joshu_w0zb8cp/Projects/AIDungeonMaster/src/lib/engine/index.ts) to mathematically enforce effects like *Prone* (disadvantage on attacks), *Restrained* (0 speed), or *Blinded*.
-- **Expanded Spell Library**: We've added 3 spells, but we need to model the unique logic for another 20–30 core SRD spells (e.g., *Shield*, *Bless*, *Guiding Bolt*) so the engine can handle their specific math.
+Status source: source inspection on 2026-06-02. This file is the concise, current roadmap. Older design docs may describe earlier plans or target architecture; when they disagree with this file and the code, this file is newer.
 
-**Infrastructure & Quality (Medium Priority)**
-- **Prompt Versioning & Eval Framework**: We need a formal system to track versions of the [system prompt](file:///c%3A/Users/joshu_w0zb8cp/Projects/AIDungeonMaster/src/lib/llm/system-prompt.ts) and run "eval" tests to ensure new updates don't make the DM less accurate or more repetitive.
-- **Durable Session Persistence**: Currently, sessions are saved to local storage or session storage. We need a backend database (like Vercel KV or Postgres) so players can resume their adventure on any device.
-- **Real Ambient Audio Playback**: The UI shows the "Mood," but we need to integrate actual royalty-free audio loops that crossfade when the DM changes the scene atmosphere.
+## Highest Priority
 
-**Multiplayer & Social (Long-term)**
-- **Multiplayer Session Support**: Implementing WebSockets for real-time group play, including room codes and automated turn tracking for multiple players.
-- **DM "Whispers"**: A way for the AI DM to send secret information or hidden checks to a single player in a group.
+- **Durable server persistence:** sessions currently persist to `.data/` locally and to process memory on Vercel, with a client `localStorage` snapshot for UI resume. Add KV/Postgres/Supabase or another durable store for cross-device and post-deploy resume.
+- **Prompt versioning and evals:** the active DM prompt is inline in `src/lib/llm/system-prompt.ts`. Add versioned prompt files, an active prompt registry, prompt changelogs, and an eval script/CI job.
+- **Safety enforcement:** `validateNarrationAgainstState` logs numeric-state warnings, but narration is not blocked or regenerated. Add moderation/safety checks and one retry/regeneration path before display.
+- **Rules-engine determinism:** engine rolls still use `Math.random()`. Add a seedable PRNG and deterministic replay support for tests and bug reports.
+- **Turn legality and action economy:** combat works for the prototype, but movement, reactions, strict turn ownership, and action/bonus-action spending are not enforced end to end.
 
-**User Experience (Polish)**
-- **Mobile Layout Optimization**: Improving the [PlayPage](file:///c%3A/Users/joshu_w0zb8cp/Projects/AIDungeonMaster/src/app/play/page.tsx) for phone screens, specifically a "Character Sheet" drawer and sticky input bar.
-- **Cost Controls & Rate Limiting**: Implementing daily token caps per user/IP to prevent API budget drain.
+## Product Polish
 
-You can find the full detailed breakdown of these remaining tasks in [full-improvement-plan.md](file:///c%3A/Users/joshu_w0zb8cp/Projects/AIDungeonMaster/docs/full-improvement-plan.md).
+- **Real ambient audio:** the UI honestly shows "Scene mood" and "(audio coming soon)". Add royalty-free loops, mute/volume controls, and crossfade by mood.
+- **Mobile play layout:** add a sticky input bar and character-sheet drawer for phone play.
+- **Failed-check UX:** mock narration gives hints, but the UI still needs inline/toast feedback for failed checks and clearer recovery choices.
+- **Accessibility pass:** improve focus order, narration log semantics, screen-reader labels, and reduced-motion behavior; add automated accessibility checks.
+- **Cost controls and rate limiting:** add per-session/IP turn limits, token estimation, and graceful "limit reached" messaging.
+
+## Rules And Content Depth
+
+- **Conditions:** basic conditions exist and some affect checks/attacks, but full SRD condition behavior, duration, save-end logic, and movement effects are incomplete.
+- **Spells:** a few spells have bespoke logic. Expand to a tested SRD subset with targeting, slots, saves, damage/healing, buffs, and debuffs.
+- **SRD character sheets:** expand from simple character templates to structured equipment, inventory, hit dice, proficiencies, progression, and validation.
+- **Character creation and leveling:** add SRD-safe species/classes/backgrounds, ability generation, starting equipment, ASI/feat subset, and level-up rules.
+- **Tactical spatial combat:** not started. Add only after the core theater-of-the-mind loop is stable.
+
+## Module And Campaign Tooling
+
+- **Encounter references:** planned `encounters.yaml` or equivalent encounter packs are not implemented.
+- **Open5e/SRD import:** monster/spell/rules imports are planned, not shipped.
+- **Authoring UX:** local JSON import exists on `/start`; a fuller scene/module editor is still future work.
+- **Local-only RAG:** optional localhost PDF index/query flow is not implemented.
+- **SKT/Nightstone fidelity:** committed templates are original placeholders. Private modules still need Josh-authored notes to match the owned book.
+
+## Longer-Term
+
+- Multiplayer rooms/WebSockets.
+- Private DM whispers/secrets.
+- Host succession.
+- Voice input/output.
+- User accounts, billing, and analytics dashboards.
+- House rules/homebrew support.

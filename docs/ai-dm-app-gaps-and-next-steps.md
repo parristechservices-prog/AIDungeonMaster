@@ -1,5 +1,7 @@
 # DM-in-a-Box — Gaps, Flaws, and Next Steps
 
+> **Accuracy note (2026-06-02):** This is an early critical planning document. Parts 1, 2, 3, and 5 remain useful product analysis. Part 4 is a historical scaffold prompt and does not match the current repo exactly: the app is now `partyquest-v0` inside `AIDungeonMaster`, uses Next.js 16, defaults to Groq chat-completions with optional comma-separated provider/key failover, has private module tooling, multiple character templates, local `.data` persistence, client snapshots, physical dice, tutorial scenario, recap export, and partial encounter balancing/canon summarization. For current remaining work, use `docs/todo.md`.
+
 Companion to the project brief. This is the critical pass: what the first document missed, where its plan is fragile, what needs to be written before any real code is, and how to scaffold the V0 prototype.
 
 ---

@@ -5,7 +5,9 @@
 **Project:** PartyQuest  
 **V0 repo/app:** `partyquest-v0`  
 **Internal codename:** DM-in-a-Box  
-**Status:** Decisions frozen for first scaffold
+**Status:** Historical pre-coding decisions; superseded where code and newer docs differ
+
+> **Accuracy note (2026-06-02):** This document records the decisions before the first scaffold. It is useful design history, but it is not a current implementation inventory. The current repo is `AIDungeonMaster`, uses Next.js 16, defaults to Groq chat-completions with optional comma-separated provider/key failover, supports multiple character templates/party setup on one device, writes local sessions under `.data/`, uses client snapshots, and includes private module tooling. Use `README.md` and `docs/todo.md` for current behavior and roadmap.
 
 ## Executive decision
 
@@ -33,16 +35,16 @@ V0 succeeds if one person can open a browser, click **Start**, play a coherent 3
 | Architecture | Hybrid deterministic engine + LLM narrator | Engine and LLM modules must be physically separated. |
 | Rules truth | Engine only | LLM never mutates HP, AC, dice, spell slots, conditions, initiative, inventory, or death saves. |
 | AI role | Narration, NPC dialogue, intent interpretation, fuzzy adjudication | AI can propose actions/checks; engine validates and resolves. |
-| LLM provider | **OpenAI Responses API** | Use one provider only for V0. Do not build multi-provider support yet. |
-| Primary model | **`gpt-5.4-mini`** | Use via `OPENAI_MODEL=gpt-5.4-mini`. Chosen over legacy GPT-4o-mini for current low-cost structured output work. |
-| Fallback model | **None in code** | If unavailable, manually change the env var. No fallback logic in V0. |
-| JSON contract | Strict structured JSON schema | Use OpenAI structured outputs/function calling style; no tagged prose parsing. |
+| LLM provider | **Historical target: OpenAI Responses API** | Current code defaults to Groq chat completions and can try a comma-separated provider list such as `groq,openai`. |
+| Primary model | **Historical target: `gpt-5.4-mini`** | Current defaults are `llama-3.3-70b-versatile` for Groq and `gpt-4o-mini` for OpenAI unless env vars override them. |
+| Fallback model | **Historical target: none in code** | Current code falls back from Groq/OpenAI failures to the table-rules mock DM. |
+| JSON contract | Strict structured JSON schema | Current implementation uses chat-completions JSON mode plus Zod validation, not OpenAI Responses structured outputs. |
 | Framework | Next.js App Router + TypeScript | Use current stable Next.js at scaffold time, but keep the source layout from this document. |
 | Package manager | pnpm | Agents should not introduce npm/yarn lockfiles. |
 | Test runner | Vitest | Engine tests must run without hitting the LLM. |
 | Runtime validation | Zod | All LLM outputs are parsed through Zod before engine dispatch. |
 | Styling | Tailwind CSS | Keep UI simple and legible; no component-library dependency required for V0. |
-| State | In-memory session state | Refresh resets the game. No database. No localStorage. |
+| State | Historical target: in-memory session state | Current local dev writes `.data/session-*.json`; Vercel remains process memory; the client stores a `localStorage` snapshot. |
 | Dev logging | JSONL dev logs | Server-side orchestrator writes local JSONL logs in dev only. |
 | Deployment | Vercel after local playthrough works | Do not deploy until engine + stubbed UI pass tests locally. |
 | Legal source | SRD 5.2.1 / CC-BY-4.0-compatible mechanics + original setting flavour | No official settings, official adventures, official art, official maps, or non-SRD trademarked content. |
@@ -122,9 +124,7 @@ Do not include:
 ### Source notes
 
 - Wizards of the Coast's SRD page states that SRD v5.2.1 contains rules content creators can use and reference under Creative Commons, and lists English SRD v5.2.1 as published 1 May 2025 with the page last updated 2 March 2026.
-- OpenAI's structured output docs state structured outputs are designed for schema adherence and are supported by GPT-4o-mini and later model snapshots.
-- OpenAI's current API pricing page lists GPT-5.4-mini pricing at USD $0.75 per million input tokens and USD $4.50 per million output tokens.
-- Anthropic's current pricing/model docs list Claude Haiku 4.5 as a fast near-frontier model at USD $1 per million input tokens and USD $5 per million output tokens.
+- The provider and pricing notes below were pre-coding research notes. They are not maintained as current pricing or model availability claims.
 
 ---
 
@@ -193,7 +193,7 @@ pnpm
 Tailwind CSS
 Vitest
 Zod
-OpenAI Responses API
+Historical target: OpenAI Responses API
 Vercel deployment
 ```
 

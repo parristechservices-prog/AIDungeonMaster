@@ -1,7 +1,7 @@
 ---
 doc: DM System Prompt Design Doc
 project: PartyQuest / DM-in-a-Box
-status: draft v0.1
+status: target design v0.1; partially implemented
 owner: Josh Parris
 date: 2026-05-12
 audience: developers, coding agents, future Josh
@@ -9,6 +9,8 @@ companions: v0-feature-spec.md, rules-engine-spec.md
 ---
 
 # DM System Prompt Design Doc — DM-in-a-Box
+
+> **Accuracy note (2026-06-02):** This document describes the intended prompt architecture. The current code has a single inline system prompt in `src/lib/llm/system-prompt.ts`, a Zod-validated JSON turn contract in `src/lib/llm/contracts.ts`, a numeric narration warning pass in `src/lib/llm/validate-narration.ts`, and a mock/table-rules fallback. Versioned prompt files, `prompts/active.ts`, `pnpm eval:prompts`, a second narrator LLM call, and moderation-based safety regeneration are not implemented yet.
 
 ## Purpose
 

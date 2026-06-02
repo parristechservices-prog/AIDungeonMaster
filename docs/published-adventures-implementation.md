@@ -40,7 +40,7 @@ For the current module backlog, see `docs/todo.md`.
 | `skt-nightstone-starter` template with original placeholders | Done |
 | `skt-nightstone-chapter1` expanded template with original placeholders | Done |
 | Optional `chapters[]` in module schema | Done |
-| `npm run module:validate` / `module:scaffold` | Done |
+| `pnpm run module:validate` / `module:scaffold` | Done |
 | `POST /api/modules/validate` (dev only) | Done |
 | `POST /api/modules/import` (dev only) | Done |
 | `docs/scenario-authoring.md` | Done |
@@ -82,10 +82,10 @@ Author **your own** goals, DCs, monster references, and short notes. Do not past
 
 ## SKT Workflow
 
-1. `npm run module:scaffold -- skt-nightstone-starter skt-nightstone`
+1. `pnpm run module:scaffold -- skt-nightstone-starter skt-nightstone`
 2. Edit `content/private/skt-nightstone/module.json` and replace every placeholder with short notes from the owned book.
-3. `npm run module:validate -- content/private/skt-nightstone/module.json`
-4. Run `npm run dev` and pick the private module on `/start`.
+3. `pnpm run module:validate -- content/private/skt-nightstone/module.json`
+4. Run `pnpm dev` and pick the private module on `/start`.
 5. Keep the PDF/book outside git; use the app for dice, state, canon, and narration support.
 
 ## API Changes Already Present
