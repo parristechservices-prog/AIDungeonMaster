@@ -1,7 +1,9 @@
 import { resolveEngineRequest } from '@/lib/engine';
 import type { EngineRequest } from '@/lib/engine/types';
 import { dmTurnSchema, type DmTurn } from '@/lib/llm/contracts';
-import { getScenario } from '@/lib/game/scenarios';
+import { getPlayableScene, getSceneChoices, getSceneGoal } from '@/lib/game/adventures/helpers';
+import { getAdventure } from '@/lib/game/adventures/registry.server';
+import { ENDING_SCENE_ID } from '@/lib/game/adventures/types';
 import type { GameState } from '@/lib/game/types';
 import { mockNarrationAfterResult } from '@/lib/orchestrator/mock-dm';
 
@@ -139,12 +141,12 @@ export function runTurn(
     }
   }
 
-  const scenario = getScenario(state.adventureId);
-  const playable = state.sceneId !== 'ending' ? scenario.scenes[state.sceneId] : undefined;
+  const adventure = getAdventure(state.adventureId);
+  const playable = getPlayableScene(adventure, state.sceneId);
   const sceneStarter = state.sceneId !== prevScene ? playable?.starter : undefined;
-  const nextChoices = playable?.choices ?? ['Start a fresh run'];
+  const nextChoices = getSceneChoices(adventure, state.sceneId);
   const nextHook =
-    state.sceneId === 'ending' ? scenario.endingMessage : 'Choose your next action.';
+    state.sceneId === ENDING_SCENE_ID ? adventure.endingMessage : 'Choose your next action.';
   const recentRolls = engineResults
     .map((r) => r.breakdown)
     .filter((b): b is import('@/lib/engine/types').RollBreakdown => !!b);
@@ -157,9 +159,9 @@ export function runTurn(
       aiUsed: context.aiUsed,
       fallbackUsed: context.fallbackUsed,
       adventureId: state.adventureId,
-      adventureTitle: scenario.title,
+      adventureTitle: adventure.title,
       sceneId: state.sceneId,
-      sceneGoal: playable?.goal ?? 'Finish the adventure.',
+      sceneGoal: getSceneGoal(adventure, state.sceneId),
       sceneStarter,
       nextChoices,
       nextHook,

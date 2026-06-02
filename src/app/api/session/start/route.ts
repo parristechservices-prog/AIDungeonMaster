@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getOpeningNarration } from '@/lib/game/state';
-import { getScenario } from '@/lib/game/scenarios';
+import { getAdventure, isValidAdventureId } from '@/lib/game/adventures/registry.server';
 import { startNewGame } from '@/lib/orchestrator/session-store';
 
 const VALID_CHARACTERS = new Set(['fighter', 'wizard', 'rogue', 'cleric']);
-const VALID_ADVENTURES = new Set(['brindlehook-inn', 'crypt-of-whispers', 'smugglers-cove']);
 const VALID_BACKGROUNDS = new Set(['soldier', 'scholar', 'criminal', 'acolyte']);
 const VALID_PERSONAS = new Set(['balanced', 'gritty', 'epic', 'whimsical']);
 
@@ -16,7 +15,7 @@ export async function POST(req: Request) {
       : `sess-${crypto.randomUUID().slice(0, 8)}`;
 
   const adventureId =
-    typeof body?.adventureId === 'string' && VALID_ADVENTURES.has(body.adventureId)
+    typeof body?.adventureId === 'string' && isValidAdventureId(body.adventureId)
       ? body.adventureId
       : 'brindlehook-inn';
 
@@ -38,7 +37,7 @@ export async function POST(req: Request) {
       : 'balanced';
 
   const state = startNewGame(sessionId, { adventureId, characterId, playerName, backgroundId, personaId });
-  const scenario = getScenario(adventureId);
+  const adventure = getAdventure(adventureId);
 
   return NextResponse.json({
     ok: true,
@@ -46,7 +45,8 @@ export async function POST(req: Request) {
     adventureId,
     characterId,
     backgroundId: state.backgroundId,
-    title: scenario.title,
+    title: adventure.title,
+    source: adventure.source,
     opening: getOpeningNarration(state),
     player: {
       name: state.player.name,

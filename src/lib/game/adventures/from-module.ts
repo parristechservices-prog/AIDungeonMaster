@@ -1,0 +1,49 @@
+import type { Adventure, AdventureScene } from './types';
+import type { AdventureModuleFile } from './module-schema';
+import { ENDING_SCENE_ID } from './types';
+
+export function moduleFileToAdventure(
+  module: AdventureModuleFile,
+  source: 'private' | 'template',
+): Adventure {
+  const scenes: Record<string, AdventureScene> = {};
+  for (const [id, scene] of Object.entries(module.scenes)) {
+    scenes[id] = { kind: scene.kind, ...scene };
+  }
+
+  const monsters = module.monsters.map((m) => ({
+    ...m,
+    hp: m.hp ?? m.maxHp,
+  }));
+
+  return {
+    id: module.id,
+    title: module.title,
+    tagline: module.tagline,
+    estimatedMinutes: module.estimatedMinutes,
+    tone: module.tone,
+    recommendedCharacters: module.recommendedCharacters,
+    source,
+    levelRange: module.levelRange,
+    sceneOrder: module.sceneOrder,
+    scenes,
+    endingMessage: module.endingMessage,
+    npcs: structuredClone(module.npcs),
+    monsters,
+    mock: module.mock,
+  };
+}
+
+export function endingSceneStub(): AdventureScene {
+  return {
+    kind: 'social',
+    goal: 'Conclude the adventure.',
+    starter: '',
+    choices: ['Start a new adventure'],
+    guidance: 'Epilogue only.',
+  };
+}
+
+export function adventureHasEnding(adventure: Adventure): boolean {
+  return adventure.sceneOrder.includes(ENDING_SCENE_ID);
+}

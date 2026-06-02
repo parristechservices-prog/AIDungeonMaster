@@ -3,6 +3,7 @@ import { useMockFlavorPrefix } from '@/lib/llm/credentials';
 import { generateDmTurn } from '@/lib/llm/provider';
 import { buildSystemPrompt } from '@/lib/llm/system-prompt';
 import { validateNarrationAgainstState } from '@/lib/llm/validate-narration';
+import { summarizeCanonLog } from '@/lib/llm/summarizer';
 import { buildRecap } from '@/lib/game/recap';
 import { deriveDmTurnFromInput } from '@/lib/orchestrator/mock-dm';
 import { runTurn } from '@/lib/orchestrator/run-turn';
@@ -62,12 +63,18 @@ export async function POST(req: Request) {
   });
   
   if (turn.response.needsManualRoll) {
-    savePendingTurn(sessionId, rawTurn);
-  }
-
-  state = turn.state;
-
-  saveSession(state);
+     savePendingTurn(sessionId, rawTurn);
+   }
+ 
+   state = turn.state;
+   
+   // Periodic Canon Log Summarization
+   if (state.canonLog.length >= 20) {
+     const summarized = await summarizeCanonLog(state.canonLog);
+     state = { ...state, canonLog: summarized };
+   }
+ 
+   saveSession(state);
   const turnNumber = nextTurnNumber(sessionId);
 
   const narration =

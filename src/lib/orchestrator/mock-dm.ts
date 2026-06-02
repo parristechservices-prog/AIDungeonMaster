@@ -1,17 +1,19 @@
 import type { DmTurn } from '@/lib/llm/contracts';
-import { getScenario } from '@/lib/game/scenarios';
+import { getSceneKind } from '@/lib/game/adventures/helpers';
+import { getAdventure } from '@/lib/game/adventures/registry.server';
+import type { Adventure } from '@/lib/game/adventures/types';
 import type { GameState } from '@/lib/game/types';
 
 const EXPLORATION_PHRASES = ['inspect', 'track', 'search', 'scout', 'boathouse', 'quay', 'trail'];
 
 const SOCIAL_RETRY_HINT =
-  ' Try offering coin, using a different approach, or asking Mira again with Insight or Persuasion.';
+  ' Try offering coin, using a different approach, or asking again with Insight or Persuasion.';
 
 const EXPLORATION_RETRY_HINT =
-  ' Search again, try Investigation instead, or look for another clue near the quay.';
+  ' Search again, try Investigation instead, or look for another clue.';
 
-function mockAmbientForScene(sceneId: GameState['sceneId']): DmTurn['ambient'] {
-  switch (sceneId) {
+function mockAmbientForKind(kind: ReturnType<typeof getSceneKind>): DmTurn['ambient'] {
+  switch (kind) {
     case 'social':
       return 'tavern';
     case 'exploration':
@@ -23,11 +25,18 @@ function mockAmbientForScene(sceneId: GameState['sceneId']): DmTurn['ambient'] {
   }
 }
 
+function getCombatStarter(adventure: Adventure): string {
+  const combatSceneId = adventure.sceneOrder.find((id) => adventure.scenes[id]?.kind === 'combat');
+  if (combatSceneId) return adventure.scenes[combatSceneId].starter;
+  return 'Combat begins.';
+}
+
 export function deriveDmTurnFromInput(state: GameState, playerInput: string): DmTurn {
   const input = playerInput.toLowerCase();
-  const scenario = getScenario(state.adventureId);
-  const mock = scenario.mock;
-  const ambient = mockAmbientForScene(state.sceneId);
+  const adventure = getAdventure(state.adventureId);
+  const mock = adventure.mock;
+  const sceneKind = getSceneKind(adventure, state.sceneId);
+  const ambient = mockAmbientForKind(sceneKind);
 
   if (input.startsWith('[appeal]') || input.includes('appeal the dm')) {
     return {
@@ -68,11 +77,11 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
     };
   }
 
-  if (state.sceneId === 'social') {
+  if (sceneKind === 'social') {
     if (EXPLORATION_PHRASES.some((p) => input.includes(p))) {
       return {
         engineRequests: [],
-        narration: `${mock.socialNpcName} is still at the bar. Learn what you can about the courier here before heading to the quay.`,
+        narration: `${mock.socialNpcName} is still here. Finish gathering leads in this scene before moving on.`,
         needsResultBeforeNarrating: false,
         ambient,
       };
@@ -128,7 +137,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
     };
   }
 
-  if (state.sceneId === 'exploration') {
+  if (sceneKind === 'exploration') {
     return {
       engineRequests: [
         {
@@ -144,10 +153,10 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
     };
   }
 
-  if (state.sceneId !== 'combat') {
+  if (sceneKind !== 'combat' && sceneKind !== 'ending') {
     return {
       engineRequests: [{ kind: 'start_combat' }],
-      narration: scenario.scenes.combat.starter,
+      narration: getCombatStarter(adventure),
       needsResultBeforeNarrating: false,
       ambient: 'combat',
     };
@@ -172,11 +181,14 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
 }
 
 export function mockNarrationAfterResult(state: GameState, kind: string, ok: boolean): string | null {
-  const mock = getScenario(state.adventureId).mock;
-  if (state.sceneId === 'social' && kind === 'skill_check') {
+  const adventure = getAdventure(state.adventureId);
+  const mock = adventure.mock;
+  const sceneKind = getSceneKind(adventure, state.sceneId);
+
+  if (sceneKind === 'social' && kind === 'skill_check') {
     return ok ? mock.socialSuccess : `${mock.socialFailure}${SOCIAL_RETRY_HINT}`;
   }
-  if (state.sceneId === 'exploration' && kind === 'skill_check') {
+  if (sceneKind === 'exploration' && kind === 'skill_check') {
     return ok ? mock.explorationSuccess : `${mock.explorationFailure}${EXPLORATION_RETRY_HINT}`;
   }
   return null;

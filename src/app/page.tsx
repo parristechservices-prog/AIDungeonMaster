@@ -27,6 +27,12 @@ export default function Home() {
         </Link>
         <Link
           className="rounded-lg border border-zinc-300 px-5 py-3 text-sm dark:border-zinc-600"
+          href="/start?adventureId=tutorial"
+        >
+          Play tutorial
+        </Link>
+        <Link
+          className="rounded-lg border border-zinc-300 px-5 py-3 text-sm dark:border-zinc-600"
           href="/play"
         >
           Continue last session

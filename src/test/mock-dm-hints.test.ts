@@ -6,7 +6,7 @@ describe('mock DM hints', () => {
   it('nudges exploration phrasing while still in social scene', () => {
     const state = createInitialState('hint-1');
     const turn = deriveDmTurnFromInput(state, 'I inspect the tracks');
-    expect(turn.narration.toLowerCase()).toMatch(/courier|quay|bar/);
+    expect(turn.narration.toLowerCase()).toMatch(/gathering leads|before moving on/);
   });
 
   it('appends retry guidance on social skill failure', () => {

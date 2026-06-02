@@ -1,3 +1,4 @@
+import { buildBalancedEncounter } from '@/lib/engine/balancer';
 import type { Scenario } from './types';
 
 export const smugglersCove: Scenario = {
@@ -56,10 +57,7 @@ export const smugglersCove: Scenario = {
       ],
     },
   ],
-  buildMonsters: () => [
-    { id: 'smug-1', name: 'Cove Cutthroat', ac: 13, maxHp: 10, hp: 10, attackBonus: 4, damage: '1d6+2' },
-    { id: 'smug-2', name: 'Fog Blade', ac: 13, maxHp: 10, hp: 10, attackBonus: 4, damage: '1d6+2' },
-  ],
+  buildMonsters: () => buildBalancedEncounter(3, 1, 'medium', ['orc', 'goblin']),
   mock: {
     socialNpcId: 'npc-holt',
     socialNpcName: 'Holt',

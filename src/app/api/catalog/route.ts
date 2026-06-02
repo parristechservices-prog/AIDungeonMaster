@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { BACKGROUNDS } from '@/lib/game/backgrounds';
 import { CHARACTER_TEMPLATES } from '@/lib/game/characters/templates';
 import { DM_PERSONAS } from '@/lib/game/personas';
-import { listScenarios } from '@/lib/game/scenarios';
+import { listAdventuresForCatalog } from '@/lib/game/adventures/registry.server';
 
 export async function GET() {
   return NextResponse.json({
@@ -19,7 +19,7 @@ export async function GET() {
       label: b.label,
       description: b.description,
     })),
-    scenarios: listScenarios(),
+    scenarios: listAdventuresForCatalog(),
     personas: Object.values(DM_PERSONAS).map((p) => ({
       id: p.id,
       name: p.name,

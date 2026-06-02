@@ -46,3 +46,8 @@ next-env.d.ts
 # local data and large files
 .data/
 src.zip
+
+# Licensed adventure PDFs and private module data (personal use — never commit)
+/content/private/
+docs/**/*.pdf
+docs/**/__*.pdf

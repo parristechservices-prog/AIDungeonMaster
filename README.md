@@ -78,6 +78,10 @@ Setup UI: `/start` · Catalog API: `GET /api/catalog` · New game: `POST /api/se
 
 Add more entries in `src/lib/game/characters/templates.ts` and `src/lib/game/scenarios/`.
 
+### Private campaign modules (owned books)
+
+Copy `content/templates/example-frontier/` to `content/private/<your-module>/` and edit `module.json` with **your** scene notes (do not commit PDFs or book text). See `docs/published-adventures-guide.md`. Modules appear in `/start` when present locally.
+
 ## Feature flags
 
 See `src/lib/config/features.ts` for roadmap toggles (voice, multiplayer, cloud save).
@@ -89,6 +93,7 @@ See `src/lib/config/features.ts` for roadmap toggles (voice, multiplayer, cloud 
 - `docs/dm-prompt-design.md` — prompt design notes
 - `docs/audit-2026-06-02.md` — deep-dive audit (mock play-test, API, gaps matrix)
 - `docs/full-improvement-plan.md` — improvement roadmap by product surface
+- `docs/published-adventures-guide.md` — running owned books (e.g. SKT) legally; private modules
 - `docs/TEN_IMPROVEMENTS.md` — brainstormed ideas (see audit for implementation status)
 
 ## License

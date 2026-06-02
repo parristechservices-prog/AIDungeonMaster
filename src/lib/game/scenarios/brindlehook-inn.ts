@@ -1,3 +1,4 @@
+import { buildBalancedEncounter } from '@/lib/engine/balancer';
 import type { Scenario } from './types';
 
 export const brindlehookInn: Scenario = {
@@ -56,10 +57,7 @@ export const brindlehookInn: Scenario = {
       ],
     },
   ],
-  buildMonsters: () => [
-    { id: 'bandit-1', name: 'Dockside Ruffian', ac: 12, maxHp: 11, hp: 11, attackBonus: 3, damage: '1d6+1' },
-    { id: 'bandit-2', name: 'Lantern Thug', ac: 12, maxHp: 11, hp: 11, attackBonus: 3, damage: '1d6+1' },
-  ],
+  buildMonsters: () => buildBalancedEncounter(3, 1, 'easy', ['goblin']),
   mock: {
     socialNpcId: 'npc-mira',
     socialNpcName: 'Mira',

@@ -1,4 +1,5 @@
-import { getScenario } from '@/lib/game/scenarios';
+import { getAdventure, getFirstPlayableSceneId } from '@/lib/game/adventures';
+import { ENDING_SCENE_ID } from '@/lib/game/adventures/types';
 import type { GameState } from '@/lib/game/types';
 
 type Props = {
@@ -8,9 +9,10 @@ type Props = {
 };
 
 export function OnboardingBanner({ sceneId, adventureId, onDismiss }: Props) {
-  const scenario = getScenario(adventureId);
-  const scene = sceneId !== 'ending' ? scenario.scenes[sceneId] : null;
-  const starters = scenario.scenes.social.choices.slice(0, 2);
+  const adventure = getAdventure(adventureId);
+  const scene = sceneId !== ENDING_SCENE_ID ? adventure.scenes[sceneId] : null;
+  const firstId = getFirstPlayableSceneId(adventure);
+  const starters = (adventure.scenes[firstId]?.choices ?? []).slice(0, 2);
 
   return (
     <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm dark:border-blue-900 dark:bg-blue-950/40">
@@ -20,7 +22,7 @@ export function OnboardingBanner({ sceneId, adventureId, onDismiss }: Props) {
           <p className="mt-1 text-blue-800 dark:text-blue-200">
             {scene?.goal ?? 'Your adventure concludes here.'}
           </p>
-          {sceneId === 'social' && (
+          {starters.length > 0 && (sceneId === firstId || scene?.kind === 'social') && (
             <p className="mt-2 text-xs text-blue-700 dark:text-blue-300">
               Try: {starters.map((s) => `"${s}"`).join(' · ')}
             </p>

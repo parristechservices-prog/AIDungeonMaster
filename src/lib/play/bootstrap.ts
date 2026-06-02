@@ -1,5 +1,10 @@
 import { isFeatureEnabled } from '@/lib/config/features';
-import { DEFAULT_ADVENTURE_ID, getScenario } from '@/lib/game/scenarios';
+import {
+  DEFAULT_ADVENTURE_ID,
+  getAdventure,
+  getFirstPlayableSceneId,
+  getSceneGoal,
+} from '@/lib/game/adventures';
 import { loadClientSnapshot } from '@/lib/persistence/client-snapshot';
 import type { TurnResponse } from '@/lib/play/types';
 
@@ -20,17 +25,24 @@ export type PlayBootstrap = {
   ambient: TurnResponse['ambient'];
 };
 
+function defaultStarter(adventureId: string): string {
+  const adventure = getAdventure(adventureId);
+  const first = getFirstPlayableSceneId(adventure);
+  return adventure.scenes[first]?.starter ?? 'Your adventure begins.';
+}
+
 export function readPlayBootstrap(): PlayBootstrap {
-  const scenario = getScenario(DEFAULT_ADVENTURE_ID);
-  const starter = scenario.scenes.social.starter;
+  const adventure = getAdventure(DEFAULT_ADVENTURE_ID);
+  const firstScene = getFirstPlayableSceneId(adventure);
+  const starter = defaultStarter(DEFAULT_ADVENTURE_ID);
   const base: PlayBootstrap = {
     sessionId: '',
     adventureId: DEFAULT_ADVENTURE_ID,
-    adventureTitle: scenario.title,
+    adventureTitle: adventure.title,
     history: [starter],
     state: null,
-    sceneId: 'social',
-    sceneGoal: scenario.scenes.social.goal,
+    sceneId: firstScene,
+    sceneGoal: getSceneGoal(adventure, firstScene),
     mode: 'table_rules',
     choices: [],
     ambient: 'none',
@@ -48,11 +60,12 @@ export function readPlayBootstrap(): PlayBootstrap {
     if (isFeatureEnabled('clientSessionSnapshot')) {
       const snapshot = loadClientSnapshot(id);
       if (snapshot?.state) {
+        const aid = snapshot.adventureId ?? DEFAULT_ADVENTURE_ID;
         return {
           sessionId: id,
-          adventureId: snapshot.adventureId ?? DEFAULT_ADVENTURE_ID,
-          adventureTitle: snapshot.adventureTitle ?? getScenario(snapshot.adventureId ?? DEFAULT_ADVENTURE_ID).title,
-          history: [starter, '(Resumed from last visit.)'],
+          adventureId: aid,
+          adventureTitle: snapshot.adventureTitle ?? getAdventure(aid).title,
+          history: [defaultStarter(aid), '(Resumed from last visit.)'],
           state: snapshot.state,
           sceneId: snapshot.sceneId,
           sceneGoal: snapshot.sceneGoal,

@@ -1,11 +1,14 @@
 import type { GameState } from '@/lib/game/types';
-import { getScenario } from '@/lib/game/scenarios';
+import { getPlayableScene } from '@/lib/game/adventures/helpers';
+import { getAdventure } from '@/lib/game/adventures/registry.server';
+import { ENDING_SCENE_ID } from '@/lib/game/adventures/types';
 import { DM_PERSONAS } from '@/lib/game/personas';
 
 export function buildSystemPrompt(state: GameState): string {
-  const scenario = getScenario(state.adventureId);
+  const adventure = getAdventure(state.adventureId);
   const persona = DM_PERSONAS[state.personaId || 'balanced'];
-  const sceneMeta = state.sceneId !== 'ending' ? scenario.scenes[state.sceneId] : undefined;
+  const sceneMeta =
+    state.sceneId !== ENDING_SCENE_ID ? getPlayableScene(adventure, state.sceneId) : undefined;
   const player = state.player;
   const featuresList = player.features.map((f) => `${f.name} (${f.usesRemaining}/${f.usesMax})`).join(', ');
   const slotsList = Object.entries(player.spellSlots)

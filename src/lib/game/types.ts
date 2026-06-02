@@ -1,4 +1,8 @@
-export type SceneId = 'social' | 'exploration' | 'combat' | 'ending';
+/** Built-in one-shots use social → exploration → combat → ending; modules use custom ids. */
+export type SceneId = string;
+
+export const BUILTIN_SCENE_IDS = ['social', 'exploration', 'combat', 'ending'] as const;
+export type BuiltinSceneId = (typeof BUILTIN_SCENE_IDS)[number];
 
 export type Character = {
   id: string;

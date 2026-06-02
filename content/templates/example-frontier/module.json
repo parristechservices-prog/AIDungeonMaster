@@ -1,0 +1,78 @@
+{
+  "id": "example-frontier",
+  "title": "Frontier Village (module template)",
+  "tagline": "Original mini-adventure — copy to content/private/ and adapt for your campaign notes.",
+  "estimatedMinutes": 35,
+  "tone": "frontier mystery",
+  "recommendedCharacters": ["fighter", "cleric", "rogue"],
+  "levelRange": [1, 3],
+  "sourceNote": "No Wizards IP. Use as a scaffold for private modules (e.g. your SKT chapter outlines).",
+  "sceneOrder": ["village-social", "trail-explore", "bandit-combat", "ending"],
+  "scenes": {
+    "village-social": {
+      "kind": "social",
+      "goal": "Learn what attacked the supply wagons.",
+      "starter": "Mud and woodsmoke hang over Millhaven. Elder Sarra beckons you from the porch.",
+      "choices": ["Ask Sarra about the wagons", "Examine the broken cart wheel", "Offer to help for pay"],
+      "guidance": "Village council wants answers; persuasion or insight DC 12."
+    },
+    "trail-explore": {
+      "kind": "exploration",
+      "goal": "Follow the trail into the pine scrub and find the raiders' camp sign.",
+      "starter": "Crushed ferns and wheel ruts lead north. Crows circle somewhere ahead.",
+      "choices": ["Track carefully", "Scout from higher ground", "Set an obvious trap"],
+      "guidance": "Perception or survival DC 12 to find the ambush point."
+    },
+    "bandit-combat": {
+      "kind": "combat",
+      "goal": "Defeat the bandits and recover the stolen strongbox.",
+      "starter": "Three ragged bandits rise from behind fallen pines, blades out.",
+      "choices": ["Charge the nearest bandit", "Take cover and assess", "Call for surrender"],
+      "guidance": "Resolve with player_attack and monster_turn."
+    }
+  },
+  "endingMessage": "Millhaven sleeps easier — for now.",
+  "npcs": [
+    {
+      "id": "npc-sarra",
+      "name": "Sarra",
+      "description": "Elder of Millhaven, practical and wary of strangers.",
+      "disposition": "neutral",
+      "knowledge": [
+        "Wagons were hit two nights ago on the north trail.",
+        "Survivors spoke of tall figures in the treeline — likely exaggeration."
+      ]
+    }
+  ],
+  "monsters": [
+    {
+      "id": "bandit-1",
+      "name": "Highway Bandit",
+      "ac": 12,
+      "maxHp": 11,
+      "attackBonus": 3,
+      "damage": "1d6+1"
+    },
+    {
+      "id": "bandit-2",
+      "name": "Highway Bandit",
+      "ac": 12,
+      "maxHp": 11,
+      "attackBonus": 3,
+      "damage": "1d6+1"
+    }
+  ],
+  "mock": {
+    "socialNpcId": "npc-sarra",
+    "socialNpcName": "Sarra",
+    "socialSuccess": "Sarra exhales. \"North trail, two nights past. They took the strongbox and left wheel ruts.\"",
+    "socialFailure": "Sarra folds her arms. \"Prove you're not part of the problem first.\"",
+    "explorationSuccess": "You spot fresh boot prints and a scrap of wagon canvas snagged on a pine branch.",
+    "explorationFailure": "The scrub all looks the same; you'll need another pass.",
+    "socialSkill": "persuasion",
+    "explorationSkill": "survival",
+    "socialDc": 12,
+    "explorationDc": 12,
+    "canonFactOnSocialSuccess": "The raid happened on the north trail two nights ago; a strongbox was stolen."
+  }
+}

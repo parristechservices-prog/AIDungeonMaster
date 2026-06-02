@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 import { clearClientSnapshot } from '@/lib/persistence/client-snapshot';
 import { newSessionId } from '@/lib/play/bootstrap';
 
@@ -27,10 +27,21 @@ type Catalog = {
 };
 
 export default function StartPage() {
+  return (
+    <Suspense fallback={<main className="mx-auto max-w-2xl p-6"><p className="text-zinc-600">Loading...</p></main>}>
+      <StartContent />
+    </Suspense>
+  );
+}
+
+function StartContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [characterId, setCharacterId] = useState('fighter');
-  const [adventureId, setAdventureId] = useState('brindlehook-inn');
+  
+  const initialAdventureId = searchParams.get('adventureId') || 'brindlehook-inn';
+  const [adventureId, setAdventureId] = useState(initialAdventureId);
   const [backgroundId, setBackgroundId] = useState<string>('');
   const [personaId, setPersonaId] = useState('balanced');
   const [playerName, setPlayerName] = useState('');

@@ -15,7 +15,7 @@ import { AppealButton } from '@/components/play/AppealButton';
 import { AmbientAudio } from '@/components/play/AmbientAudio';
 import { ManualRollModal } from '@/components/play/ManualRollModal';
 import { isFeatureEnabled } from '@/lib/config/features';
-import { DEFAULT_ADVENTURE_ID, getScenario } from '@/lib/game/scenarios';
+import { DEFAULT_ADVENTURE_ID, getAdventure, getFirstPlayableSceneId, getSceneGoal } from '@/lib/game/adventures';
 import type { TurnResponse } from '@/lib/play/types';
 import { saveClientSnapshot } from '@/lib/persistence/client-snapshot';
 import type { RollBreakdown } from '@/lib/engine/types';
@@ -25,12 +25,14 @@ export default function PlayPage() {
   const router = useRouter();
   const [sessionId, setSessionId] = useState('');
   const [adventureId, setAdventureId] = useState(DEFAULT_ADVENTURE_ID);
-  const [adventureTitle, setAdventureTitle] = useState(getScenario(DEFAULT_ADVENTURE_ID).title);
+  const [adventureTitle, setAdventureTitle] = useState(getAdventure(DEFAULT_ADVENTURE_ID).title);
   const [input, setInput] = useState('');
   const [history, setHistory] = useState<string[]>([]);
   const [state, setState] = useState<TurnResponse['state'] | null>(null);
   const [sceneId, setSceneId] = useState<TurnResponse['sceneId']>('social');
-  const [sceneGoal, setSceneGoal] = useState(getScenario(DEFAULT_ADVENTURE_ID).scenes.social.goal);
+  const [sceneGoal, setSceneGoal] = useState(
+    getSceneGoal(getAdventure(DEFAULT_ADVENTURE_ID), getFirstPlayableSceneId(getAdventure(DEFAULT_ADVENTURE_ID))),
+  );
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<'ai_director' | 'table_rules'>('table_rules');
   const [choices, setChoices] = useState<string[]>([]);
@@ -57,7 +59,7 @@ export default function PlayPage() {
         setHistory(boot.history);
       }
     } else {
-      setHistory(boot.history.length > 0 ? boot.history : [getScenario(DEFAULT_ADVENTURE_ID).scenes.social.starter]);
+      setHistory(boot.history);
     }
 
     if (boot.state) {
@@ -70,7 +72,7 @@ export default function PlayPage() {
     }
     if (boot.adventureId) {
       setAdventureId(boot.adventureId);
-      setAdventureTitle(boot.adventureTitle ?? getScenario(boot.adventureId).title);
+      setAdventureTitle(boot.adventureTitle ?? getAdventure(boot.adventureId).title);
       setSceneGoal(boot.sceneGoal);
     }
   }, []);

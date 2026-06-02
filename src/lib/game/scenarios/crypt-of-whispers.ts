@@ -1,3 +1,4 @@
+import { buildBalancedEncounter } from '@/lib/engine/balancer';
 import type { Scenario } from './types';
 
 export const cryptOfWhispers: Scenario = {
@@ -56,10 +57,7 @@ export const cryptOfWhispers: Scenario = {
       ],
     },
   ],
-  buildMonsters: () => [
-    { id: 'skel-1', name: 'Armored Skeleton', ac: 13, maxHp: 13, hp: 13, attackBonus: 4, damage: '1d6+2' },
-    { id: 'skel-2', name: 'Crypt Guardian', ac: 13, maxHp: 13, hp: 13, attackBonus: 4, damage: '1d6+2' },
-  ],
+  buildMonsters: () => buildBalancedEncounter(3, 1, 'medium', ['skeleton']),
   mock: {
     socialNpcId: 'npc-elara',
     socialNpcName: 'Sister Elara',

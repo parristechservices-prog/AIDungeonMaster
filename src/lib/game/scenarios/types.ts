@@ -1,6 +1,6 @@
-import type { Monster, NPC, SceneId } from '../types';
+import type { Monster, NPC } from '../types';
 
-export type PlayableSceneId = Exclude<SceneId, 'ending'>;
+export type PlayableSceneId = 'social' | 'exploration' | 'combat';
 
 export type ScenarioScene = {
   goal: string;

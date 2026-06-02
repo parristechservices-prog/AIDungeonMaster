@@ -1,32 +1,29 @@
+import { listAdventuresForCatalog } from '../adventures';
 import { brindlehookInn } from './brindlehook-inn';
 import { cryptOfWhispers } from './crypt-of-whispers';
 import { smugglersCove } from './smugglers-cove';
+import { tutorial } from './tutorial';
 import type { Scenario } from './types';
 
-export const SCENARIOS: Scenario[] = [brindlehookInn, cryptOfWhispers, smugglersCove];
+export const SCENARIOS: Scenario[] = [tutorial, brindlehookInn, cryptOfWhispers, smugglersCove];
 
-export const DEFAULT_ADVENTURE_ID = 'brindlehook-inn';
+export {
+  DEFAULT_ADVENTURE_ID,
+  getAdventure,
+  listAdventuresForCatalog,
+  isValidAdventureId,
+} from '../adventures';
 
+/** @deprecated Use getAdventure */
 export function getScenario(id: string): Scenario {
-  return SCENARIOS.find((s) => s.id === id) ?? brindlehookInn;
+  const builtIn = SCENARIOS.find((s) => s.id === id);
+  if (builtIn) return builtIn;
+  return brindlehookInn;
 }
 
-export function listScenarios(): Array<{
-  id: string;
-  title: string;
-  tagline: string;
-  estimatedMinutes: number;
-  tone: string;
-  recommendedCharacters: string[];
-}> {
-  return SCENARIOS.map(({ id, title, tagline, estimatedMinutes, tone, recommendedCharacters }) => ({
-    id,
-    title,
-    tagline,
-    estimatedMinutes,
-    tone,
-    recommendedCharacters,
-  }));
+/** @deprecated Use listAdventuresForCatalog */
+export function listScenarios() {
+  return listAdventuresForCatalog();
 }
 
 /** @deprecated Use getScenario('brindlehook-inn') */

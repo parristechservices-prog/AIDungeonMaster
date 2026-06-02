@@ -1,3 +1,5 @@
+import { getSceneKind } from '@/lib/game/adventures/helpers';
+import { getAdventure } from '@/lib/game/adventures/registry.server';
 import type { GameState } from '@/lib/game/types';
 import { advanceScene } from '@/lib/game/state';
 import type { EngineRequest, EngineResult, RollBreakdown } from './types';
@@ -28,7 +30,9 @@ export function resolveEngineRequest(
         : rollFormula('1d20', mod);
       
       const ok = breakdown.total >= request.dc;
-      const next = ok && state.sceneId !== 'combat' ? advanceScene(state) : state;
+      const inCombatScene =
+        getSceneKind(getAdventure(state.adventureId), state.sceneId) === 'combat';
+      const next = ok && !inCombatScene ? advanceScene(state) : state;
       return {
         state: appendLog(next, `${request.skill} check ${ok ? 'passed' : 'failed'} (${breakdown.total} vs DC ${request.dc})`),
         result: { ok, summary: `${request.reason}: ${ok ? 'success' : 'failure'}`, breakdown },
@@ -39,7 +43,14 @@ export function resolveEngineRequest(
         { actorId: state.player.id, roll: d20() + 1 },
         ...state.monsters.map((m) => ({ actorId: m.id, roll: d20() + 1 })),
       ].sort((a, b) => b.roll - a.roll);
-      const next = { ...state, combat: { active: true, initiative: init, turnIndex: 0 }, sceneId: 'combat' as const };
+      const adventure = getAdventure(state.adventureId);
+      const combatSceneId =
+        adventure.sceneOrder.find((id) => adventure.scenes[id]?.kind === 'combat') ?? 'combat';
+      const next = {
+        ...state,
+        combat: { active: true, initiative: init, turnIndex: 0 },
+        sceneId: combatSceneId,
+      };
       return { state: appendLog(next, 'Combat started.'), result: { ok: true, summary: 'Initiative rolled.' } };
     }
     case 'player_attack': {
