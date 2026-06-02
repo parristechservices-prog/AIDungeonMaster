@@ -20,7 +20,9 @@ describe('skt-nightstone-starter template', () => {
     const raw = JSON.parse(readFileSync(filePath, 'utf8'));
     const parsed = adventureModuleSchema.safeParse(raw);
     expect(parsed.success).toBe(true);
-    expect(parsed.data?.chapters).toHaveLength(1);
+    expect(parsed.data?.chapters).toHaveLength(3);
+    expect(parsed.data?.sceneOrder).toContain('hark-showdown');
+    expect(parsed.data?.sceneOrder).toContain('tower-of-zephyros');
   });
 
   it('loads from template registry', () => {

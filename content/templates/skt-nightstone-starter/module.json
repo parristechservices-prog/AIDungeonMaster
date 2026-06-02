@@ -2,43 +2,85 @@
   "id": "skt-nightstone-starter",
   "title": "Giants on the Frontier - Nightstone Chapter 1 scaffold",
   "tagline": "A local-play scaffold for your owned Chapter 1 notes: Nightstone, the missing villagers, the caves, and the strange giant tower.",
-  "estimatedMinutes": 180,
+  "estimatedMinutes": 300,
   "tone": "eerie frontier giant aftermath",
   "recommendedCharacters": ["fighter", "cleric", "rogue", "wizard"],
   "levelRange": [1, 5],
   "sourceNote": "Not official WotC content. Paraphrased play scaffold only; use your owned book/PDF for boxed text, maps, exact room keys, treasure, and stat blocks.",
-  "campaignGuide": "Run Chapter 1 as an investigation of an abandoned village after a giant attack. Do not invent a welcoming leader at the gate. Nightstone is quiet except for a ringing bell; the drawbridge is down; the palisade entrance is open; the keep and bridge show major impact damage; the central megalith is missing from the village square. The survivors fled toward nearby caves and were captured by goblins. Goblins have entered the abandoned village to loot it. Use the owner's PDF for exact read-aloud, maps, room details, and named treasure. Log important discoveries as canon facts.",
+  "campaignGuide": "Run Chapter 1 as an investigation of an abandoned village after a giant attack. Do not invent a welcoming leader at the gate. Nightstone is quiet except for a ringing bell; the drawbridge is down; the palisade entrance is open; the keep and bridge show major impact damage; the central megalith is missing from the village square. Survivors fled toward nearby caves and were captured by goblins. Goblins have entered the abandoned village to loot it. A hidden Zhentarim agent and her allies can complicate the village before an orc raid pushes the party toward the cave rescue. Use the owner's PDF for exact read-aloud, maps, room details, names you want at the table, treasure, and stat blocks. Log important discoveries as canon facts.",
   "playConfig": {
     "defaultLevel": 1,
     "partySize": 1,
     "defaultDifficulty": "medium",
     "spawnMonstersOnCombatOnly": true,
-    "preferredMonsterTemplates": ["goblin", "goblin", "ogre"]
+    "preferredMonsterTemplates": ["goblin", "goblin", "orc", "ogre", "bandit"]
   },
   "chapters": [
     {
-      "id": "ch01",
-      "title": "Chapter 1 - Nightstone scaffold",
+      "id": "ch01-nightstone",
+      "title": "Chapter 1 - Nightstone",
       "sceneIds": [
         "settlement-arrival",
+        "drawbridge-watchtowers",
         "village-square",
-        "ringing-bell",
-        "goblin-looters",
-        "cave-leads",
-        "dripping-caves",
+        "temple-bell",
+        "nightstone-inn",
+        "trading-post-and-windmill",
+        "nandar-keep",
+        "seven-snakes",
+        "ear-seekers",
+        "cave-leads"
+      ]
+    },
+    {
+      "id": "ch01-dripping-caves",
+      "title": "Chapter 1 - Dripping Caves",
+      "sceneIds": [
+        "dripping-caves-approach",
+        "main-cavern",
+        "goblin-warrens",
+        "east-caves-and-prisoners",
+        "snigbat-bargain",
+        "hark-showdown",
+        "morak-quest"
+      ]
+    },
+    {
+      "id": "ch01-tower",
+      "title": "Chapter 1 - Tower of Zephyros",
+      "sceneIds": [
         "tower-of-zephyros",
+        "tower-life",
+        "unfriendly-skies-cult",
+        "unfriendly-skies-dwarves",
+        "chapter-transition",
         "ending"
       ]
     }
   ],
   "sceneOrder": [
     "settlement-arrival",
+    "drawbridge-watchtowers",
     "village-square",
-    "ringing-bell",
-    "goblin-looters",
+    "temple-bell",
+    "nightstone-inn",
+    "trading-post-and-windmill",
+    "nandar-keep",
+    "seven-snakes",
+    "ear-seekers",
     "cave-leads",
-    "dripping-caves",
+    "dripping-caves-approach",
+    "main-cavern",
+    "goblin-warrens",
+    "east-caves-and-prisoners",
+    "snigbat-bargain",
+    "hark-showdown",
+    "morak-quest",
     "tower-of-zephyros",
+    "tower-life",
+    "unfriendly-skies-cult",
+    "unfriendly-skies-dwarves",
+    "chapter-transition",
     "ending"
   ],
   "scenes": {
@@ -46,106 +88,193 @@
       "kind": "exploration",
       "goal": "Approach Nightstone and recognize that the settlement is abandoned and damaged.",
       "starter": "A bell rings somewhere inside Nightstone. The road ends at a lowered drawbridge over the moat, with no guards answering from the open palisade gate.",
-      "choices": [
-        "Cross the drawbridge",
-        "Inspect the watchtowers",
-        "Listen for movement",
-        "Study the damaged keep",
-        "Search for tracks"
-      ],
+      "choices": ["Cross the drawbridge", "Inspect the watchtowers", "Listen for movement", "Study the damaged keep", "Search for tracks"],
       "guidance": "Paraphrase the approach from the owner's PDF. Establish the moat, wooden palisade, open gate, silent village, visible windmill and steeple, and the damaged keep across the water. No leader, guards, or villagers greet the party. If the player greets someone, answer with silence, the bell, and environmental details. Perception or Investigation DC 10-13 can confirm no ordinary village activity and signs of a recent evacuation or attack. Use advance_scene once the party enters or commits to investigating inside."
+    },
+    "drawbridge-watchtowers": {
+      "kind": "exploration",
+      "goal": "Secure the entrance and confirm the first signs of recent looting.",
+      "starter": "The drawbridge creaks underfoot. Empty watchtowers overlook the muddy road and the open gap in the palisade.",
+      "choices": ["Search the towers", "Check the drawbridge controls", "Look for sentries", "Examine small tracks", "Enter the village quietly"],
+      "guidance": "Use this scene for the drawbridge and watchtower approach. The bridge is down and the towers are not properly guarded. Look for goblin-sized tracks, signs of hurried movement, and possible loot dropped near the entrance. No human defenders respond. Good checks: Perception DC 10 to notice movement or signs of looters; Investigation DC 12 to read the bridge/tower scene; Stealth DC 12 if the party wants to enter unseen. Advance after the entrance is secured."
     },
     "village-square": {
       "kind": "exploration",
       "goal": "Discover the missing nightstone and evidence of a giant bombardment.",
       "starter": "Inside the palisade, the village square is scarred by fallen rocks. A conspicuous empty space marks where a great stone once stood.",
-      "choices": [
-        "Examine the empty space",
-        "Search damaged cottages",
-        "Inspect fallen rocks",
-        "Look for bodies or survivors",
-        "Follow fresh tracks"
-      ],
-      "guidance": "Keep this as investigation, not a social briefing. Reveal that a large central megalith is gone, buildings were struck from above, and the inhabitants appear to have fled rather than formed a defense. Arcana, History, Investigation, Nature, or Perception can identify useful clues. Do not provide exact boxed text or room keys; point the user to their PDF for map areas and treasure."
+      "choices": ["Examine the empty space", "Search damaged cottages", "Inspect fallen rocks", "Look for bodies or survivors", "Follow fresh tracks"],
+      "guidance": "Keep this as investigation, not a social briefing. Reveal that a large central megalith is gone, buildings were struck from above, and the inhabitants appear to have fled rather than formed a defense. The missing stone is a central mystery; avoid explaining everything until the party gathers more clues. Arcana, History, Investigation, Nature, or Perception DC 10-15 can identify useful clues. Point the user to their PDF for exact map areas, room keys, and treasure."
     },
-    "ringing-bell": {
+    "temple-bell": {
       "kind": "exploration",
       "goal": "Trace the bell and learn that the noise is not a normal alarm response.",
-      "starter": "The bell keeps ringing from the village chapel, too steady and lonely to sound like an organized warning.",
-      "choices": [
-        "Enter the chapel",
-        "Climb toward the bell",
-        "Call out from the doorway",
-        "Search nearby rooms",
-        "Set a watch outside"
-      ],
-      "guidance": "The bell should feel like an eerie clue, not a summons from authorities. If the party calls out, no village leader answers. Use cautious exploration and simple checks to reveal whether creatures or hazards are nearby. Use advance_scene once the party understands the bell is part of the abandoned-village mystery."
+      "starter": "The bell keeps ringing from the village temple, too steady and lonely to sound like an organized warning.",
+      "choices": ["Enter the temple", "Climb toward the bell", "Call out from the doorway", "Search nearby rooms", "Set a watch outside"],
+      "guidance": "The bell should feel like an eerie clue, not a summons from authorities. If the party calls out, no village leader answers. Use cautious exploration and simple checks to reveal whether creatures or hazards are nearby. The temple and nearby graveyards can reinforce that the village was hit abruptly and abandoned. Use advance_scene once the party understands the bell is part of the abandoned-village mystery."
     },
-    "goblin-looters": {
+    "nightstone-inn": {
+      "kind": "social",
+      "goal": "Investigate the inn and uncover the hidden agent waiting for outside allies.",
+      "starter": "The inn is too quiet for a village in crisis. One upstairs room shows signs of recent occupation.",
+      "choices": ["Search guest rooms", "Call for survivors", "Question the lone guest", "Look for secret messages", "Watch the road"],
+      "guidance": "This scene represents the inn and Kella Darkhope thread. A lone guest/spy may pretend to be an innocent survivor while waiting for Zhentarim allies. She should be wary, evasive, and plausible rather than immediately hostile. Insight opposed by Deception, Investigation, or careful roleplay can expose the lie. If the party treats her well, she may stall; if discovered, she tries to survive until allies arrive. Use the owner's PDF for exact name, room, message, and treasure details."
+    },
+    "trading-post-and-windmill": {
+      "kind": "exploration",
+      "goal": "Search the village services for signs of evacuation, looting, and useful supplies.",
+      "starter": "The trading post and windmill stand silent, their doors and storage areas disturbed by hurried hands.",
+      "choices": ["Check the trading post", "Inspect the windmill", "Search for useful supplies", "Look for survivor notes", "Avoid disturbing property"],
+      "guidance": "Use this scene to cover the trading post, windmill, stables, residences, and similar village locations without exhaustive room-by-room play. The important beats are abandonment, recent looting, signs that villagers fled fast, and optional supplies if the DM allows them. Keep treasure exactness in the owner's PDF. Investigation DC 12 can distinguish goblin looting from panicked evacuation."
+    },
+    "nandar-keep": {
+      "kind": "exploration",
+      "goal": "Reach the damaged keep and learn the fate of Nightstone's leadership.",
+      "starter": "Across the water, the keep rises from its hill in broken silhouette. The bridge to it is damaged, and part of the structure has collapsed.",
+      "choices": ["Find a way across", "Inspect the broken bridge", "Enter the keep", "Search the great hall", "Recover noble records"],
+      "guidance": "Use this scene for the bridge, gate, bailey, and Nandar Keep. Establish that the keep was badly damaged by rocks from above and that Lady Velrosa Nandar is dead. The party can learn about local leadership, House Nandar history, and the political vacuum. Use checks for crossing damaged access, searching rubble, and respectfully handling noble remains. Keep exact rooms, treasure, ring/chest/library details in the owner's PDF."
+    },
+    "seven-snakes": {
+      "kind": "social",
+      "goal": "Resolve the arrival of Zhentarim mercenaries seeking influence over the abandoned village.",
+      "starter": "Riders approach Nightstone with practiced confidence, more interested in control than rescue.",
+      "choices": ["Parley at the gate", "Hide and observe", "Confront their leader", "Use Kella as leverage", "Prepare an ambush"],
+      "guidance": "Represent Xolkin Alassandar and the Seven Snakes without quoting the text. Their goals are opportunistic: secure Kella, exploit the village's weakness, and claim influence if possible. They are not automatic villains if the party negotiates, but they are dangerous and self-interested. Insight, Persuasion, Intimidation, or Deception DC 13-16 can shape the outcome. If combat occurs, use bandits as a simple SRD stand-in. Log whether the Zhentarim become enemies, uneasy allies, or temporary defenders."
+    },
+    "ear-seekers": {
       "kind": "combat",
-      "goal": "Confront goblin looters in the abandoned village and learn where the villagers went.",
-      "starter": "Small figures dart between damaged buildings with stolen goods clutched in their arms.",
-      "choices": [
-        "Ambush the looters",
-        "Demand answers",
-        "Block their escape",
-        "Try to capture one alive",
-        "Drive them from the square"
-      ],
-      "guidance": "Run this as goblin looters exploiting the empty village after the giant attack. The party can fight, intimidate, trick, or capture them. A captured or frightened goblin can reveal that villagers fled to nearby caves and were captured there. Log that lead as a canon fact. Use advance_scene after the goblin scene resolves and the cave lead is established."
+      "goal": "Defend Nightstone from an orc raid while other factions may interfere.",
+      "starter": "War cries rise beyond the palisade. A raiding force rushes toward the weakened village.",
+      "choices": ["Hold the gate", "Use the towers", "Rally uneasy allies", "Protect civilians", "Fall back to the keep"],
+      "guidance": "Represent the Ear Seekers raid as an orc attack timed after the village's defenses are compromised. If the Zhentarim remain, they may help but protect their own interests. Keep the fight scalable for solo play: start with a small vanguard, let terrain matter, and let clever plans reduce enemy pressure. Victory should make the cave rescue feel urgent: the village cannot recover until the missing people return."
     },
     "cave-leads": {
       "kind": "exploration",
       "goal": "Follow evidence from Nightstone toward the caves where the villagers fled.",
       "starter": "Tracks lead away from Nightstone toward the hills: hurried villagers, small goblin prints, and signs of a forced march.",
-      "choices": [
-        "Track the villagers",
-        "Scout ahead quietly",
-        "Question a captured goblin",
-        "Look for ambush signs",
-        "Take a short rest first"
-      ],
-      "guidance": "This scene connects Nightstone to the cave rescue. Survival, Perception, Insight, or Intimidation can establish the cave route and likely opposition. Keep the route summary concise and use the owner's PDF for exact travel and cave details. Use advance_scene when the party reaches the cave entrance."
+      "choices": ["Track the villagers", "Scout ahead quietly", "Question a captured goblin", "Look for ambush signs", "Take a short rest first"],
+      "guidance": "This scene connects Nightstone to the cave rescue. Survival, Perception, Insight, or Intimidation can establish the cave route and likely opposition. A captured goblin, rescued clue, or survivor trail should point to the Dripping Caves. Keep the route summary concise and use the owner's PDF for exact travel and cave details. Use advance_scene when the party reaches the cave entrance."
     },
-    "dripping-caves": {
+    "dripping-caves-approach": {
+      "kind": "exploration",
+      "goal": "Approach the Dripping Caves and choose a rescue strategy.",
+      "starter": "The cave mouth opens into damp darkness. Smoke, animal stink, and distant voices drift from inside.",
+      "choices": ["Scout the entrance", "Listen from cover", "Sneak inside", "Create a distraction", "Call out in Goblin"],
+      "guidance": "Use this scene for the cave exterior and general features. Establish wet stone, darkness, echoes, multiple passages, and the risk of alerting the cave. Let Stealth, Perception, Survival, or Deception shape the approach. The goal is to choose direct assault, stealth rescue, negotiation, or faction manipulation before entering the main cavern."
+    },
+    "main-cavern": {
       "kind": "combat",
-      "goal": "Rescue the captured villagers from goblins and their stronger allies.",
-      "starter": "The cave mouth smells of damp stone, smoke, and unwashed bodies. Voices echo from deeper chambers.",
-      "choices": [
-        "Sneak inside",
-        "Create a distraction",
-        "Search for prisoners",
-        "Challenge the goblin boss",
-        "Free captives first"
-      ],
-      "guidance": "Use this as a compact rescue version of the Dripping Caves. The villagers are prisoners, goblins control the caves, and stronger brute-force allies may be present. For solo play, reduce enemy pressure, allow stealth/social solutions, and do not force every cave area. Log rescued survivors and any named NPCs the user chooses from the PDF. Use advance_scene after the villagers are rescued or the party secures a clear outcome."
+      "goal": "Get past the main cavern defenders without losing the rescue mission.",
+      "starter": "The first large chamber is noisy with goblin activity, crude shelters, and hulking brute-force allies nearby.",
+      "choices": ["Attack quickly", "Sneak along the edge", "Lure guards away", "Bargain with food or coin", "Retreat and rethink"],
+      "guidance": "Represent the main cavern, goblin camp life, and ogre threat in compact form. For solo play, avoid throwing the full cave at the player at once. Use goblins first; foreshadow ogres as a serious hazard. Creative stealth, distractions, or negotiated entry should work. Use the owner's PDF for exact cave map and creature placement."
+    },
+    "goblin-warrens": {
+      "kind": "exploration",
+      "goal": "Navigate cramped goblin passages and discover internal cave politics.",
+      "starter": "Low tunnels twist away from the main cavern, sized for smaller bodies and full of nervous whispers.",
+      "choices": ["Crawl through the warrens", "Question a lesser goblin", "Search for a side route", "Avoid noisy movement", "Look for a rival faction"],
+      "guidance": "Use this to cover goblin warrens, side caves, narrow passages, stream/fissure/chimney routes, and chances to learn that the goblin band is not unified. Let the party discover a disgruntled goblin or route that can bypass stronger enemies. Checks: Stealth, Acrobatics, Perception, Investigation, or Persuasion/Intimidation if a goblin is cornered."
+    },
+    "east-caves-and-prisoners": {
+      "kind": "exploration",
+      "goal": "Find the captured villagers and learn what happened after the giant attack.",
+      "starter": "Frightened prisoners huddle deeper in the caves, stripped of weapons and waiting for rescue or worse.",
+      "choices": ["Free prisoners quietly", "Ask about the attack", "Find Morak", "Look for Daphne", "Hide the captives before fighting"],
+      "guidance": "Represent the prisoner areas, bats, and larder/rescue stakes in paraphrase. Important facts: villagers fled Nightstone after the bombardment, were captured in the caves, and can identify key missing/dead leaders. Morak Ur'gray should emerge as a practical leader who can provide follow-up hooks. Daphne Featherstone can connect to Lady Nandar's fate if you use her from the PDF. Log rescued villagers and what they reveal."
+    },
+    "snigbat-bargain": {
+      "kind": "social",
+      "goal": "Exploit a goblin rival's offer or decide not to trust it.",
+      "starter": "A nervous goblin offers a bargain from the shadows: help against the boss, and the prisoners might live.",
+      "choices": ["Hear the offer", "Demand proof", "Use the goblin as a guide", "Refuse the bargain", "Set a trap"],
+      "guidance": "Represent Snigbat's factional play without quoting. The goblin can guide the party toward Hark, reveal treasure/route information, and ask the party to remove rivals. Make the bargain useful but suspect. Insight DC 12 can read ambition; Persuasion/Intimidation DC 13 can secure temporary cooperation. Track promises in the canon log."
+    },
+    "hark-showdown": {
+      "kind": "combat",
+      "goal": "Resolve Boss Hark's control of the caves through negotiation, trickery, or battle.",
+      "starter": "The goblin boss's chamber reeks of stolen goods, damp fur, and confidence that every captive has a price.",
+      "choices": ["Negotiate with Hark", "Challenge the boss", "Offer a trade", "Spring an ambush", "Protect the prisoners"],
+      "guidance": "Represent Boss Hark, his guards/pets, hoard, and bargaining options in compact form. Hark is selfish but not mindless; negotiation can work if the party offers something useful or proves a threat has been solved. Combat should be dangerous but scalable. The outcome should free the villagers, settle Snigbat's fate if involved, and establish what the party recovers. Use the owner's PDF for exact treasure and creature counts."
+    },
+    "morak-quest": {
+      "kind": "social",
+      "goal": "Receive Morak's follow-up quests and decide where the party goes next.",
+      "starter": "With the prisoners safe, Morak Ur'gray gathers the shaken survivors and turns to the party with unfinished business.",
+      "choices": ["Ask Morak what comes next", "Report Lady Nandar's fate", "Choose a delivery quest", "Rest with the survivors", "Return to Nightstone"],
+      "guidance": "Morak is the practical quest-giver after the rescue. He can ask the party to carry news or belongings to relatives/friends in later Chapter 2 locations. Use the owner's PDF for exact destination names and personal details. The scene should reward rescue, close the Nightstone loop, and point toward the next settlement or the Tower of Zephyros transition."
     },
     "tower-of-zephyros": {
       "kind": "social",
-      "goal": "Meet a strange giant ally and establish the next phase of the giant crisis.",
-      "starter": "After Nightstone's crisis, an enormous floating tower becomes the party's unlikely road onward.",
-      "choices": [
-        "Question the giant",
-        "Ask about the attack",
-        "Study the tower",
-        "Rest before traveling",
-        "Prepare for the next settlement"
-      ],
-      "guidance": "Treat this as the transition from Nightstone into the broader giant story. Use the owner's PDF for the giant NPC's exact personality and tower events. The key function is to give the party transport, foreshadow giant politics, and move toward the next chapter location. Use advance_scene when the party accepts the next destination."
+      "goal": "Meet Zephyros and establish the wider giant crisis.",
+      "starter": "A massive cloud-borne tower descends from the sky, and its eccentric giant master offers the party a strange road onward.",
+      "choices": ["Question Zephyros", "Ask about the giants", "Accept transport", "Study the tower", "Refuse the offer"],
+      "guidance": "Use Zephyros as a friendly, eccentric cloud giant wizard who believes the small folk may matter to the broken giant order. He can transport the party toward the next chapter location and foreshadow giant politics. Do not include his exact stat block or spell list in the repo; use the owner's PDF for those. Log the party's chosen destination."
+    },
+    "tower-life": {
+      "kind": "exploration",
+      "goal": "Explore life aboard the giant tower during travel.",
+      "starter": "The tower drifts through the clouds, its huge rooms and strange conveniences built for a giant rather than adventurers.",
+      "choices": ["Explore the lower level", "Visit the library", "Look at the control orb", "Watch the griffons", "Rest during travel"],
+      "guidance": "Represent the tower's levels, library, control magic, sleeping arrangements, and griffon aerie in paraphrase. Let curious players learn about giant lore, Zephyros's research, and travel timing. Keep exact room descriptions, travel table, spellbook contents, and magic item rules in the owner's PDF. This should feel wondrous and odd rather than dangerous by default."
+    },
+    "unfriendly-skies-cult": {
+      "kind": "social",
+      "goal": "Handle aerial visitors who seek power from Zephyros.",
+      "starter": "Winged visitors circle the tower, hoping the cloud giant can grant them the power they crave.",
+      "choices": ["Let them land", "Warn Zephyros", "Question their motives", "Refuse them entry", "Prepare for trouble"],
+      "guidance": "Represent the first Unfriendly Skies event in paraphrase: aerial cultists or zealots arrive seeking a powerful giant ally. They are not automatically a fight if refused or redirected, but their motives are dangerous. Use cultists or bandits as stand-ins if combat starts. Let player choices decide whether this is diplomacy, deception, intimidation, or battle."
+    },
+    "unfriendly-skies-dwarves": {
+      "kind": "combat",
+      "goal": "Survive a mistaken aerial attack against Zephyros's tower.",
+      "starter": "Another flying threat appears on the horizon, armed and convinced the tower is hostile.",
+      "choices": ["Signal peaceful intent", "Help defend the tower", "Protect Zephyros", "Disable attackers", "Hide below"],
+      "guidance": "Represent the second Unfriendly Skies event in paraphrase: armed flyers mistake Zephyros or the tower for an enemy threat. The party can defuse the misunderstanding, help defend, or fight nonlethally. Use bandits or other simple templates as mechanical stand-ins. Keep exact faction names, numbers, and tactics in the owner's PDF."
+    },
+    "chapter-transition": {
+      "kind": "social",
+      "goal": "Arrive at the chosen Chapter 2 destination and set the next adventure hook.",
+      "starter": "At last, the tower descends toward the party's chosen destination. The giant crisis is no longer distant rumor.",
+      "choices": ["Thank Zephyros", "Ask for final advice", "Choose Bryn Shander", "Choose Goldenfields", "Choose Triboar"],
+      "guidance": "Close Chapter 1. Zephyros delivers the party to a Chapter 2 location or as close as the DM wants. Summarize unresolved threads: Nightstone's survivors, Zhentarim status, goblin survivors, Morak's quest, and what the party learned about giants. Use advance_scene after the party commits to the next chapter."
     }
   },
   "sceneEncounters": {
-    "goblin-looters": {
-      "templates": ["goblin", "goblin"]
+    "ear-seekers": {
+      "templates": ["orc", "orc"]
     },
-    "dripping-caves": {
-      "auto": true,
-      "difficulty": "medium",
-      "preferredTemplates": ["goblin", "goblin", "ogre"]
+    "main-cavern": {
+      "templates": ["goblin", "goblin", "ogre"]
+    },
+    "hark-showdown": {
+      "templates": ["goblin", "goblin", "goblin"]
+    },
+    "unfriendly-skies-dwarves": {
+      "templates": ["bandit", "bandit"]
     }
   },
-  "endingMessage": "Nightstone's immediate crisis is resolved. Record who was rescued, what the party learned about the giant attack, and where the tower carries them next.",
+  "endingMessage": "Nightstone's immediate crisis is resolved. Record who was rescued, what happened to Nightstone, what became of Kella and the Seven Snakes, what Morak asked next, and where Zephyros carried the party.",
   "npcs": [
+    {
+      "id": "npc-kella",
+      "name": "Kella Darkhope",
+      "description": "A hidden Zhentarim agent posing as a stranded guest.",
+      "disposition": "neutral",
+      "knowledge": [
+        "She is waiting for allies rather than trying to save the village.",
+        "Her story can be exposed by careful questioning or searching her room."
+      ]
+    },
+    {
+      "id": "npc-xolkin",
+      "name": "Xolkin Alassandar",
+      "description": "Leader of a hard-edged mercenary band seeking leverage in Nightstone.",
+      "disposition": "neutral",
+      "knowledge": [
+        "He wants Kella safe and Nightstone useful to his faction.",
+        "He may negotiate, threaten, or fight depending on the party's posture."
+      ]
+    },
     {
       "id": "npc-nightstone-survivor",
       "name": "Nightstone survivor",
@@ -157,13 +286,43 @@
       ]
     },
     {
-      "id": "npc-goblin-captive",
-      "name": "Captured goblin",
-      "description": "A frightened looter who knows where the villagers were taken.",
+      "id": "npc-morak",
+      "name": "Morak Ur'gray",
+      "description": "A practical survivor who can organize the rescued villagers and give follow-up quests.",
+      "disposition": "friendly",
+      "knowledge": [
+        "He knows who is missing, who survived, and which errands must be carried beyond Nightstone.",
+        "He can point the party toward the next chapter location."
+      ]
+    },
+    {
+      "id": "npc-snigbat",
+      "name": "Snigbat",
+      "description": "A goblin rival who may betray Boss Hark for a better position.",
+      "disposition": "neutral",
+      "knowledge": [
+        "She knows routes through the caves and where Hark keeps captives or loot.",
+        "Her help is self-interested and should be tracked as a bargain."
+      ]
+    },
+    {
+      "id": "npc-hark",
+      "name": "Boss Hark",
+      "description": "Goblin boss holding prisoners and stolen goods in the caves.",
       "disposition": "hostile",
       "knowledge": [
-        "Goblins came to loot the abandoned village after the attack.",
-        "The cave captives are under control of the goblin band."
+        "He may trade prisoners if the party offers something useful or proves dangerous.",
+        "His control over the goblins is resented by at least one rival."
+      ]
+    },
+    {
+      "id": "npc-zephyros",
+      "name": "Zephyros",
+      "description": "An eccentric cloud giant wizard who offers transport and giant-lore foreshadowing.",
+      "disposition": "friendly",
+      "knowledge": [
+        "The giant order has been disrupted, and the party may have a role in restoring balance.",
+        "He can carry the party toward a Chapter 2 destination."
       ]
     }
   ],
@@ -178,9 +337,9 @@
     }
   ],
   "mock": {
-    "socialNpcId": "npc-nightstone-survivor",
-    "socialNpcName": "a Nightstone survivor",
-    "socialSuccess": "The survivor explains what they saw and points the party toward the next lead.",
+    "socialNpcId": "npc-morak",
+    "socialNpcName": "Morak Ur'gray",
+    "socialSuccess": "Morak steadies himself, explains what the survivors know, and points the party toward the next obligation.",
     "socialFailure": "The survivor is shaken and gives only fragments until the party earns trust.",
     "explorationSuccess": "You find a solid clue: Nightstone was struck from above, its people fled, and the next trail leads toward the caves.",
     "explorationFailure": "The silence, bell, and broken buildings confirm danger, but the exact sequence remains unclear. Try another angle or move deeper into the village.",

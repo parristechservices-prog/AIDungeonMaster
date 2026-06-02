@@ -17,7 +17,7 @@ describe('SKT encounter spawning', () => {
     expect(state.monsters).toHaveLength(0);
   });
 
-  it('spawns goblins when advancing to goblin looters', () => {
+  it('spawns monsters when advancing to the first combat scene', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.5);
 
     let state = createInitialState('enc-2', {
@@ -29,8 +29,8 @@ describe('SKT encounter spawning', () => {
     while (getSceneKind(adventure, state.sceneId) !== 'combat') {
       state = advanceScene(state);
     }
-    expect(state.sceneId).toBe('goblin-looters');
+    expect(state.sceneId).toBe('ear-seekers');
     expect(state.monsters.length).toBeGreaterThan(0);
-    expect(state.monsters.some((m) => m.name.toLowerCase().includes('goblin'))).toBe(true);
+    expect(state.monsters.some((m) => m.name.toLowerCase().includes('orc'))).toBe(true);
   });
 });
