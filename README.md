@@ -1,41 +1,82 @@
 # PartyQuest V0
 
-Initial scaffold for the PartyQuest V0 prototype.
+Solo text-only fantasy RPG prototype: a **deterministic rules engine** owns mechanics; an **LLM narrator** owns prose.
 
-## Stack
-- Next.js (App Router) + TypeScript
-- Tailwind CSS
-- Zod
-- Vitest
+Repository: [github.com/parristechservices-prog/AIDungeonMaster](https://github.com/parristechservices-prog/AIDungeonMaster)
 
-## Current status
-- ✅ Project scaffolded with pnpm
-- ✅ `/play` route created
-- ✅ `/api/turn` route stub created
-- ✅ Basic engine contract + resolver scaffold in `src/lib/engine`
-- ✅ First Vitest test running
-- ✅ Source planning docs copied into `docs/`
-- ✅ API route now supports Groq-first provider flow (with OpenAI fallback) plus local mock DM fallback
+## Architecture
 
-## Environment
-```bash
-OPENAI_API_KEY=...
-OPENAI_MODEL=gpt-5.4-mini
-GROQ_API_KEY=...
-GROQ_MODEL=llama-3.3-70b-versatile # optional override for Groq
-PARTYQUEST_LLM_PROVIDER=groq
-PARTYQUEST_LLM_MODE=light # set to light for Groq light-mode defaults
-PARTYQUEST_DEV_LOGS=true
+```
+Player input → /api/turn → LLM (structured JSON) → engine resolves requests → narration + state
+                                    ↓ (no API key)
+                              mock DM fallback
 ```
 
-When `PARTYQUEST_LLM_MODE=light` and `GROQ_MODEL` is unset, PartyQuest defaults to `llama-3.3-mini` for faster, lower-cost Groq inference.
+- **Engine** (`src/lib/engine`) — dice, HP, combat, skill checks. Never writes story text.
+- **LLM** (`src/lib/llm`) — DM turns as JSON with `engineRequests` + `narration`.
+- **Orchestrator** (`src/lib/orchestrator`) — validates schema, runs engine, builds recaps.
+- **UI** (`src/app/play`, `src/components/play`) — narration, combat HUD, dice breakdown, clickable choices, ending screen.
 
-## Run
+Narration is checked against engine state (`validate-narration.ts`); warnings are logged and surfaced in dev.
+
+## Stack
+
+- Next.js 16 (App Router) + TypeScript
+- Tailwind CSS 4
+- Zod + Vitest
+- Groq-first LLM (OpenAI fallback)
+
+## Setup
+
 ```bash
+pnpm install
+cp env.example .env.local
+# Add GROQ_API_KEY and/or OPENAI_API_KEY
 pnpm dev
 ```
 
-## Test
+Open [http://localhost:3000](http://localhost:3000) → **Start one-shot**.
+
+### Environment
+
+| Variable | Description |
+|----------|-------------|
+| `GROQ_API_KEY` | Primary LLM (recommended) |
+| `GROQ_MODEL` | Default `llama-3.3-70b-versatile` |
+| `OPENAI_API_KEY` | Fallback / `PARTYQUEST_LLM_PROVIDER=openai` |
+| `PARTYQUEST_LLM_MODE` | `light` for smaller Groq model when unset |
+| `PARTYQUEST_DEV_LOGS` | `true` writes turn logs under `.data/` |
+
+Without API keys, the **table-rules mock DM** runs the full one-shot.
+
+## Scripts
+
 ```bash
-pnpm test
+pnpm dev          # local server
+pnpm test         # Vitest (engine + regression + narration validator)
+pnpm lint
+pnpm build
 ```
+
+## Deploy (Vercel)
+
+1. Import the GitHub repo in [Vercel](https://vercel.com).
+2. Set environment variables from `env.example`.
+3. Deploy — `vercel.json` uses `pnpm build`.
+
+**Note:** Session files persist to `.data/` locally; on Vercel, state is in-memory per instance. Client-side snapshot (`localStorage`) helps resume UI state between visits.
+
+## Feature flags
+
+See `src/lib/config/features.ts` for roadmap toggles (voice, multiplayer, cloud save).
+
+## Docs
+
+- `docs/v0-feature-spec.md` — scope and done criteria
+- `docs/ai-dm-app-gaps-and-next-steps.md` — longer-term product gaps
+- `docs/dm-prompt-design.md` — prompt design notes
+- `docs/TEN_IMPROVEMENTS.md` — 10 ways to improve the app (Brainstormed)
+
+## License
+
+Private / project-specific — see repository owner.
