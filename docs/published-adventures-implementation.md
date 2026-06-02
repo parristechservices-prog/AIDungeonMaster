@@ -2,7 +2,7 @@
 doc: Published adventures — implementation plan
 project: PartyQuest / AIDungeonMaster
 date: 2026-06-02
-status: in progress
+status: Phase 1 complete
 companions: published-adventures-guide.md
 ---
 

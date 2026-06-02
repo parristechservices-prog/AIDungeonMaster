@@ -22,6 +22,8 @@ type Catalog = {
     estimatedMinutes: number;
     tone: string;
     recommendedCharacters: string[];
+    source?: 'builtin' | 'private' | 'template';
+    levelRange?: [number, number];
   }>;
   personas: Array<{ id: string; name: string; description: string }>;
 };
@@ -215,6 +217,8 @@ function StartContent() {
                 <p className="font-semibold">{s.title}</p>
                 <span className="text-xs text-zinc-500">
                   ~{s.estimatedMinutes} min · {s.tone}
+                  {s.source === 'private' ? ' · Private module' : s.source === 'template' ? ' · Template' : ''}
+                  {s.levelRange ? ` · Lv ${s.levelRange[0]}–${s.levelRange[1]}` : ''}
                 </span>
               </div>
               <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{s.tagline}</p>
