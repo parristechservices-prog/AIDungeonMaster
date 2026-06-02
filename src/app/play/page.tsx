@@ -11,6 +11,7 @@ import { EndingScreen } from '@/components/play/EndingScreen';
 import { InputBox } from '@/components/play/InputBox';
 import { NarrationPanel } from '@/components/play/NarrationPanel';
 import { OnboardingBanner } from '@/components/play/OnboardingBanner';
+import { AmbientAudio } from '@/components/play/AmbientAudio';
 import { DEFAULT_ADVENTURE_ID, getScenario } from '@/lib/game/scenarios';
 import { isFeatureEnabled } from '@/lib/config/features';
 import type { TurnResponse } from '@/lib/play/types';
@@ -35,6 +36,7 @@ export default function PlayPage() {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [turnCount, setTurnCount] = useState(0);
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [ambient, setAmbient] = useState<TurnResponse['ambient']>('none');
 
   useEffect(() => {
     const boot = readPlayBootstrap();
@@ -94,6 +96,7 @@ export default function PlayPage() {
         setChoices(data.nextChoices);
         setRecentRolls(data.recentRolls ?? []);
         setWarnings(data.narrationWarnings ?? []);
+        if (data.ambient) setAmbient(data.ambient);
         setTurnCount((n) => n + 1);
         if (data.state) setState(data.state);
 
@@ -187,6 +190,8 @@ export default function PlayPage() {
             </p>
           )}
         </aside>
+
+        <AmbientAudio type={ambient} />
       </main>
 
       {sceneId === 'ending' && (

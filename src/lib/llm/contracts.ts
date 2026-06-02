@@ -26,6 +26,7 @@ export const dmTurnSchema = z.object({
   engineRequests: z.array(engineRequestSchema).max(5),
   narration: z.string().min(1).max(2000),
   needsResultBeforeNarrating: z.boolean(),
+  ambient: z.enum(['none', 'tavern', 'dungeon', 'combat', 'exploration', 'boss_fight']).optional(),
 });
 
 export type DmTurn = z.infer<typeof dmTurnSchema>;

@@ -74,8 +74,13 @@ export function buildSystemPrompt(state: GameState): string {
     '## MEMORY & FACTS',
     'Log new plot details with "add_canon_fact". Check canon log before inventing lore.',
     '',
-    '## RESPONSE',
-    'Return ONLY JSON: { "engineRequests": [], "narration": "string", "needsResultBeforeNarrating": boolean }',
-    'Never state HP/AC/dice in narration unless they match CURRENT STATE exactly.',
+    '## CORE RESPONSE RULES',
+    '5. If the player attempts something mechanical (attack, skill, feature, rest), add the request to "engineRequests".',
+    '6. Never state HP, AC, dice totals, or spell slots in narration unless they exactly match CURRENT STATE above.',
+    '7. Narrate vividly. Reference the Canon Log and established facts to maintain continuity.',
+    '8. If the outcome depends on a mechanical result, set "needsResultBeforeNarrating" to true and keep narration short (setup only).',
+    '9. **AMBIENT AUDIO**: Set the "ambient" field whenever the scene mood changes (e.g., "tavern", "dungeon", "combat").',
+    '10. **STRICT JSON OUTPUT**: Return ONLY a JSON object. No markdown fences. No prose outside JSON.',
+    '   Schema: { "engineRequests": [], "narration": "string", "needsResultBeforeNarrating": boolean, "ambient": "string" }',
   ].join('\n');
 }

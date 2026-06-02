@@ -17,6 +17,7 @@ export type TurnResult = {
   nextChoices: string[];
   nextHook: string;
   narration: string;
+  ambient?: 'none' | 'tavern' | 'dungeon' | 'combat' | 'exploration' | 'boss_fight';
   engineResults: Array<{ kind: string; summary: string; ok: boolean; breakdown?: import('@/lib/engine/types').RollBreakdown; critical?: boolean }>;
   recentRolls: import('@/lib/engine/types').RollBreakdown[];
   narrationWarnings?: string[];
@@ -103,7 +104,7 @@ export function runTurn(
     state.sceneId === 'ending' ? scenario.endingMessage : 'Choose your next action.';
   const recentRolls = engineResults
     .map((r) => r.breakdown)
-    .filter((b): b is NonNullable<typeof b> => Boolean(b));
+    .filter((b): b is import('@/lib/engine/types').RollBreakdown => !!b);
 
   return {
     state,
@@ -120,6 +121,7 @@ export function runTurn(
       nextChoices,
       nextHook,
       narration: finalNarration,
+      ambient: turn.ambient,
       engineResults,
       recentRolls,
       state: {
