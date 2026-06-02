@@ -27,6 +27,11 @@ function getProviderApiKeys(provider: string): string[] {
     if (process.env.GROQ_API_KEY?.trim()) keys.unshift(process.env.GROQ_API_KEY.trim());
   }
 
+  if (provider === 'openrouter') {
+    keys.push(...(process.env.OPENROUTER_API_KEYS?.split(',') ?? []).map((k) => k.trim()));
+    if (process.env.OPENROUTER_API_KEY?.trim()) keys.unshift(process.env.OPENROUTER_API_KEY.trim());
+  }
+
   return keys.filter(Boolean);
 }
 

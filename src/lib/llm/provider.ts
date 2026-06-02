@@ -27,10 +27,49 @@ function getProviderApiKeys(provider: string): string[] {
     }
   }
 
+  if (provider === 'openrouter') {
+    if (process.env.OPENROUTER_API_KEY?.trim()) keys.push(process.env.OPENROUTER_API_KEY.trim());
+    if (process.env.OPENROUTER_API_KEYS) {
+      keys.push(...process.env.OPENROUTER_API_KEYS.split(',').map((k) => k.trim()));
+    }
+  }
+
   return [...new Set(keys.filter(Boolean))];
 }
 
-export async function callLlm(input: Input, options?: { json?: boolean }): Promise<string | null> {
+function getProviderBaseUrl(provider: string): string {
+  if (provider === 'openai') return 'https://api.openai.com/v1/chat/completions';
+  if (provider === 'openrouter') return 'https://openrouter.ai/api/v1/chat/completions';
+  return 'https://api.groq.com/openai/v1/chat/completions';
+}
+
+function getProviderModel(provider: string): string {
+  if (provider === 'openai') return process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
+  if (provider === 'openrouter') {
+    return process.env.OPENROUTER_MODEL ?? 'meta-llama/llama-3.3-70b-instruct';
+  }
+
+  const useLightMode = (process.env.PARTYQUEST_LLM_MODE ?? '').toLowerCase() === 'light';
+  return process.env.GROQ_MODEL ?? (useLightMode ? 'llama-3.1-8b-instant' : 'llama-3.3-70b-versatile');
+}
+
+function getProviderHeaders(provider: string, apiKey: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
+  };
+
+  if (provider === 'openrouter') {
+    headers['X-Title'] = process.env.OPENROUTER_APP_NAME ?? 'PartyQuest';
+    if (process.env.OPENROUTER_SITE_URL?.trim()) {
+      headers['HTTP-Referer'] = process.env.OPENROUTER_SITE_URL.trim();
+    }
+  }
+
+  return headers;
+}
+
+async function* callLlmCandidates(input: Input, options?: { json?: boolean }): AsyncGenerator<string> {
   if (!hasLlmCredentials()) return null;
 
   const providers = getProviderList();
@@ -39,27 +78,12 @@ export async function callLlm(input: Input, options?: { json?: boolean }): Promi
     if (apiKeys.length === 0) continue;
 
     for (const apiKey of apiKeys) {
-      const baseUrl = provider === 'openai'
-        ? 'https://api.openai.com/v1/chat/completions'
-        : 'https://api.groq.com/openai/v1/chat/completions';
-
-      let model: string;
-      if (provider === 'openai') {
-        model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
-      } else {
-        const useLightMode = (process.env.PARTYQUEST_LLM_MODE ?? '').toLowerCase() === 'light';
-        model = process.env.GROQ_MODEL ?? (useLightMode ? 'llama-3.1-8b-instant' : 'llama-3.3-70b-versatile');
-      }
-
       try {
-        const r = await fetch(baseUrl, {
+        const r = await fetch(getProviderBaseUrl(provider), {
           method: 'POST',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
+          headers: getProviderHeaders(provider, apiKey),
           body: JSON.stringify({
-            model,
+            model: getProviderModel(provider),
             messages: [
               { role: 'system', content: input.systemPrompt },
               { role: 'user', content: input.playerInput },
@@ -72,20 +96,27 @@ export async function callLlm(input: Input, options?: { json?: boolean }): Promi
         if (!r.ok) continue;
         const data = await r.json();
         const text = data.choices?.[0]?.message?.content ?? null;
-        if (text) return text;
+        if (text) yield text;
       } catch {
         continue;
       }
     }
   }
+}
 
+export async function callLlm(input: Input, options?: { json?: boolean }): Promise<string | null> {
+  for await (const text of callLlmCandidates(input, options)) {
+    return text;
+  }
   return null;
 }
 
 export async function generateDmTurn(input: Input): Promise<DmTurn | null> {
-  const text = await callLlm(input, { json: true });
-  if (!text) return null;
-  return parseDmTurn(text);
+  for await (const text of callLlmCandidates(input, { json: true })) {
+    const parsed = parseDmTurn(text);
+    if (parsed) return parsed;
+  }
+  return null;
 }
 
 function parseDmTurn(raw: string): DmTurn | null {

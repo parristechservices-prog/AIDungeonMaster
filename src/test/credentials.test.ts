@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { hasLlmCredentials, useMockFlavorPrefix } from '@/lib/llm/credentials';
 
 describe('hasLlmCredentials', () => {
-  const env = process.env;
+  const env = { ...process.env };
 
   afterEach(() => {
     process.env = { ...env };
@@ -36,11 +36,22 @@ describe('hasLlmCredentials', () => {
     expect(hasLlmCredentials()).toBe(true);
   });
 
+  it('returns true when provider list includes openrouter and OpenRouter key is set', () => {
+    delete process.env.PARTYQUEST_FORCE_MOCK;
+    process.env.PARTYQUEST_LLM_PROVIDER = 'groq,openrouter,openai';
+    process.env.GROQ_API_KEY = '';
+    process.env.OPENROUTER_API_KEY = 'test-openrouter';
+    process.env.OPENAI_API_KEY = '';
+    expect(hasLlmCredentials()).toBe(true);
+  });
+
   it('returns false when no keys are set', () => {
     delete process.env.PARTYQUEST_FORCE_MOCK;
     process.env.PARTYQUEST_LLM_PROVIDER = 'groq';
     process.env.GROQ_API_KEY = '';
     process.env.GROQ_API_KEYS = '';
+    process.env.OPENROUTER_API_KEY = '';
+    process.env.OPENROUTER_API_KEYS = '';
     process.env.OPENAI_API_KEY = '';
     process.env.OPENAI_API_KEYS = '';
     expect(hasLlmCredentials()).toBe(false);
@@ -48,7 +59,7 @@ describe('hasLlmCredentials', () => {
 });
 
 describe('useMockFlavorPrefix', () => {
-  const env = process.env;
+  const env = { ...process.env };
 
   afterEach(() => {
     process.env = { ...env };

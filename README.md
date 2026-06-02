@@ -24,7 +24,7 @@ Narration is checked against engine state (`validate-narration.ts`); warnings ar
 - Next.js 16 (App Router) + TypeScript
 - Tailwind CSS 4
 - Zod + Vitest
-- Groq by default; `PARTYQUEST_LLM_PROVIDER` can select `openai` or a comma-separated failover list such as `groq,openai`
+- Groq by default; `PARTYQUEST_LLM_PROVIDER` can select `openrouter`, `openai`, or a comma-separated failover list such as `groq,openrouter,openai`
 
 ## Setup
 
@@ -48,16 +48,27 @@ OPENAI_API_KEY=your-primary-openai-key
 OPENAI_API_KEYS=backup-openai-key-1,backup-openai-key-2
 ```
 
+If you use OpenRouter:
+
+```env
+OPENROUTER_API_KEY=your-primary-openrouter-key
+OPENROUTER_API_KEYS=backup-openrouter-key-1,backup-openrouter-key-2
+OPENROUTER_MODEL=meta-llama/llama-3.3-70b-instruct
+```
+
 Open [http://localhost:3000](http://localhost:3000) → **Create adventure** to pick class, background, DM persona, and scenario.
 
 ### Environment
 
 | Variable | Description |
 |----------|-------------|
-| `PARTYQUEST_LLM_PROVIDER` | Provider order, default `groq`; supports comma-separated failover such as `groq,openai` |
+| `PARTYQUEST_LLM_PROVIDER` | Provider order, default `groq`; supports comma-separated failover such as `groq,openrouter,openai` |
 | `GROQ_API_KEY` | Primary Groq key (recommended) |
 | `GROQ_API_KEYS` | Comma-separated backup Groq keys for failover |
 | `GROQ_MODEL` | Default `llama-3.3-70b-versatile` |
+| `OPENROUTER_API_KEY` | Primary OpenRouter key, used when provider order includes `openrouter` |
+| `OPENROUTER_API_KEYS` | Comma-separated backup OpenRouter keys for failover |
+| `OPENROUTER_MODEL` | Default `meta-llama/llama-3.3-70b-instruct` |
 | `OPENAI_API_KEY` | Primary OpenAI key, used when provider order includes `openai` |
 | `OPENAI_API_KEYS` | Comma-separated backup OpenAI keys for failover |
 | `PARTYQUEST_LLM_MODE` | Set to `light` to use the smaller Groq model |
