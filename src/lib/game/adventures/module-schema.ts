@@ -28,6 +28,12 @@ const monsterSchema = z.object({
   damage: z.string().max(32),
 });
 
+const chapterSchema = z.object({
+  id: z.string().min(1).max(64),
+  title: z.string().min(1).max(120),
+  sceneIds: z.array(z.string().min(1)).min(1).max(50),
+});
+
 const mockSchema = z.object({
   socialNpcId: z.string(),
   socialNpcName: z.string(),
@@ -52,6 +58,7 @@ export const adventureModuleSchema = z
     recommendedCharacters: z.array(z.string()).min(1).max(8),
     levelRange: z.tuple([z.number().int().min(1).max(20), z.number().int().min(1).max(20)]).optional(),
     sourceNote: z.string().max(500).optional(),
+    chapters: z.array(chapterSchema).max(20).optional(),
     sceneOrder: z.array(z.string().min(1)).min(2).max(50),
     scenes: z.record(z.string(), sceneSchema),
     endingMessage: z.string().max(2000),
@@ -92,6 +99,19 @@ export const adventureModuleSchema = z
           message: `Scene "${sceneId}" is not listed in sceneOrder`,
           path: ['scenes'],
         });
+      }
+    }
+    if (data.chapters) {
+      for (const ch of data.chapters) {
+        for (const sceneId of ch.sceneIds) {
+          if (sceneId !== 'ending' && !data.scenes[sceneId]) {
+            ctx.addIssue({
+              code: 'custom',
+              message: `Chapter "${ch.id}" references unknown scene "${sceneId}"`,
+              path: ['chapters'],
+            });
+          }
+        }
       }
     }
   });

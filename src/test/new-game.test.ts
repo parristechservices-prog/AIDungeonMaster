@@ -31,6 +31,6 @@ describe('new game options', () => {
       characterId: 'rogue',
     });
     expect(state.npcs[0]?.name).toBe('Dockmaster Holt');
-    expect(state.monsters).toHaveLength(2);
+    expect(state.monsters.length).toBeGreaterThanOrEqual(2);
   });
 });

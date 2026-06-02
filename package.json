@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "module:validate": "tsx scripts/validate-module.ts",
+    "module:scaffold": "tsx scripts/scaffold-private-module.ts"
   },
   "dependencies": {
     "next": "16.2.6",
@@ -25,6 +27,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
+    "tsx": "^4.19.4",
     "typescript": "^5",
     "vitest": "^4.1.5"
   }

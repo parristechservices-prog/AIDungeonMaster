@@ -80,7 +80,12 @@ Add more entries in `src/lib/game/characters/templates.ts` and `src/lib/game/sce
 
 ### Private campaign modules (owned books)
 
-Copy `content/templates/example-frontier/` to `content/private/<your-module>/` and edit `module.json` with **your** scene notes (do not commit PDFs or book text). See `docs/published-adventures-guide.md`. Modules appear in `/start` when present locally.
+```bash
+npm run module:scaffold -- skt-nightstone-starter skt-nightstone
+npm run module:validate -- content/private/skt-nightstone/module.json
+```
+
+Edit the private `module.json` with **your** scene notes (do not commit PDFs or book text). See `docs/published-adventures-guide.md` and `docs/scenario-authoring.md`. Modules appear on `/start` when present locally.
 
 ## Feature flags
 

@@ -31,22 +31,24 @@ Tracks engineering work to support **owned** campaign books (e.g. *Storm King's 
 | Committed template module | `content/templates/example-frontier/module.json` | Done |
 | Tests | `src/test/adventure-registry.test.ts` | Done |
 
-## Phase 2 — SKT-sized campaigns
+## Phase 2 — SKT-sized campaigns (in progress)
 
-| Task | Notes |
+| Task | Status |
 |------|--------|
-| Per-chapter `module.json` or `chapters[]` in one file | Start with Nightstone-only slice |
-| Encounter refs → `encounters.yaml` | SRD creature ids from Open5e |
-| Import Open5e monsters | `src/lib/game/srd/` |
-| `POST /api/modules` dev-only validate | Upload JSON, validate schema |
+| `skt-nightstone-starter` template (original placeholders) | Done |
+| Optional `chapters[]` in module schema | Done |
+| `npm run module:validate` / `module:scaffold` | Done |
+| `POST /api/modules/validate` (dev only) | Done |
+| `docs/scenario-authoring.md` | Done |
+| Encounter refs → `encounters.yaml` | Planned |
+| Import Open5e monsters | Planned |
 
 ## Phase 3 — Authoring UX
 
 | Task | Notes |
 |------|--------|
-| CLI `pnpm module:validate` | Zod + path check |
 | Scene editor (web) | Local dev tool |
-| Module picker shows `private` badge | `/start` UI |
+| Module picker shows `private` badge | Done (`/start`) |
 
 ## Phase 4 — Local RAG (optional)
 
@@ -75,11 +77,11 @@ Author **your own** goals/DCs — do not paste book text.
 
 ## SKT workflow (Josh)
 
-1. Copy `content/templates/example-frontier/` → `content/private/skt-nightstone/`
-2. Rename id/title; set `levelRange: [1, 5]`
-3. For Chapter 1 scenes, one JSON scene per beat you run at the table
+1. `npm run module:scaffold -- skt-nightstone-starter skt-nightstone`
+2. Edit `content/private/skt-nightstone/module.json` — replace every `YOUR NOTE:` line
+3. `npm run module:validate -- content/private/skt-nightstone/module.json`
 4. Keep PDF open for read-aloud; app runs dice + canon
-5. Use SRD names for monsters (`ogre` → use SRD-compliant stat block in `monsters[]`)
+5. Use SRD names for monsters in `monsters[]` for anything you might publish later
 
 ## API changes
 
