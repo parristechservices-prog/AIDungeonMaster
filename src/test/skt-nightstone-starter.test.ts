@@ -60,7 +60,21 @@ describe('skt-nightstone-starter template', () => {
 
     expect(turn.engineRequests).toEqual([]);
     expect(turn.narration.toLowerCase()).toContain('drawbridge');
-    expect(turn.narration).toContain('80 to 120 feet');
+    expect(turn.narration).toContain('100 feet');
+    expect(turn.narration).toContain('30-foot speed');
+  });
+
+  it('gives a tactical distance to the drawbridge at the arrival scene', () => {
+    const state = createInitialState('test-skt-drawbridge-distance', {
+      adventureId: 'skt-nightstone-starter',
+      characterIds: ['fighter'],
+    });
+
+    const turn = deriveDmTurnFromInput(state, 'how many feet am i from the drawbridge?');
+
+    expect(turn.engineRequests).toEqual([]);
+    expect(turn.narration).toContain('30 feet');
+    expect(turn.narration).toContain('one normal move');
   });
 
   it('only exposes NPCs near the current Nightstone starter scene', () => {

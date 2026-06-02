@@ -2,7 +2,7 @@ import type { DmTurn } from '@/lib/llm/contracts';
 import { getPlayableScene, getSceneKind } from '@/lib/game/adventures/helpers';
 import { getAdventure } from '@/lib/game/adventures/registry.server';
 import type { Adventure } from '@/lib/game/adventures/types';
-import type { GameState } from '@/lib/game/types';
+import type { Character, GameState } from '@/lib/game/types';
 
 const EXPLORATION_PHRASES = ['inspect', 'track', 'search', 'scout', 'boathouse', 'quay', 'trail'];
 const OBSERVATION_PHRASES = [
@@ -24,6 +24,14 @@ const DISTANCE_PHRASES = [
   'yards',
   'paces',
   'how many',
+];
+const SELF_DESCRIPTION_PHRASES = [
+  'what do i look like',
+  'how do i look',
+  'describe me',
+  'describe myself',
+  'what am i wearing',
+  'what am i carrying',
 ];
 const MOVEMENT_PHRASES = [
   'move',
@@ -70,6 +78,10 @@ function isPassiveObservation(input: string): boolean {
   return includesAny(input, OBSERVATION_PHRASES) && !includesAny(input, ACTIVE_SEARCH_PHRASES);
 }
 
+function isSelfDescriptionQuestion(input: string): boolean {
+  return SELF_DESCRIPTION_PHRASES.some((phrase) => input.includes(phrase));
+}
+
 function isDistanceQuestion(input: string): boolean {
   return includesAny(input, DISTANCE_PHRASES);
 }
@@ -78,11 +90,103 @@ function isMovementOnly(input: string): boolean {
   return includesAny(input, MOVEMENT_PHRASES) && !includesAny(input, ACTIVE_SEARCH_PHRASES);
 }
 
-function explorationPositionHint(sceneId: string): string {
+type DistanceHint = {
+  target: string;
+  feet: number;
+  note: string;
+};
+
+function movementSpeedFeet(character: Character): number {
+  const race = character.race.toLowerCase();
+  if (race.includes('dwarf') || race.includes('halfling') || race.includes('gnome')) return 25;
+  return 30;
+}
+
+function movementCostText(character: Character, feet: number): string {
+  const speed = movementSpeedFeet(character);
+  const moves = Math.max(1, Math.ceil(feet / speed));
+  const owner = `${character.name}'s ${speed}-foot speed`;
+
+  if (moves === 1) {
+    return `With ${owner}, that is within one normal move.`;
+  }
+  if (moves === 2) {
+    return `With ${owner}, that takes two normal moves, or one turn if you Dash.`;
+  }
+  return `With ${owner}, that takes about ${moves} normal moves; in combat you would need multiple turns unless you Dash.`;
+}
+
+function describeActiveCharacter(activeChar: Character): string {
+  const armor = activeChar.inventory.find((item) => /chain shirt|leather|studded|plate|scale|mail/i.test(item)) ?? 'your armor';
+  const weapon = activeChar.weapon?.name ?? 'your weapon';
+  return `You are ${activeChar.name}, a level ${activeChar.level} ${activeChar.race} ${activeChar.className} wearing ${armor} and carrying ${weapon}.`;
+}
+
+function getDistanceHint(sceneId: string, input: string): DistanceHint {
+  const asksForDrawbridge = input.includes('drawbridge') || input.includes('bridge');
+  const asksForGate = input.includes('gate') || input.includes('palisade');
+  const asksForTower = input.includes('tower') || input.includes('watchtower');
+  const asksForSquare = input.includes('square') || input.includes('village');
+  const asksForBell = input.includes('bell') || input.includes('chapel') || input.includes('temple');
+  const asksForKeep = input.includes('keep');
+
   switch (sceneId) {
     case 'settlement-arrival':
     case 'road-to-nightstone':
-      return 'You are on the road just outside Nightstone. The lowered drawbridge is ahead across the moat, close enough to reach in a short walk, with the open palisade gate and empty watchtowers beyond it.';
+      if (asksForKeep) return { target: 'the damaged keep', feet: 300, note: 'It is visible beyond the village and separated by the moat and broken bridge.' };
+      if (asksForBell) return { target: 'the ringing bell', feet: 180, note: 'The sound is coming from deeper inside the village, past the open gate.' };
+      if (asksForSquare) return { target: 'the village square', feet: 120, note: 'You would need to cross the drawbridge and pass through the open gate first.' };
+      if (asksForGate || asksForTower) return { target: asksForTower ? 'the nearest watchtower' : 'the open palisade gate', feet: 60, note: 'The drawbridge lies between you and the gate opening.' };
+      return { target: asksForDrawbridge ? 'the lowered drawbridge' : 'the lowered drawbridge ahead', feet: 30, note: 'You are still on the road outside the moat.' };
+    case 'drawbridge-watchtowers':
+    case 'open-palisade':
+      if (asksForKeep) return { target: 'the damaged keep', feet: 250, note: 'It lies off to the south beyond the village route.' };
+      if (asksForBell) return { target: 'the ringing bell', feet: 120, note: 'The bell is deeper inside Nightstone.' };
+      if (asksForSquare) return { target: 'the village square', feet: 60, note: 'The square is just inside the palisade.' };
+      if (asksForDrawbridge) return { target: 'the drawbridge behind you', feet: 15, note: 'You are at the gate threshold now.' };
+      return { target: asksForTower ? 'the nearest watchtower' : 'the open gate', feet: 15, note: 'You are already at the bridge and gate area.' };
+    case 'village-square':
+      if (asksForBell) return { target: 'the ringing bell', feet: 60, note: 'The sound points toward the chapel area.' };
+      if (asksForKeep) return { target: 'the damaged keep', feet: 180, note: 'It is south of the village and harder to reach because the bridge is damaged.' };
+      if (asksForSquare) return { target: 'the center of the square', feet: 0, note: 'You are already in the village square.' };
+      return { target: asksForDrawbridge || asksForGate ? 'the drawbridge and gate behind you' : 'the drawbridge and gate behind you', feet: 100, note: 'The exact route through the street can shift that by about 20 feet.' };
+    case 'temple-bell':
+    case 'chapel-bell':
+      if (asksForBell || asksForTower) return { target: 'the bell tower', feet: 20, note: 'You are already at the chapel area.' };
+      if (asksForSquare) return { target: 'the village square', feet: 60, note: 'It is back through the nearby streets.' };
+      return { target: asksForDrawbridge || asksForGate ? 'the drawbridge and gate' : 'the drawbridge and gate', feet: 140, note: 'You would go back through the square and empty streets.' };
+    case 'nightstone-inn':
+      if (asksForSquare) return { target: 'the village square', feet: 40, note: 'It is nearby through the damaged street.' };
+      if (asksForBell) return { target: 'the chapel bell', feet: 90, note: 'The bell carries clearly from across the village.' };
+      return { target: asksForDrawbridge || asksForGate ? 'the drawbridge and gate' : 'the drawbridge and gate', feet: 120, note: 'The route leads back past the square.' };
+    case 'trading-post-and-windmill':
+      if (asksForSquare) return { target: 'the village square', feet: 60, note: 'The square remains the central landmark.' };
+      if (asksForBell) return { target: 'the chapel bell', feet: 100, note: 'The ringing is still easy to track by sound.' };
+      return { target: asksForDrawbridge || asksForGate ? 'the drawbridge and gate' : 'the drawbridge and gate', feet: 130, note: 'You can retrace the main village path.' };
+    case 'nandar-keep':
+      return { target: asksForDrawbridge || asksForGate ? 'the drawbridge and village gate' : 'the village gate', feet: 220, note: 'The moat and damaged bridge make the route awkward.' };
+    case 'trail-to-caves':
+    case 'cave-leads':
+      return { target: asksForDrawbridge || asksForGate || asksForSquare ? 'Nightstone behind you' : 'the cave trail ahead', feet: 300, note: 'You are now outside the village on the trail.' };
+    default:
+      return { target: 'the nearest clear landmark', feet: 30, note: 'This is an approximate table distance.' };
+  }
+}
+
+function explorationPositionHint(sceneId: string, input: string, activeChar: Character): string {
+  const distance = getDistanceHint(sceneId, input);
+  const distanceText =
+    distance.feet === 0
+      ? `You are already at ${distance.target}.`
+      : `You are about ${distance.feet} feet from ${distance.target}.`;
+  return `${distanceText} ${movementCostText(activeChar, Math.max(distance.feet, 1))} ${distance.note}`;
+}
+
+function explorationLocationSummary(sceneId: string): string {
+  switch (sceneId) {
+    case 'settlement-arrival':
+    case 'road-to-nightstone':
+      return 'You are on the road just outside Nightstone. The lowered drawbridge is ahead across the moat, with the open palisade gate and empty watchtowers beyond it.';
     case 'drawbridge-watchtowers':
     case 'open-palisade':
       return 'You are at the bridge and gate threshold. The road is behind you, the village streets are ahead, and the square lies only a short way inside the palisade.';
@@ -281,10 +385,19 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
       };
     }
 
+    if (isSelfDescriptionQuestion(input)) {
+      return {
+        engineRequests: [],
+        narration: describeActiveCharacter(activeChar),
+        needsResultBeforeNarrating: false,
+        ambient,
+      };
+    }
+
     if (isDistanceQuestion(input)) {
       return {
         engineRequests: [],
-        narration: explorationPositionHint(state.sceneId),
+        narration: explorationPositionHint(state.sceneId, input, activeChar),
         needsResultBeforeNarrating: false,
         ambient,
       };
@@ -312,7 +425,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
     if (isMovementOnly(input)) {
       return {
         engineRequests: [],
-        narration: `${explorationPositionHint(state.sceneId)} You can move there; tell me the destination if you want to commit, or inspect a specific clue if you want a roll.`,
+        narration: `${explorationLocationSummary(state.sceneId)} You can move there; tell me the destination if you want to commit, or inspect a specific clue if you want a roll.`,
         needsResultBeforeNarrating: false,
         ambient,
       };
