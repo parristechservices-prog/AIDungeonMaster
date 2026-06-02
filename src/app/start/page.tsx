@@ -124,6 +124,7 @@ function StartContent() {
       sessionStorage.setItem(
         'partyquest-opening',
         JSON.stringify({
+          sessionId: data.sessionId,
           opening: data.opening,
           title: data.title,
           adventureId: data.adventureId,

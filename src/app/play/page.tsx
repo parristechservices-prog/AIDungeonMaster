@@ -106,7 +106,8 @@ export default function PlayPage() {
     const openingRaw = sessionStorage.getItem('partyquest-opening');
     if (openingRaw) {
       try {
-        const { opening, title, adventureId: openingAdventureId, state: openingState, sceneId: openingSceneId, sceneGoal: openingSceneGoal, nextChoices } = JSON.parse(openingRaw) as {
+        const { sessionId: openingSessionId, opening, title, adventureId: openingAdventureId, state: openingState, sceneId: openingSceneId, sceneGoal: openingSceneGoal, nextChoices } = JSON.parse(openingRaw) as {
+          sessionId?: string;
           opening: string;
           title: string;
           adventureId?: string;
@@ -116,6 +117,7 @@ export default function PlayPage() {
           nextChoices?: string[];
         };
         sessionStorage.removeItem('partyquest-opening');
+        if (openingSessionId) setSessionId(openingSessionId);
         setAdventureTitle(title);
         setHistory([opening]);
         if (openingAdventureId) setAdventureId(openingAdventureId);
@@ -123,6 +125,9 @@ export default function PlayPage() {
         if (openingSceneId) setSceneId(openingSceneId);
         if (openingSceneGoal) setSceneGoal(openingSceneGoal);
         if (nextChoices) setChoices(nextChoices);
+        setMode('table_rules');
+        setAmbient('none');
+        return;
       } catch {
         setHistory(boot.history);
       }
