@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { generateDmTurn } from '@/lib/llm/provider';
 import { buildSystemPrompt } from '@/lib/llm/system-prompt';
+import { validateNarrationAgainstState } from '@/lib/llm/validate-narration';
 import { buildRecap } from '@/lib/game/recap';
 import { deriveDmTurnFromInput } from '@/lib/orchestrator/mock-dm';
 import { runTurn } from '@/lib/orchestrator/run-turn';
@@ -14,13 +15,16 @@ export async function POST(req: Request) {
 
   let state = getOrCreateSession(sessionId);
   const recentRecaps = getRecaps(sessionId).slice(-5);
-  const systemPrompt = buildSystemPrompt(state) + 
-    (recentRecaps.length > 0 ? `\n\n## RECENT CONVERSATION HISTORY\n${recentRecaps.map(r => `Turn ${r.turnNumber} Narration: ${r.narration}`).join('\n')}` : '');
+  const systemPrompt =
+    buildSystemPrompt(state) +
+    (recentRecaps.length > 0
+      ? `\n\n## RECENT CONVERSATION HISTORY\n${recentRecaps.map((r) => `Turn ${r.turnNumber} Narration: ${r.narration}`).join('\n')}`
+      : '');
 
   const aiTurn = await generateDmTurn({
-      systemPrompt,
-      playerInput,
-    });
+    systemPrompt,
+    playerInput,
+  });
   const fallbackUsed = !aiTurn;
   const rawTurn = aiTurn ?? deriveDmTurnFromInput(state, playerInput);
   const turn = runTurn(state, rawTurn, {
@@ -32,10 +36,15 @@ export async function POST(req: Request) {
 
   saveSession(state);
   const turnNumber = nextTurnNumber(sessionId);
-  
-  const narration = fallbackUsed
+
+  let narration = fallbackUsed
     ? `The wind shifts and the tale steadies itself. ${turn.response.narration}`
     : turn.response.narration;
+
+  const narrationWarnings = validateNarrationAgainstState(narration, state);
+  if (narrationWarnings.length > 0) {
+    writeDevLog({ type: 'narration_validation', sessionId, warnings: narrationWarnings });
+  }
 
   const recap = buildRecap({
     state,
@@ -51,7 +60,13 @@ export async function POST(req: Request) {
   });
   saveRecap(sessionId, recap);
 
-  const response = { ...turn.response, narration, sessionId, recap };
+  const response = {
+    ...turn.response,
+    narration,
+    narrationWarnings,
+    sessionId,
+    recap,
+  };
 
   writeDevLog({ type: 'turn', sessionId, playerInput, response });
 

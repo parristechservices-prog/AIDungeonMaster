@@ -14,7 +14,9 @@ export type TurnResult = {
   nextChoices: string[];
   nextHook: string;
   narration: string;
-  engineResults: Array<{ kind: string; summary: string; ok: boolean; breakdown?: unknown; critical?: boolean }>;
+  engineResults: Array<{ kind: string; summary: string; ok: boolean; breakdown?: import('@/lib/engine/types').RollBreakdown; critical?: boolean }>;
+  recentRolls: import('@/lib/engine/types').RollBreakdown[];
+  narrationWarnings?: string[];
   state: {
     player: {
       name: string;
@@ -99,6 +101,9 @@ export function runTurn(
   const sceneStarter = state.sceneId !== prevScene ? sceneData?.starter : undefined;
   const nextChoices = choicesForScene(state.sceneId);
   const nextHook = state.sceneId === 'ending' ? 'Your tale concludes at Brindlehook Inn.' : 'Choose your next action.';
+  const recentRolls = engineResults
+    .map((r) => r.breakdown)
+    .filter((b): b is NonNullable<typeof b> => Boolean(b));
 
   return {
     state,
@@ -114,6 +119,7 @@ export function runTurn(
       nextHook,
       narration: finalNarration,
       engineResults,
+      recentRolls,
       state: {
         player: {
         name: state.player.name,
