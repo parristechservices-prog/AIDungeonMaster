@@ -85,7 +85,9 @@ See `src/lib/config/features.ts` for roadmap toggles (voice, multiplayer, cloud 
 - `docs/v0-feature-spec.md` — scope and done criteria
 - `docs/ai-dm-app-gaps-and-next-steps.md` — longer-term product gaps
 - `docs/dm-prompt-design.md` — prompt design notes
-- `docs/TEN_IMPROVEMENTS.md` — 10 ways to improve the app (Brainstormed)
+- `docs/audit-2026-06-02.md` — deep-dive audit (mock play-test, API, gaps matrix)
+- `docs/full-improvement-plan.md` — improvement roadmap by product surface
+- `docs/TEN_IMPROVEMENTS.md` — brainstormed ideas (see audit for implementation status)
 
 ## License
 
