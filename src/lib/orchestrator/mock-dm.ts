@@ -242,10 +242,18 @@ function shouldAdvanceByMovement(sceneId: string, input: string): boolean {
     return input.includes('drawbridge') || input.includes('bridge') || input.includes('gate') || input.includes('enter') || input.includes('cross');
   }
   if (sceneId === 'road-to-nightstone') {
-    return input.includes('gate') || input.includes('palisade') || input.includes('enter') || input.includes('village');
+    return (
+      input.includes('drawbridge') ||
+      input.includes('bridge') ||
+      input.includes('gate') ||
+      input.includes('palisade') ||
+      input.includes('enter') ||
+      input.includes('cross') ||
+      input.includes('village')
+    );
   }
   if (sceneId === 'drawbridge-watchtowers' || sceneId === 'open-palisade') {
-    return input.includes('village') || input.includes('square') || input.includes('enter') || input.includes('inside');
+    return input.includes('village') || input.includes('square') || input.includes('enter') || input.includes('inside') || input.includes('cross');
   }
   return false;
 }

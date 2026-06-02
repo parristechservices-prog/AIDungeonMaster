@@ -41,6 +41,18 @@ describe('skt-nightstone-chapter1 template', () => {
     expect(turn.narration.toLowerCase()).toContain('drawbridge');
   });
 
+  it('advances the scene when the player crosses the drawbridge', () => {
+    const state = createInitialState('test-chapter1-look', {
+      adventureId: 'skt-nightstone-chapter1',
+      characterIds: ['fighter'],
+    });
+
+    const turn = deriveDmTurnFromInput(state, 'I cross the drawbridge');
+
+    expect(turn.engineRequests).toEqual([{ kind: 'advance_scene' }]);
+    expect(turn.narration.toLowerCase()).toContain('move carefully');
+  });
+
   it('hides future Chapter 1 NPCs until their scenes', () => {
     const adventure = getAdventure('skt-nightstone-chapter1');
 
