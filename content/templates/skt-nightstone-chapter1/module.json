@@ -7,7 +7,7 @@
   "recommendedCharacters": ["fighter", "ranger", "rogue", "cleric", "wizard"],
   "levelRange": [1, 5],
   "sourceNote": "Not official WotC content. This is an original scaffold inspired by the Nightstone chapter; use your owned book/PDF for exact narration, maps, treasure, and stat blocks.",
-  "campaignGuide": "Use this expanded Chapter 1 template to run Nightstone as a connected investigation and rescue. Open the village slowly, avoid inventing an organized guard force, and let the ringing bell be a clue, not a welcome signal. The villagers fled toward the hills and were captured by goblins in the caves. The tower of Zephyros appears after the rescue and moves the story from village aftermath into the giant conflict. Keep the book outside version control and use it for exact room keys, names, and future giant politics.",
+  "campaignGuide": "Use this expanded Chapter 1 template to run Nightstone as a connected investigation and rescue. Open the village slowly, avoid inventing an organized guard force, and let the ringing bell be a clue, not a welcome signal. Nightstone is abandoned by villagers but not empty: two worgs are feeding in the square, two goblins are ringing the chapel bell, and scattered goblin looters occupy towers, farms, the inn pantry, the trading post, and the windmill. The villagers fled toward the hills and were captured by goblins in the caves. The tower of Zephyros appears after the rescue and moves the story from village aftermath into the giant conflict. Keep the book outside version control and use it for exact room keys, names, and future giant politics.",
   "playConfig": {
     "defaultLevel": 2,
     "partySize": 1,
@@ -68,20 +68,20 @@
         "Search for hidden tracks",
         "Call into the village"
       ],
-      "guidance": "This scene is about the first impression of Nightstone. The defenders did not greet the party; the place feels abandoned and unsafe. If the party searches, let them find evidence of people fleeing and something large striking the village. Guide them toward the village square or the chapel bell rather than into random buildings."
+      "guidance": "This scene is about the first impression of Nightstone. The defenders did not greet the party; the place feels abandoned and unsafe. If the party searches, let them find evidence of people fleeing, something large striking the village, and goblin-sized tracks near the gate and towers. There is one goblin looter in the east tower and two in the southeast tower if the party searches those towers closely. Guide them toward the village square or the chapel bell rather than into random buildings."
     },
     "village-square": {
-      "kind": "exploration",
+      "kind": "combat",
       "goal": "Discover the missing megalith, damaged homes, and a pattern of forced evacuation.",
-      "starter": "The village square is littered with smashed stone and overturned carts. A wide patch of bare earth marks where the central megalith once stood.",
+      "starter": "The village square is littered with smashed stone and overturned carts. Two worgs snarl over a dead dog near the open center, where a wide patch of bare earth marks where the central megalith once stood.",
       "choices": [
-        "Inspect the megalith site",
-        "Search the ruined cottages",
-        "Look for bodies or dropped supplies",
-        "Check the inn or stable",
-        "Follow the bell sound"
+        "Face the two worgs",
+        "Back toward the gate",
+        "Circle toward cover",
+        "Study the empty megalith site",
+        "Listen for nearby goblins"
       ],
-      "guidance": "Use this scene to show that Nightstone was attacked from above and that the villagers fled. Do not invent new reasons for the evacuation; keep it consistent with giants and panic. A successful Investigation or History check can reveal that the stone was removed or shattered, and that the damage came from a powerful force. Keep official location names vague and refer the player to their book for exact maps and treasures."
+      "guidance": "Use this scene to show that Nightstone was attacked from above and that the villagers fled, but do not present it as an empty safe square. Two worgs are present in the square and attack intruders. After the worg threat is handled, investigation can reveal that the stone is gone, the damage came from a powerful aerial bombardment, and the villagers fled rather than defended the settlement. If combat gets loud after the bell has been stopped, nearby goblin looters may investigate from adjacent locations. Keep official location names vague and refer the player to their book for exact maps and treasures."
     },
     "chapel-bell": {
       "kind": "exploration",
@@ -94,7 +94,7 @@
         "Call out from the doorway",
         "Check nearby houses"
       ],
-      "guidance": "The bell should feel eerie. If the party approaches carefully, let them notice that the ringing continues despite no obvious guard force. It can hint that someone is trapped or that the place is watched. Use a Stealth or Perception check to detect movement; use the book for exact text if the party finds a clue or a hidden survivor. Once the bell's meaning is clear, move the story along."
+      "guidance": "The bell should feel eerie. The cause is specific: two goblins in the chapel/steeple area are playing with the bell rope. If the party approaches carefully, let them notice that the ringing continues despite no obvious guard force. Use Stealth or Perception to detect the goblins before they notice the party. Once the bell is silenced or its meaning is clear, move the story along."
     },
     "goblin-scouts": {
       "kind": "combat",
@@ -107,7 +107,7 @@
         "Attempt to capture one alive",
         "Let them flee and follow" 
       ],
-      "guidance": "Run the goblins as opportunistic looters using the abandoned village. They may fight, flee, or bargain. At least one should reveal that the villagers ran toward the hills and that goblins took captives into nearby caves. This scene should transition the party from village exploration into the rescue path."
+      "guidance": "Run the goblins as opportunistic looters using the abandoned village. They may fight, flee, or bargain. Concrete looter count for the DM: one goblin in the east tower, two in the southeast tower, two in the Southwell farm yard, two at the Nesper farm, one in the stable hayloft, one in the inn kitchen or pantry, one in the trading post, two in the windmill, and two in the chapel/steeple bell scene. At least one captured goblin should reveal that the villagers ran toward the hills and that goblins took captives into nearby caves. This scene should transition the party from village exploration into the rescue path."
     },
     "trail-to-caves": {
       "kind": "exploration",
@@ -150,6 +150,9 @@
     }
   },
   "sceneEncounters": {
+    "village-square": {
+      "templates": ["worg", "worg"]
+    },
     "goblin-scouts": {
       "templates": ["goblin", "goblin"],
       "difficulty": "easy"

@@ -7,7 +7,7 @@
   "recommendedCharacters": ["fighter", "cleric", "rogue", "wizard"],
   "levelRange": [1, 5],
   "sourceNote": "Not official WotC content. Paraphrased play scaffold only; use your owned book/PDF for boxed text, maps, exact room keys, treasure, and stat blocks.",
-  "campaignGuide": "Run Chapter 1 as an investigation of an abandoned village after a giant attack. Do not invent a welcoming leader at the gate. Nightstone is quiet except for a ringing bell; the drawbridge is down; the palisade entrance is open; the keep and bridge show major impact damage; the central megalith is missing from the village square. Survivors fled toward nearby caves and were captured by goblins. Goblins have entered the abandoned village to loot it. A hidden Zhentarim agent and her allies can complicate the village before an orc raid pushes the party toward the cave rescue. Use the owner's PDF for exact read-aloud, maps, room details, names you want at the table, treasure, and stat blocks. Log important discoveries as canon facts.",
+  "campaignGuide": "Run Chapter 1 as an investigation of an abandoned village after a giant attack. Do not invent a welcoming leader at the gate. Nightstone is quiet except for a ringing bell; the drawbridge is down; the palisade entrance is open; the keep and bridge show major impact damage; the central megalith is missing from the village square. Nightstone is not empty: two worgs are feeding in the square, two goblins are ringing the temple bell, and scattered goblin looters occupy towers, farms, the inn pantry, the trading post, and the windmill. Survivors fled toward nearby caves and were captured by goblins. A hidden Zhentarim agent and her allies can complicate the village before an orc raid pushes the party toward the cave rescue. Use the owner's PDF for exact read-aloud, maps, room details, names you want at the table, treasure, and stat blocks. Log important discoveries as canon facts.",
   "playConfig": {
     "defaultLevel": 1,
     "partySize": 1,
@@ -96,42 +96,42 @@
       "goal": "Secure the entrance and confirm the first signs of recent looting.",
       "starter": "The drawbridge creaks underfoot. Empty watchtowers overlook the muddy road and the open gap in the palisade.",
       "choices": ["Search the towers", "Check the drawbridge controls", "Look for sentries", "Examine small tracks", "Enter the village quietly"],
-      "guidance": "Use this scene for the drawbridge and watchtower approach. The bridge is down and the towers are not properly guarded. Look for goblin-sized tracks, signs of hurried movement, and possible loot dropped near the entrance. No human defenders respond. Good checks: Perception DC 10 to notice movement or signs of looters; Investigation DC 12 to read the bridge/tower scene; Stealth DC 12 if the party wants to enter unseen. Advance after the entrance is secured."
+      "guidance": "Use this scene for the drawbridge and watchtower approach. The bridge is down and the towers are not properly guarded. No human defenders respond. There are goblin looters nearby: one in the east tower and two in the southeast tower, with small tracks and stolen trinkets as evidence. Good checks: Perception DC 10 to notice movement or signs of looters; Investigation DC 12 to read the bridge/tower scene; Stealth DC 12 if the party wants to enter unseen. Advance after the entrance is secured or the party pushes into the square."
     },
     "village-square": {
-      "kind": "exploration",
+      "kind": "combat",
       "goal": "Discover the missing nightstone and evidence of a giant bombardment.",
-      "starter": "Inside the palisade, the village square is scarred by fallen rocks. A conspicuous empty space marks where a great stone once stood.",
-      "choices": ["Examine the empty space", "Search damaged cottages", "Inspect fallen rocks", "Look for bodies or survivors", "Follow fresh tracks"],
-      "guidance": "Keep this as investigation, not a social briefing. Reveal that a large central megalith is gone, buildings were struck from above, and the inhabitants appear to have fled rather than formed a defense. The missing stone is a central mystery; avoid explaining everything until the party gathers more clues. Arcana, History, Investigation, Nature, or Perception DC 10-15 can identify useful clues. Point the user to their PDF for exact map areas, room keys, and treasure."
+      "starter": "Inside the palisade, the village square is scarred by fallen rocks. Two worgs snarl over a dead dog near the square while a conspicuous empty space marks where a great stone once stood.",
+      "choices": ["Face the two worgs", "Back toward the gate", "Circle toward cover", "Study the empty stone site", "Listen for nearby goblins"],
+      "guidance": "This is an immediate danger scene, not a quiet empty square. Two worgs are in the square and attack intruders. The square also contains the muddy hole or bare space where the nightstone once stood, a nearby well, fallen rocks, damaged cottages, and evidence that the megalith was taken after bombardment from above. If combat gets loud after the temple bell is silenced, nearby goblin looters from the farmyard and trading post can investigate and shoot from the edges. After the worg threat is handled, let Arcana, History, Investigation, Nature, or Perception DC 10-15 reveal the giant bombardment clues, the missing central stone, and the villagers' flight north."
     },
     "temple-bell": {
       "kind": "exploration",
       "goal": "Trace the bell and learn that the noise is not a normal alarm response.",
       "starter": "The bell keeps ringing from the village temple, too steady and lonely to sound like an organized warning.",
       "choices": ["Enter the temple", "Climb toward the bell", "Call out from the doorway", "Search nearby rooms", "Set a watch outside"],
-      "guidance": "The bell should feel like an eerie clue, not a summons from authorities. If the party calls out, no village leader answers. Use cautious exploration and simple checks to reveal whether creatures or hazards are nearby. The temple and nearby graveyards can reinforce that the village was hit abruptly and abandoned. Use advance_scene once the party understands the bell is part of the abandoned-village mystery."
+      "guidance": "The bell should feel like an eerie clue, not a summons from authorities. If the party calls out, no village leader answers. The source is two goblins in the temple/steeple area playing with the bell rope, not a trapped innkeeper or organized alarm. The temple and nearby graveyards can reinforce that the village was hit abruptly and abandoned. Use cautious exploration, Stealth, or Perception to approach before the goblins notice the party. Use advance_scene once the bell is silenced or its cause is understood."
     },
     "nightstone-inn": {
       "kind": "social",
       "goal": "Investigate the inn and uncover the hidden agent waiting for outside allies.",
       "starter": "The inn is too quiet for a village in crisis. One upstairs room shows signs of recent occupation.",
       "choices": ["Search guest rooms", "Call for survivors", "Question the lone guest", "Look for secret messages", "Watch the road"],
-      "guidance": "This scene represents the inn and Kella Darkhope thread. A lone guest/spy may pretend to be an innocent survivor while waiting for Zhentarim allies. She should be wary, evasive, and plausible rather than immediately hostile. Insight opposed by Deception, Investigation, or careful roleplay can expose the lie. If the party treats her well, she may stall; if discovered, she tries to survive until allies arrive. Use the owner's PDF for exact name, room, message, and treasure details."
+      "guidance": "This scene represents the inn and Kella Darkhope thread. A lone guest/spy may pretend to be an innocent survivor while waiting for Zhentarim allies. She should be wary, evasive, and plausible rather than immediately hostile. The inn should not be a normal staffed tavern: no innkeeper is working the room, one goblin is looting in the kitchen or pantry area, and a dead goblin plus a fresh missile clue can point to Kella's cover story. Insight opposed by Deception, Investigation, or careful roleplay can expose the lie. If the party treats her well, she may stall; if discovered, she tries to survive until allies arrive. Use the owner's PDF for exact name, room, message, and treasure details."
     },
     "trading-post-and-windmill": {
       "kind": "exploration",
       "goal": "Search the village services for signs of evacuation, looting, and useful supplies.",
       "starter": "The trading post and windmill stand silent, their doors and storage areas disturbed by hurried hands.",
       "choices": ["Check the trading post", "Inspect the windmill", "Search for useful supplies", "Look for survivor notes", "Avoid disturbing property"],
-      "guidance": "Use this scene to cover the trading post, windmill, stables, residences, and similar village locations without exhaustive room-by-room play. The important beats are abandonment, recent looting, signs that villagers fled fast, and optional supplies if the DM allows them. Keep treasure exactness in the owner's PDF. Investigation DC 12 can distinguish goblin looting from panicked evacuation."
+      "guidance": "Use this scene to cover the trading post, windmill, stables, residences, and similar village locations without exhaustive room-by-room play. The important beats are abandonment, recent looting, signs that villagers fled fast, and optional supplies if the DM allows them. Keep treasure exactness in the owner's PDF. Concrete looter count for the DM: two goblins in the Southwell farm yard, two at the Nesper farm, one in the stable hayloft, one in the trading post, and two in the windmill. Investigation DC 12 can distinguish goblin looting from panicked evacuation."
     },
     "nandar-keep": {
       "kind": "exploration",
       "goal": "Reach the damaged keep and learn the fate of Nightstone's leadership.",
       "starter": "Across the water, the keep rises from its hill in broken silhouette. The bridge to it is damaged, and part of the structure has collapsed.",
       "choices": ["Find a way across", "Inspect the broken bridge", "Enter the keep", "Search the great hall", "Recover noble records"],
-      "guidance": "Use this scene for the bridge, gate, bailey, and Nandar Keep. Establish that the keep was badly damaged by rocks from above and that Lady Velrosa Nandar is dead. The party can learn about local leadership, House Nandar history, and the political vacuum. Use checks for crossing damaged access, searching rubble, and respectfully handling noble remains. Keep exact rooms, treasure, ring/chest/library details in the owner's PDF."
+      "guidance": "Use this scene for the bridge, gate, bailey, and Nandar Keep. Establish that the keep was badly damaged by rocks from above, the access bridge is broken, Lady Velrosa Nandar is dead, and surviving guards are still inside. Those guards are a key information source: they can explain that cloud giants attacked from above, removed the nightstone, and left the village leaderless while villagers fled north toward the caves. Use checks for crossing damaged access, searching rubble, and respectfully handling noble remains. Keep exact rooms, treasure, ring/chest/library details in the owner's PDF."
     },
     "seven-snakes": {
       "kind": "social",
@@ -240,6 +240,9 @@
     }
   },
   "sceneEncounters": {
+    "village-square": {
+      "templates": ["worg", "worg"]
+    },
     "ear-seekers": {
       "templates": ["orc", "orc"]
     },

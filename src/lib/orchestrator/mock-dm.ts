@@ -464,6 +464,21 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
     };
   }
 
+  if (isPassiveObservation(input)) {
+    const living = state.monsters.filter((m) => m.hp > 0);
+    const enemyText =
+      living.length > 0
+        ? `Visible enemies: ${living.map((m) => m.name).join(', ')}.`
+        : 'No active enemies are visible.';
+    const scene = getPlayableScene(adventure, state.sceneId);
+    return {
+      engineRequests: [],
+      narration: `${scene?.starter ?? 'Combat is underway.'} ${enemyText} Decide whether to fight, retreat, take cover, or try a risky interaction.`,
+      needsResultBeforeNarrating: false,
+      ambient: 'combat',
+    };
+  }
+
   if (input.includes('attack') || input.includes('strike') || input.includes('hit')) {
     const living = state.monsters.find((m) => m.hp > 0);
     return {
@@ -474,9 +489,13 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
     };
   }
 
+  const living = state.monsters.filter((m) => m.hp > 0);
   return {
     engineRequests: [],
-    narration: 'The moment hangs — what do you do?',
+    narration:
+      living.length > 0
+        ? `${living.map((m) => m.name).join(' and ')} threaten the area. Choose an action: attack, retreat, take cover, or try something risky.`
+        : 'The immediate threat is down. Choose your next action.',
     needsResultBeforeNarrating: false,
     ambient: 'combat',
   };

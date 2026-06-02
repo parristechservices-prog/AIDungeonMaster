@@ -17,7 +17,7 @@ describe('SKT encounter spawning', () => {
     expect(state.monsters).toHaveLength(0);
   });
 
-  it('spawns monsters when advancing to the first combat scene', () => {
+  it('spawns the two square worgs when advancing to the first combat scene', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.5);
 
     let state = createInitialState('enc-2', {
@@ -29,8 +29,8 @@ describe('SKT encounter spawning', () => {
     while (getSceneKind(adventure, state.sceneId) !== 'combat') {
       state = advanceScene(state);
     }
-    expect(state.sceneId).toBe('ear-seekers');
-    expect(state.monsters.length).toBeGreaterThan(0);
-    expect(state.monsters.some((m) => m.name.toLowerCase().includes('orc'))).toBe(true);
+    expect(state.sceneId).toBe('village-square');
+    expect(state.monsters).toHaveLength(2);
+    expect(state.monsters.every((m) => m.name.toLowerCase() === 'worg')).toBe(true);
   });
 });

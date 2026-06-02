@@ -30,6 +30,15 @@ export const MONSTER_LIBRARY: Record<string, MonsterTemplate> = {
     cr: 0.25,
     conditions: [],
   },
+  worg: {
+    name: 'Worg',
+    ac: 13,
+    maxHp: 26,
+    attackBonus: 5,
+    damage: '2d6+3',
+    cr: 0.5,
+    conditions: [],
+  },
   orc: {
     name: 'Orc',
     ac: 13,
