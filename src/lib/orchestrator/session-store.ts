@@ -19,7 +19,7 @@ if (!IS_VERCEL) {
 const sessions = new Map<string, GameState>();
 const turnCounters = new Map<string, number>();
 const latestRecaps = new Map<string, PartyQuestRecap[]>();
-const pendingTurns = new Map<string, any>();
+const pendingTurns = new Map<string, unknown>();
 
 function getSessionPath(sessionId: string) { return path.join(STORAGE_DIR, `session-${sessionId}.json`); }
 function getRecapsPath(sessionId: string) { return path.join(STORAGE_DIR, `recaps-${sessionId}.json`); }
@@ -120,11 +120,11 @@ export function saveRecap(sessionId: string, recap: PartyQuestRecap): void {
   }
 }
 
-export function savePendingTurn(sessionId: string, turn: any): void {
+export function savePendingTurn(sessionId: string, turn: unknown): void {
   pendingTurns.set(sessionId, turn);
 }
 
-export function getPendingTurn(sessionId: string): any {
+export function getPendingTurn(sessionId: string): unknown {
   return pendingTurns.get(sessionId);
 }
 

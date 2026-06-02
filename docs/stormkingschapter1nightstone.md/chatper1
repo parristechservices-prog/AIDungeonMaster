@@ -1,0 +1,42 @@
+It currently matches **very loosely**. It is a placeholder SKT-flavored scaffold, not a faithful Chapter 1 Nightstone scene.
+
+Main mismatches:
+
+- **Wrong scene type:** current scene is `social`, but actual Nightstone arrival is mostly **exploration/investigation**. The village appears abandoned.
+- **Wrong NPC assumption:** the app invents “the settlement leader” waiting to talk. In the actual arrival, there should not be a leader greeting you at the gate.
+- **Wrong suggested actions:** “Talk to guards at the gate” does not match, because the warning signs are that the settlement is quiet/unguarded.
+- **Missing key arrival details:** river/moat, palisade, lowered drawbridge, open gap, watchtowers, windmill, steeple, rooftops, collapsed keep/bridge, and the bell as the only activity.
+- **Missing actual mystery setup:** cloud giant bombardment, missing nightstone, villagers fled, goblins entered after the attack, villagers are in the caves.
+- **Wrong tone/audio:** Tavern mood is wrong. It should be eerie village/exploration.
+- **Placeholder NPCs:** `YOUR NOTE: leader name` and `YOUR NOTE: witness name` make it feel unfinished.
+- **Bad fallback behavior:** “the settlement leader waits...” is generic mock-DM logic and actively contradicts the scene.
+
+How to make it match more:
+
+1. Change `settlement-arrival` from `social` to `exploration`.
+2. Replace the starter with a **paraphrased** Nightstone approach, not copied boxed text, since this repo/deployment should not ship book prose.
+3. Remove leader/witness NPCs from the first scene.
+4. Add scene guidance like:
+   - Nightstone is quiet except for the bell.
+   - The drawbridge is down.
+   - No guards are visible.
+   - Two watchtowers flank an open palisade gap.
+   - The keep and bridge are damaged.
+   - Let Perception/Investigation reveal bombardment damage and absence of villagers.
+5. Suggested actions should become:
+   - Cross the drawbridge
+   - Inspect the watchtowers
+   - Follow the bell
+   - Examine the damaged keep
+   - Search for tracks or survivors
+6. Split Chapter 1 into more scenes:
+   - Approach Nightstone
+   - Village square / missing nightstone
+   - Ringing bell source
+   - Goblin looters
+   - Clues to Dripping Caves
+   - Dripping Caves rescue
+   - Tower of Zephyros
+7. Update mock DM so “I greet them” in an abandoned scene responds with silence/no answer, not a leader.
+
+Best approach: keep exact boxed text in your local PDF only, but put strong paraphrased scene notes into the private module or template so the app behaves like SKT without redistributing the book text.

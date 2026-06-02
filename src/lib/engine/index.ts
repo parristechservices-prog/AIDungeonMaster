@@ -1,6 +1,6 @@
 import { getSceneKind } from '@/lib/game/adventures/helpers';
 import { getAdventure } from '@/lib/game/adventures/registry.server';
-import type { GameState, Character, Monster } from '@/lib/game/types';
+import type { GameState, Character } from '@/lib/game/types';
 import { advanceScene } from '@/lib/game/state';
 import type { EngineRequest, EngineResult, RollBreakdown } from './types';
 
@@ -33,7 +33,7 @@ export function resolveEngineRequest(
 
       const mod = char.skills[request.skill] ?? 0;
       
-      let advantage = request.advantage;
+      const advantage = request.advantage;
       let disadvantage = request.disadvantage;
       let bonusFormula = undefined;
 
@@ -244,9 +244,7 @@ export function resolveEngineRequest(
         msg = 'Failure. Marks 1 failure.';
       }
 
-      let dead = false;
       if (failure >= 3) {
-        dead = true;
         msg += ' Has died.';
       } else if (success >= 3) {
         success = 0;

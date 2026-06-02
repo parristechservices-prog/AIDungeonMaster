@@ -191,7 +191,7 @@ export function CharacterSheet({ state }: Props) {
           {state.canonLog?.length > 0 ? (
             state.canonLog.map((f) => (
               <p key={f.id} className="mb-2 text-[11px] text-zinc-600 dark:text-zinc-400 italic">
-                "{f.content}"
+                &quot;{f.content}&quot;
               </p>
             ))
           ) : (

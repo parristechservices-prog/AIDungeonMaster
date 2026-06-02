@@ -61,9 +61,9 @@ export function readPlayBootstrap(): PlayBootstrap {
       const snapshot = loadClientSnapshot(id);
       if (snapshot?.state) {
         const aid = snapshot.adventureId ?? DEFAULT_ADVENTURE_ID;
-        const rawState = snapshot.state as Partial<PlayBootstrap['state']> & { player?: any };
-        const party = rawState.party ?? (rawState.player ? [rawState.player] : []);
-        const activeCharacterId = rawState.activeCharacterId ?? party[0]?.id ?? '';
+        const rawState = snapshot.state as Partial<PlayBootstrap['state']> & { player?: unknown };
+        const party = (rawState.party as any[]) ?? (rawState.player ? [rawState.player as any] : []);
+        const activeCharacterId = rawState.activeCharacterId ?? (party[0] as any)?.id ?? '';
         const migratedState = {
           ...rawState,
           party,
