@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   saveSession(state);
   const turnNumber = nextTurnNumber(sessionId);
 
-  let narration = fallbackUsed
+  const narration = fallbackUsed
     ? `The wind shifts and the tale steadies itself. ${turn.response.narration}`
     : turn.response.narration;
 

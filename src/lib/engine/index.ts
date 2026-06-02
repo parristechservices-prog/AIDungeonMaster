@@ -128,7 +128,7 @@ export function resolveEngineRequest(state: GameState, request: EngineRequest): 
       return { state: { ...state, canonLog: [...state.canonLog, fact] }, result: { ok: true, summary: 'Added canon fact.' } };
     }
     case 'update_inventory': {
-      let gold = state.player.gold + (request.goldDelta ?? 0);
+      const gold = state.player.gold + (request.goldDelta ?? 0);
       let inventory = [...state.player.inventory];
       
       if (request.add) {

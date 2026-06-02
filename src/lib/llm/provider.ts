@@ -1,34 +1,5 @@
 import { dmTurnSchema, type DmTurn } from './contracts';
 
-const responseSchema = {
-  type: 'object',
-  additionalProperties: false,
-  properties: {
-    engineRequests: {
-      type: 'array',
-      items: {
-        oneOf: [
-          { type: 'object', additionalProperties: false, properties: { kind: { const: 'skill_check' }, skill: { type: 'string' }, dc: { type: 'integer' }, reason: { type: 'string' } }, required: ['kind', 'skill', 'dc', 'reason'] },
-          { type: 'object', additionalProperties: false, properties: { kind: { const: 'start_combat' } }, required: ['kind'] },
-          { type: 'object', additionalProperties: false, properties: { kind: { const: 'player_attack' }, targetId: { type: 'string' } }, required: ['kind', 'targetId'] },
-          { type: 'object', additionalProperties: false, properties: { kind: { const: 'monster_turn' } }, required: ['kind'] },
-          { type: 'object', additionalProperties: false, properties: { kind: { const: 'use_feature' }, featureId: { type: 'string' } }, required: ['kind', 'featureId'] },
-          { type: 'object', additionalProperties: false, properties: { kind: { const: 'cast_spell' }, spellName: { type: 'string' }, level: { type: 'integer' }, targetId: { type: 'string' } }, required: ['kind', 'spellName', 'level'] },
-          { type: 'object', additionalProperties: false, properties: { kind: { const: 'short_rest' } }, required: ['kind'] },
-          { type: 'object', additionalProperties: false, properties: { kind: { const: 'long_rest' } }, required: ['kind'] },
-          { type: 'object', additionalProperties: false, properties: { kind: { const: 'update_npc' }, npcId: { type: 'string' }, disposition: { type: 'string', enum: ['friendly', 'neutral', 'hostile'] }, knowledge: { type: 'string' } }, required: ['kind', 'npcId'] },
-          { type: 'object', additionalProperties: false, properties: { kind: { const: 'add_canon_fact' }, content: { type: 'string' }, importance: { type: 'string', enum: ['low', 'medium', 'high'] } }, required: ['kind', 'content', 'importance'] },
-          { type: 'object', additionalProperties: false, properties: { kind: { const: 'update_inventory' }, add: { type: 'array', items: { type: 'string' } }, remove: { type: 'array', items: { type: 'string' } }, goldDelta: { type: 'integer' } }, required: ['kind'] },
-        ],
-      },
-      maxItems: 5,
-    },
-    narration: { type: 'string' },
-    needsResultBeforeNarrating: { type: 'boolean' },
-  },
-  required: ['engineRequests', 'narration', 'needsResultBeforeNarrating'],
-} as const;
-
 type Input = { systemPrompt: string; playerInput: string };
 
 export async function generateDmTurn(input: Input): Promise<DmTurn | null> {
@@ -52,8 +23,8 @@ async function generateWithGroq(input: Input): Promise<DmTurn | null> {
   }
 
   const useLightMode = (process.env.PARTYQUEST_LLM_MODE ?? '').toLowerCase() === 'light';
-  const defaultModel = 'llama-3.3-70b-versatile';
-  const model = process.env.GROQ_MODEL ?? defaultModel;
+  const model =
+    process.env.GROQ_MODEL ?? (useLightMode ? 'llama-3.1-8b-instant' : 'llama-3.3-70b-versatile');
 
   try {
     const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {

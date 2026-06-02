@@ -4,38 +4,37 @@ import { useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark';
 
+function readTheme(): Theme {
+  if (typeof window === 'undefined') return 'light';
+  const saved = localStorage.getItem('partyquest-theme') as Theme | null;
+  if (saved === 'light' || saved === 'dark') return saved;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function applyTheme(next: Theme) {
+  document.documentElement.classList.remove('light', 'dark');
+  document.documentElement.classList.add(next);
+  localStorage.setItem('partyquest-theme', next);
+}
+
 export function ThemeToggle() {
-  const [mounted, setMounted] = useState(false);
   const [theme, setTheme] = useState<Theme>('light');
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    const saved = localStorage.getItem('partyquest-theme') as Theme | null;
-    const initial = saved ?? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const initial = readTheme();
+    applyTheme(initial);
     setTheme(initial);
+    setReady(true);
   }, []);
-
-  const applyTheme = (next: Theme) => {
-    if (typeof window === 'undefined') return;
-    document.documentElement.classList.remove('light', 'dark');
-    document.documentElement.classList.add(next);
-    localStorage.setItem('partyquest-theme', next);
-  };
-
-  useEffect(() => {
-    if (mounted) {
-      applyTheme(theme);
-    }
-  }, [theme, mounted]);
 
   function toggle() {
     const next: Theme = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
+    applyTheme(next);
   }
 
-  if (!mounted) {
-    return null;
-  }
+  if (!ready) return null;
 
   return (
     <button

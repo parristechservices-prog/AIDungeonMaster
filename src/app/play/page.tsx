@@ -12,12 +12,9 @@ import { OnboardingBanner } from '@/components/play/OnboardingBanner';
 import { isFeatureEnabled } from '@/lib/config/features';
 import { oneShot } from '@/lib/game/one-shot';
 import type { TurnResponse } from '@/lib/play/types';
-import { loadClientSnapshot, saveClientSnapshot } from '@/lib/persistence/client-snapshot';
+import { saveClientSnapshot } from '@/lib/persistence/client-snapshot';
 import type { RollBreakdown } from '@/lib/engine/types';
-
-function newSessionId(): string {
-  return `sess-${crypto.randomUUID().slice(0, 8)}`;
-}
+import { newSessionId, readPlayBootstrap } from '@/lib/play/bootstrap';
 
 export default function PlayPage() {
   const [sessionId, setSessionId] = useState('');
@@ -35,32 +32,14 @@ export default function PlayPage() {
   const [warnings, setWarnings] = useState<string[]>([]);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('partyquest-session-id');
-      const id = saved ?? newSessionId();
-      if (!saved) localStorage.setItem('partyquest-session-id', id);
-      setSessionId(id);
-
-      if (isFeatureEnabled('clientSessionSnapshot')) {
-        const snapshot = loadClientSnapshot(id);
-        if (snapshot?.state) {
-          setState(snapshot.state);
-          setSceneId(snapshot.sceneId);
-          setSceneGoal(snapshot.sceneGoal);
-          setMode(snapshot.mode);
-          setChoices(snapshot.nextChoices);
-          setHistory([oneShot.scenes.social.starter, '(Resumed from last visit.)']);
-        } else {
-          setHistory([oneShot.scenes.social.starter]);
-        }
-      } else {
-        setHistory([oneShot.scenes.social.starter]);
-      }
-    } catch {
-      const id = newSessionId();
-      setSessionId(id);
-      setHistory([oneShot.scenes.social.starter]);
-    }
+    const boot = readPlayBootstrap();
+    setSessionId(boot.sessionId);
+    setHistory(boot.history);
+    setState(boot.state);
+    setSceneId(boot.sceneId);
+    setSceneGoal(boot.sceneGoal);
+    setMode(boot.mode);
+    setChoices(boot.choices);
   }, []);
 
   const sendTurn = useCallback(
