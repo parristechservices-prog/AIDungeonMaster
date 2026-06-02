@@ -1,21 +1,20 @@
 import type { DmTurn } from '@/lib/llm/contracts';
+import { getScenario } from '@/lib/game/scenarios';
 import type { GameState } from '@/lib/game/types';
 
 export function deriveDmTurnFromInput(state: GameState, playerInput: string): DmTurn {
   const input = playerInput.toLowerCase();
+  const scenario = getScenario(state.adventureId);
+  const mock = scenario.mock;
 
-  // Meta-questions about stats or skills
   if (input.includes('perception') || input.includes('skill') || input.includes('stat') || input.includes('ability')) {
-    const skillName = (['perception', 'stealth', 'athletics', 'persuasion', 'insight', 'investigation'] as const)
-      .find(s => input.includes(s));
-    
-    let info = '';
-    if (skillName) {
-      const bonus = state.player.skills[skillName] ?? 0;
-      info = `Your ${skillName} skill bonus is +${bonus}.`;
-    } else {
-      info = `You have ${state.player.hp}/${state.player.maxHp} HP and an AC of ${state.player.ac}.`;
-    }
+    const skillName = (
+      ['perception', 'stealth', 'athletics', 'persuasion', 'insight', 'investigation', 'religion', 'deception'] as const
+    ).find((s) => input.includes(s));
+
+    const info = skillName
+      ? `Your ${skillName} skill bonus is +${state.player.skills[skillName] ?? 0}.`
+      : `You have ${state.player.hp}/${state.player.maxHp} HP and AC ${state.player.ac}.`;
 
     return {
       engineRequests: [],
@@ -24,50 +23,76 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
     };
   }
 
-  // Social Scene logic
+  const feature = state.player.features.find(
+    (f) => input.includes(f.id.replace(/_/g, ' ')) || input.includes(f.name.toLowerCase()),
+  );
+  if (feature) {
+    return {
+      engineRequests: [{ kind: 'use_feature', featureId: feature.id }],
+      narration: `You invoke ${feature.name}.`,
+      needsResultBeforeNarrating: true,
+    };
+  }
+
   if (state.sceneId === 'social') {
-    const isAsking = input.includes('ask') || input.includes('question') || input.includes('tell') || input.includes('where') || input.includes('established') || input.includes('remember');
-    
+    const isAsking =
+      input.includes('ask') ||
+      input.includes('question') ||
+      input.includes('tell') ||
+      input.includes('where') ||
+      input.includes('bribe') ||
+      input.includes('learn') ||
+      input.includes('examine') ||
+      input.includes('bless') ||
+      input.includes('watch');
+
     if (isAsking) {
       return {
         engineRequests: [
-          { kind: 'skill_check', skill: 'persuasion', dc: 12, reason: 'Convince Mira to share what she knows.' },
-          { kind: 'update_npc', npcId: 'npc-mira', disposition: 'friendly' },
-          { kind: 'add_canon_fact', content: 'The courier was seen heading to the boathouse with two cloaked figures.', importance: 'medium' }
+          {
+            kind: 'skill_check',
+            skill: mock.socialSkill,
+            dc: mock.socialDc,
+            reason: `Convince ${mock.socialNpcName} to share what they know.`,
+          },
+          { kind: 'update_npc', npcId: mock.socialNpcId, disposition: 'friendly' },
+          {
+            kind: 'add_canon_fact',
+            content: mock.canonFactOnSocialSuccess,
+            importance: 'medium',
+          },
         ],
-        narration: 'Mira narrows her eyes, weighing your tone before speaking.',
+        narration: `${mock.socialNpcName} studies you before answering.`,
         needsResultBeforeNarrating: true,
       };
     }
 
-    if (input.includes('hey') || input.includes('hello') || input.includes('hi')) {
+    if (input.includes('hey') || input.includes('hello') || input.includes('hi') || input.includes('greet')) {
       return {
         engineRequests: [],
-        narration: 'Mira looks up from the glass she\'s cleaning. "Well met, stranger. What can I do for you on a night like this?"',
+        narration: `${mock.socialNpcName} looks up. "Well? State your business."`,
         needsResultBeforeNarrating: false,
       };
     }
 
     return {
       engineRequests: [],
-      narration: 'The inn is quiet, save for the rain. Mira waits for you to approach or speak.',
+      narration: `${mock.socialNpcName} waits for you to speak or act.`,
       needsResultBeforeNarrating: false,
     };
   }
 
-  // Exploration Scene logic
   if (state.sceneId === 'exploration') {
     return {
-      engineRequests: [{ kind: 'skill_check', skill: 'perception', dc: 12, reason: 'Track signs near the boathouse.' }],
-      narration: 'You sweep the shoreline for clues while the tide pulls back.',
-      needsResultBeforeNarrating: true,
-    };
-  }
-
-  if (input.includes('second wind')) {
-    return {
-      engineRequests: [{ kind: 'use_feature', featureId: 'second_wind' }],
-      narration: 'You draw a deep breath and steady your stance.',
+      engineRequests: [
+        {
+          kind: 'skill_check',
+          skill: mock.explorationSkill,
+          dc: mock.explorationDc,
+          reason: 'Search the area for a lead.',
+        },
+      ],
+      narration: 'You work the scene for anything out of place.',
       needsResultBeforeNarrating: true,
     };
   }
@@ -75,7 +100,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
   if (state.sceneId !== 'combat') {
     return {
       engineRequests: [{ kind: 'start_combat' }],
-      narration: 'Steel flashes in the rain as two ruffians close in.',
+      narration: scenario.scenes.combat.starter,
       needsResultBeforeNarrating: false,
     };
   }
@@ -84,22 +109,25 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
     const living = state.monsters.find((m) => m.hp > 0);
     return {
       engineRequests: living ? [{ kind: 'player_attack', targetId: living.id }, { kind: 'monster_turn' }] : [],
-      narration: 'You lunge forward with your blade.',
+      narration: 'You lunge forward.',
       needsResultBeforeNarrating: true,
-    };
-  }
-
-  if (input.includes('hey') || input.includes('hello') || input.includes('hi')) {
-    return {
-      engineRequests: [],
-      narration: 'Mira looks up from the glass she\'s cleaning. "Well met, stranger. What can I do for you on a night like this?"',
-      needsResultBeforeNarrating: false,
     };
   }
 
   return {
     engineRequests: [],
-    narration: 'The rain drums against the windows. Mira waits for you to speak or act.',
+    narration: 'The moment hangs — what do you do?',
     needsResultBeforeNarrating: false,
   };
+}
+
+export function mockNarrationAfterResult(state: GameState, kind: string, ok: boolean): string | null {
+  const mock = getScenario(state.adventureId).mock;
+  if (state.sceneId === 'social' && kind === 'skill_check') {
+    return ok ? mock.socialSuccess : mock.socialFailure;
+  }
+  if (state.sceneId === 'exploration' && kind === 'skill_check') {
+    return ok ? mock.explorationSuccess : mock.explorationFailure;
+  }
+  return null;
 }

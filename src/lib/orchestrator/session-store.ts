@@ -1,6 +1,6 @@
-import { createInitialState } from '@/lib/game/state';
+import { createInitialState, migrateGameState } from '@/lib/game/state';
 import type { PartyQuestRecap } from '@/lib/game/recap';
-import type { GameState } from '@/lib/game/types';
+import type { GameState, NewGameOptions } from '@/lib/game/types';
 import fs from 'fs';
 import path from 'path';
 
@@ -23,8 +23,29 @@ const latestRecaps = new Map<string, PartyQuestRecap[]>();
 function getSessionPath(sessionId: string) { return path.join(STORAGE_DIR, `session-${sessionId}.json`); }
 function getRecapsPath(sessionId: string) { return path.join(STORAGE_DIR, `recaps-${sessionId}.json`); }
 
+export function startNewGame(sessionId: string, options: NewGameOptions): GameState {
+  const state = createInitialState(sessionId, options);
+  sessions.set(sessionId, state);
+  turnCounters.set(sessionId, 0);
+  latestRecaps.set(sessionId, []);
+  saveSession(state);
+  if (!IS_VERCEL) {
+    try {
+      const recapsPath = getRecapsPath(sessionId);
+      if (fs.existsSync(recapsPath)) fs.unlinkSync(recapsPath);
+    } catch {
+      // ignore
+    }
+  }
+  return state;
+}
+
 export function getOrCreateSession(sessionId: string): GameState {
-  if (sessions.has(sessionId)) return sessions.get(sessionId)!;
+  if (sessions.has(sessionId)) {
+    const cached = migrateGameState(sessions.get(sessionId)!);
+    sessions.set(sessionId, cached);
+    return cached;
+  }
   
   if (!IS_VERCEL) {
     const filePath = getSessionPath(sessionId);
@@ -38,14 +59,15 @@ export function getOrCreateSession(sessionId: string): GameState {
         if (state.player && !state.player.inventory) state.player.inventory = defaults.player.inventory;
         if (!state.npcs) state.npcs = defaults.npcs;
         if (!state.canonLog) state.canonLog = defaults.canonLog;
-        
-        sessions.set(sessionId, state);
-        return state;
+
+        const migrated = migrateGameState(state as import('@/lib/game/types').GameState);
+        sessions.set(sessionId, migrated);
+        return migrated;
       } catch (e) { console.error('Failed to load session', e); }
     }
   }
 
-  const next = createInitialState(sessionId);
+  const next = migrateGameState(createInitialState(sessionId));
   saveSession(next);
   return next;
 }

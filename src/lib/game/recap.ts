@@ -19,6 +19,8 @@ export type PartyQuestRecap = {
   consequences: string[];
   keyEvents: string[];
   openThreads: string[];
+  itemsFound: string[];
+  npcsMet: string[];
   nextChoices: string[];
   nextHook: string;
   mode: 'ai_director' | 'table_rules';

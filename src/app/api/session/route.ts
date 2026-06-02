@@ -13,9 +13,13 @@ export async function GET(req: Request) {
   return NextResponse.json({
     ok: true,
     sessionId,
+    adventureId: state.adventureId,
+    characterTemplateId: state.characterTemplateId,
+    backgroundId: state.backgroundId,
     sceneId: state.sceneId,
     player: {
       name: state.player.name,
+      className: state.player.className,
       hp: state.player.hp,
       maxHp: state.player.maxHp,
     },

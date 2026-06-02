@@ -49,8 +49,21 @@ export type CombatState = {
   turnIndex: number;
 };
 
+export type DMPersonaId = 'balanced' | 'gritty' | 'epic' | 'whimsical';
+
+export type DMPersona = {
+  id: DMPersonaId;
+  name: string;
+  description: string;
+  tone: string;
+};
+
 export type GameState = {
   sessionId: string;
+  adventureId: string;
+  characterTemplateId: string;
+  backgroundId?: string;
+  personaId: DMPersonaId;
   sceneId: SceneId;
   log: string[];
   canonLog: CanonFact[];
@@ -58,4 +71,12 @@ export type GameState = {
   monsters: Monster[];
   npcs: NPC[];
   combat: CombatState;
+};
+
+export type NewGameOptions = {
+  adventureId?: string;
+  characterId?: string;
+  playerName?: string;
+  backgroundId?: string;
+  personaId?: DMPersonaId;
 };

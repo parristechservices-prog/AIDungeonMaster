@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { CharacterSheet } from '@/components/play/CharacterSheet';
 import { ChoiceButtons } from '@/components/play/ChoiceButtons';
@@ -9,20 +11,23 @@ import { EndingScreen } from '@/components/play/EndingScreen';
 import { InputBox } from '@/components/play/InputBox';
 import { NarrationPanel } from '@/components/play/NarrationPanel';
 import { OnboardingBanner } from '@/components/play/OnboardingBanner';
+import { DEFAULT_ADVENTURE_ID, getScenario } from '@/lib/game/scenarios';
 import { isFeatureEnabled } from '@/lib/config/features';
-import { oneShot } from '@/lib/game/one-shot';
 import type { TurnResponse } from '@/lib/play/types';
 import { saveClientSnapshot } from '@/lib/persistence/client-snapshot';
 import type { RollBreakdown } from '@/lib/engine/types';
-import { newSessionId, readPlayBootstrap } from '@/lib/play/bootstrap';
+import { readPlayBootstrap } from '@/lib/play/bootstrap';
 
 export default function PlayPage() {
+  const router = useRouter();
   const [sessionId, setSessionId] = useState('');
+  const [adventureId, setAdventureId] = useState(DEFAULT_ADVENTURE_ID);
+  const [adventureTitle, setAdventureTitle] = useState(getScenario(DEFAULT_ADVENTURE_ID).title);
   const [input, setInput] = useState('');
   const [history, setHistory] = useState<string[]>([]);
   const [state, setState] = useState<TurnResponse['state'] | null>(null);
   const [sceneId, setSceneId] = useState<TurnResponse['sceneId']>('social');
-  const [sceneGoal, setSceneGoal] = useState<string>(oneShot.scenes.social.goal);
+  const [sceneGoal, setSceneGoal] = useState(getScenario(DEFAULT_ADVENTURE_ID).scenes.social.goal);
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<'ai_director' | 'table_rules'>('table_rules');
   const [choices, setChoices] = useState<string[]>([]);
@@ -34,12 +39,33 @@ export default function PlayPage() {
   useEffect(() => {
     const boot = readPlayBootstrap();
     setSessionId(boot.sessionId);
-    setHistory(boot.history);
-    setState(boot.state);
-    setSceneId(boot.sceneId);
-    setSceneGoal(boot.sceneGoal);
-    setMode(boot.mode);
-    setChoices(boot.choices);
+
+    const openingRaw = sessionStorage.getItem('partyquest-opening');
+    if (openingRaw) {
+      try {
+        const { opening, title } = JSON.parse(openingRaw) as { opening: string; title: string };
+        sessionStorage.removeItem('partyquest-opening');
+        setAdventureTitle(title);
+        setHistory([opening]);
+      } catch {
+        setHistory(boot.history);
+      }
+    } else {
+      setHistory(boot.history.length > 0 ? boot.history : [getScenario(DEFAULT_ADVENTURE_ID).scenes.social.starter]);
+    }
+
+    if (boot.state) {
+      setState(boot.state);
+      setSceneId(boot.sceneId);
+      setSceneGoal(boot.sceneGoal);
+      setMode(boot.mode);
+      setChoices(boot.choices);
+    }
+    if (boot.adventureId) {
+      setAdventureId(boot.adventureId);
+      setAdventureTitle(boot.adventureTitle ?? getScenario(boot.adventureId).title);
+      setSceneGoal(boot.sceneGoal);
+    }
   }, []);
 
   const sendTurn = useCallback(
@@ -60,6 +86,8 @@ export default function PlayPage() {
         const data = (await res.json()) as TurnResponse;
         if (!data.ok) throw new Error('Turn failed');
 
+        setAdventureId(data.adventureId);
+        setAdventureTitle(data.adventureTitle);
         setSceneId(data.sceneId);
         setSceneGoal(data.sceneGoal);
         setMode(data.mode);
@@ -77,9 +105,7 @@ export default function PlayPage() {
           ...(data.sceneStarter ? [`— ${data.sceneStarter}`] : []),
           data.narration,
           ...data.engineResults.map((r) => `• ${r.summary}`),
-          ...(data.narrationWarnings?.length
-            ? [`(DM note: ${data.narrationWarnings[0]})`]
-            : []),
+          ...(data.narrationWarnings?.length ? [`(DM note: ${data.narrationWarnings[0]})`] : []),
           `Turn ${data.recap.turnNumber} saved.`,
           data.nextHook,
         ];
@@ -94,24 +120,18 @@ export default function PlayPage() {
   );
 
   function handleNewGame() {
-    const id = newSessionId();
-    localStorage.setItem('partyquest-session-id', id);
-    setSessionId(id);
-    setState(null);
-    setSceneId('social');
-    setSceneGoal(oneShot.scenes.social.goal);
-    setHistory([oneShot.scenes.social.starter]);
-    setChoices([]);
-    setRecentRolls([]);
-    setTurnCount(0);
-    setShowOnboarding(true);
-    setWarnings([]);
+    router.push('/start');
   }
 
   if (!sessionId) {
     return (
       <main className="mx-auto max-w-3xl p-6">
         <p className="text-zinc-600">Loading session…</p>
+        <p className="mt-4 text-sm">
+          <Link href="/start" className="underline">
+            Set up a new character and scenario
+          </Link>
+        </p>
       </main>
     );
   }
@@ -121,7 +141,7 @@ export default function PlayPage() {
       <main className="mx-auto grid max-w-6xl grid-cols-1 gap-6 p-6 md:grid-cols-[2fr_1fr]">
         <section className="rounded-lg border border-zinc-300 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
           <header>
-            <h1 className="text-2xl font-bold">{oneShot.title}</h1>
+            <h1 className="text-2xl font-bold">{adventureTitle}</h1>
             <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
               Scene: <b>{sceneId}</b> · {sceneGoal}
             </p>
@@ -133,7 +153,11 @@ export default function PlayPage() {
 
           {showOnboarding && turnCount === 0 && (
             <div className="mt-4">
-              <OnboardingBanner sceneId={sceneId} onDismiss={() => setShowOnboarding(false)} />
+              <OnboardingBanner
+                sceneId={sceneId}
+                adventureId={adventureId}
+                onDismiss={() => setShowOnboarding(false)}
+              />
             </div>
           )}
 
@@ -168,6 +192,7 @@ export default function PlayPage() {
       {sceneId === 'ending' && (
         <EndingScreen
           sessionId={sessionId}
+          adventureTitle={adventureTitle}
           playerName={state?.player.name ?? 'Hero'}
           onNewGame={handleNewGame}
         />

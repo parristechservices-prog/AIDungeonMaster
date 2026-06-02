@@ -35,7 +35,7 @@ cp env.example .env.local
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) → **Start one-shot**.
+Open [http://localhost:3000](http://localhost:3000) → **Create adventure** to pick class, background, DM persona, and scenario.
 
 ### Environment
 
@@ -65,6 +65,16 @@ pnpm build
 3. Deploy — `vercel.json` uses `pnpm build`.
 
 **Note:** Session files persist to `.data/` locally; on Vercel, state is in-memory per instance. Client-side snapshot (`localStorage`) helps resume UI state between visits.
+
+## Character & scenario options
+
+| Characters | Scenarios | Backgrounds | DM personas |
+|------------|-----------|---------------|-------------|
+| Fighter, Wizard, Rogue, Cleric | Brindlehook Inn, Crypt of Whispers, Smuggler's Cove | Soldier, Scholar, Criminal, Acolyte | Classic, Gritty, Epic, Whimsical |
+
+Setup UI: `/start` · Catalog API: `GET /api/catalog` · New game: `POST /api/session/start`
+
+Add more entries in `src/lib/game/characters/templates.ts` and `src/lib/game/scenarios/`.
 
 ## Feature flags
 

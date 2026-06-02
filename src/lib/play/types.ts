@@ -4,6 +4,8 @@ import type { RollBreakdown } from '@/lib/engine/types';
 export type TurnResponse = {
   ok: boolean;
   sessionId: string;
+  adventureId: string;
+  adventureTitle: string;
   mode: 'ai_director' | 'table_rules';
   sceneId: GameState['sceneId'];
   sceneGoal: string;

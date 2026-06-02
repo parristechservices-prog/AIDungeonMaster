@@ -10,7 +10,7 @@ export const FEATURE_FLAGS = {
   cloudSave: false,
   /** Client-side localStorage snapshot of last turn state */
   clientSessionSnapshot: true,
-  appealTheDm: false,
+  appealTheDm: true,
 } as const;
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;

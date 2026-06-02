@@ -7,11 +7,12 @@ import { clearClientSnapshot } from '@/lib/persistence/client-snapshot';
 
 type Props = {
   sessionId: string;
+  adventureTitle: string;
   playerName: string;
   onNewGame: () => void;
 };
 
-export function EndingScreen({ sessionId, playerName, onNewGame }: Props) {
+export function EndingScreen({ sessionId, adventureTitle, playerName, onNewGame }: Props) {
   const [recap, setRecap] = useState<PartyQuestRecap | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -41,7 +42,7 @@ export function EndingScreen({ sessionId, playerName, onNewGame }: Props) {
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
         <h2 className="text-2xl font-bold">Adventure complete</h2>
         <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-          {playerName} survived <em>The Last Lantern at Brindlehook Inn</em>.
+          {playerName} completed <em>{adventureTitle}</em>.
         </p>
 
         {loading && <p className="mt-4 text-sm text-zinc-500">Loading recap…</p>}

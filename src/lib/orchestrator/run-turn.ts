@@ -1,13 +1,16 @@
 import { resolveEngineRequest } from '@/lib/engine';
 import { dmTurnSchema, type DmTurn } from '@/lib/llm/contracts';
-import { oneShot } from '@/lib/game/one-shot';
+import { getScenario } from '@/lib/game/scenarios';
 import type { GameState } from '@/lib/game/types';
+import { mockNarrationAfterResult } from '@/lib/orchestrator/mock-dm';
 
 export type TurnResult = {
   ok: boolean;
   mode: 'ai_director' | 'table_rules';
   aiUsed: boolean;
   fallbackUsed: boolean;
+  adventureId: string;
+  adventureTitle: string;
   sceneId: GameState['sceneId'];
   sceneGoal: string;
   sceneStarter?: string;
@@ -70,14 +73,9 @@ export function runTurn(
     const mainResult = engineResults[0];
     if (mainResult) {
       if (context.fallbackUsed) {
-        if (state.sceneId === 'social') {
-          finalNarration = mainResult.ok 
-            ? '"Fine," Mira sighs, leaning in. "He went to the boathouse. But he wasn\'t alone. Two cloaked figures were on his heels."'
-            : 'Mira just shakes her head. "I don\'t want any trouble, stranger. Buy a drink or move on."';
-        } else if (state.sceneId === 'exploration') {
-          finalNarration = mainResult.ok
-            ? 'You find fresh tracks—heavy boots, dragging something. They lead straight to the boathouse door.'
-            : 'The rain has washed away the clearest signs. You catch a faint smell of salt and rot from the boathouse.';
+        const scripted = mockNarrationAfterResult(state, mainResult.kind, mainResult.ok);
+        if (scripted) {
+          finalNarration = scripted;
         } else if (mainResult.kind === 'player_attack') {
           finalNarration = mainResult.ok
             ? `Your strike finds its mark! ${mainResult.summary}`
@@ -97,10 +95,12 @@ export function runTurn(
     }
   }
 
-  const sceneData = oneShot.scenes[state.sceneId as keyof typeof oneShot.scenes];
-  const sceneStarter = state.sceneId !== prevScene ? sceneData?.starter : undefined;
-  const nextChoices = choicesForScene(state.sceneId);
-  const nextHook = state.sceneId === 'ending' ? 'Your tale concludes at Brindlehook Inn.' : 'Choose your next action.';
+  const scenario = getScenario(state.adventureId);
+  const playable = state.sceneId !== 'ending' ? scenario.scenes[state.sceneId] : undefined;
+  const sceneStarter = state.sceneId !== prevScene ? playable?.starter : undefined;
+  const nextChoices = playable?.choices ?? ['Start a fresh run'];
+  const nextHook =
+    state.sceneId === 'ending' ? scenario.endingMessage : 'Choose your next action.';
   const recentRolls = engineResults
     .map((r) => r.breakdown)
     .filter((b): b is NonNullable<typeof b> => Boolean(b));
@@ -112,8 +112,10 @@ export function runTurn(
       mode: context.mode,
       aiUsed: context.aiUsed,
       fallbackUsed: context.fallbackUsed,
+      adventureId: state.adventureId,
+      adventureTitle: scenario.title,
       sceneId: state.sceneId,
-      sceneGoal: sceneData?.goal ?? 'Finish the adventure.',
+      sceneGoal: playable?.goal ?? 'Finish the adventure.',
       sceneStarter,
       nextChoices,
       nextHook,
@@ -141,15 +143,3 @@ export function runTurn(
   };
 }
 
-function choicesForScene(sceneId: GameState['sceneId']): string[] {
-  switch (sceneId) {
-    case 'social':
-      return ['Question Mira about the courier', 'Offer coin for information', 'Inspect the inn patrons'];
-    case 'exploration':
-      return ['Scout the boathouse approach', 'Search for hidden tracks', 'Call out to lure the ambushers'];
-    case 'combat':
-      return ['Strike the nearest ruffian', 'Use Second Wind', 'Hold position and watch for an opening'];
-    case 'ending':
-      return ['Review your recap', 'Start a fresh run'];
-  }
-}

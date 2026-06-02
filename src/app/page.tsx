@@ -15,15 +15,21 @@ export default function Home() {
       <h1 className="mt-2 text-4xl font-bold tracking-tight">AI Dungeon Master</h1>
       <p className="mt-4 text-lg text-zinc-600 dark:text-zinc-400">
         A solo fantasy one-shot where a <strong>deterministic rules engine</strong> owns the numbers and an{' '}
-        <strong>AI narrator</strong> owns the story. About 30 minutes: inn, trail, ambush, resolution.
+        <strong>AI narrator</strong> owns the story. Choose your class, background, and starting scenario.
       </p>
 
       <div className="mt-8 flex flex-wrap gap-3">
         <Link
           className="rounded-lg bg-black px-5 py-3 font-medium text-white dark:bg-zinc-100 dark:text-black"
+          href="/start"
+        >
+          Create adventure
+        </Link>
+        <Link
+          className="rounded-lg border border-zinc-300 px-5 py-3 text-sm dark:border-zinc-600"
           href="/play"
         >
-          Start one-shot
+          Continue last session
         </Link>
         <a
           className="rounded-lg border border-zinc-300 px-5 py-3 text-sm dark:border-zinc-600"
