@@ -17,6 +17,7 @@ export type PlayBootstrap = {
   sceneGoal: string;
   mode: TurnResponse['mode'];
   choices: string[];
+  ambient: TurnResponse['ambient'];
 };
 
 export function readPlayBootstrap(): PlayBootstrap {
@@ -32,6 +33,7 @@ export function readPlayBootstrap(): PlayBootstrap {
     sceneGoal: scenario.scenes.social.goal,
     mode: 'table_rules',
     choices: [],
+    ambient: 'none',
   };
 
   if (typeof window === 'undefined') return base;
@@ -56,6 +58,7 @@ export function readPlayBootstrap(): PlayBootstrap {
           sceneGoal: snapshot.sceneGoal,
           mode: snapshot.mode,
           choices: snapshot.nextChoices,
+          ambient: snapshot.ambient ?? 'none',
         };
       }
     }

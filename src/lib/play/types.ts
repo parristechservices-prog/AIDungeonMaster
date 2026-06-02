@@ -13,6 +13,7 @@ export type TurnResponse = {
   nextChoices: string[];
   nextHook: string;
   narration: string;
+  ambient?: 'none' | 'tavern' | 'dungeon' | 'combat' | 'exploration' | 'boss_fight';
   narrationWarnings?: string[];
   engineResults: {
     kind: string;

@@ -62,6 +62,7 @@ export default function PlayPage() {
       setSceneGoal(boot.sceneGoal);
       setMode(boot.mode);
       setChoices(boot.choices);
+      setAmbient(boot.ambient ?? 'none');
     }
     if (boot.adventureId) {
       setAdventureId(boot.adventureId);
