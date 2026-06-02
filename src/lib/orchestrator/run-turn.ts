@@ -3,6 +3,7 @@ import type { EngineRequest } from '@/lib/engine/types';
 import { dmTurnSchema, type DmTurn } from '@/lib/llm/contracts';
 import { getPlayableScene, getSceneChoices, getSceneGoal } from '@/lib/game/adventures/helpers';
 import { getAdventure } from '@/lib/game/adventures/registry.server';
+import { visibleNpcsForScene } from '@/lib/game/adventures/visibility';
 import { ENDING_SCENE_ID } from '@/lib/game/adventures/types';
 import type { GameState } from '@/lib/game/types';
 import { mockNarrationAfterResult } from '@/lib/orchestrator/mock-dm';
@@ -206,7 +207,7 @@ export function runTurn(
         })),
         activeCharacterId: state.activeCharacterId,
         monsters: state.monsters.map((m) => ({ id: m.id, name: m.name, hp: m.hp, maxHp: m.maxHp, ac: m.ac, conditions: m.conditions })),
-        npcs: state.npcs,
+        npcs: visibleNpcsForScene(state.adventureId, state.sceneId, state.npcs),
         canonLog: state.canonLog,
         combat: state.combat,
         log: state.log.slice(-10),

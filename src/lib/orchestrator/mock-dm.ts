@@ -5,6 +5,37 @@ import type { Adventure } from '@/lib/game/adventures/types';
 import type { GameState } from '@/lib/game/types';
 
 const EXPLORATION_PHRASES = ['inspect', 'track', 'search', 'scout', 'boathouse', 'quay', 'trail'];
+const OBSERVATION_PHRASES = [
+  'look',
+  'look around',
+  'listen',
+  'observe',
+  'survey',
+  'take in',
+  'what do i see',
+  'what can i see',
+  'where am i',
+];
+const DISTANCE_PHRASES = [
+  'how far',
+  'distance',
+  'feet',
+  'ft',
+  'yards',
+  'paces',
+  'how many',
+];
+const MOVEMENT_PHRASES = [
+  'move',
+  'walk',
+  'go ',
+  'head',
+  'approach',
+  'closer',
+  'cross',
+  'enter',
+];
+const ACTIVE_SEARCH_PHRASES = ['inspect', 'track', 'search', 'scout', 'examine', 'investigate', 'trail'];
 
 const SOCIAL_RETRY_HINT =
   ' Try offering coin, using a different approach, or asking again with Insight or Persuasion.';
@@ -29,6 +60,90 @@ function getCombatStarter(adventure: Adventure): string {
   const combatSceneId = adventure.sceneOrder.find((id) => adventure.scenes[id]?.kind === 'combat');
   if (combatSceneId) return adventure.scenes[combatSceneId].starter;
   return 'Combat begins.';
+}
+
+function includesAny(input: string, phrases: string[]): boolean {
+  return phrases.some((phrase) => input.includes(phrase));
+}
+
+function isPassiveObservation(input: string): boolean {
+  return includesAny(input, OBSERVATION_PHRASES) && !includesAny(input, ACTIVE_SEARCH_PHRASES);
+}
+
+function isDistanceQuestion(input: string): boolean {
+  return includesAny(input, DISTANCE_PHRASES);
+}
+
+function isMovementOnly(input: string): boolean {
+  return includesAny(input, MOVEMENT_PHRASES) && !includesAny(input, ACTIVE_SEARCH_PHRASES);
+}
+
+function explorationPositionHint(sceneId: string): string {
+  switch (sceneId) {
+    case 'settlement-arrival':
+    case 'road-to-nightstone':
+      return 'You are on the road just outside Nightstone. The lowered drawbridge is ahead across the moat, close enough to reach in a short walk, with the open palisade gate and empty watchtowers beyond it.';
+    case 'drawbridge-watchtowers':
+    case 'open-palisade':
+      return 'You are at the bridge and gate threshold. The road is behind you, the village streets are ahead, and the square lies only a short way inside the palisade.';
+    case 'village-square':
+      return 'You are inside the palisade near the village square. The drawbridge and gate are behind you, roughly 80 to 120 feet away depending on the exact path through the street.';
+    case 'temple-bell':
+    case 'chapel-bell':
+      return 'You are near the chapel and its ringing bell, still within the village walls. The square is nearby, and the gate is back through the empty streets.';
+    case 'nightstone-inn':
+      return 'You are by the inn on the village edge. The square and chapel are nearby, while the gate sits back through the damaged streets.';
+    case 'trading-post-and-windmill':
+      return 'You are among the village outbuildings. The windmill, trading post, square, and chapel give you clear landmarks despite the damage.';
+    case 'nandar-keep':
+      return 'You are looking toward the damaged keep south of the village, separated by the moat and a broken bridge.';
+    case 'trail-to-caves':
+    case 'cave-leads':
+      return 'You are following the tracks away from Nightstone toward the foothills. The village is behind you, and the cave trail is ahead.';
+    default:
+      return 'You pause long enough to orient yourself by the nearest landmarks. Nothing about your position calls for a roll; decide where you want to go next.';
+  }
+}
+
+function explorationLookDescription(sceneId: string, sceneStarter?: string): string {
+  switch (sceneId) {
+    case 'settlement-arrival':
+    case 'road-to-nightstone':
+      return 'Nightstone is silent except for the bell. The drawbridge is lowered over the moat, the palisade gate stands open, and no guards answer from the watchtowers. Farther south, the keep looks damaged.';
+    case 'drawbridge-watchtowers':
+    case 'open-palisade':
+      return 'The bridge and gate look abandoned rather than defended. Mud, damage, and the unanswered bell make the village feel recently emptied, not peacefully quiet.';
+    case 'village-square':
+      return 'The square is scarred by fallen stones and damaged buildings. A bare patch marks where the great central stone once stood, and the bell keeps pulling your attention toward the chapel.';
+    case 'temple-bell':
+    case 'chapel-bell':
+      return 'The bell rings from the chapel area, but no orderly watch or village leader appears. The sound feels like a clue in an abandoned settlement, not a normal alarm.';
+    case 'nightstone-inn':
+      return 'The inn is quiet and unsettled. You can look around freely, but a careful room-by-room search would take time and may call for a check.';
+    case 'trading-post-and-windmill':
+      return 'The outbuildings show signs of hasty abandonment and looting. Supplies are disturbed, but nothing nearby behaves like a waiting guard post.';
+    case 'nandar-keep':
+      return 'The keep has been badly damaged, and the bridge connection is unsafe. The destruction here matches the sense that something huge struck Nightstone from above.';
+    case 'trail-to-caves':
+    case 'cave-leads':
+      return 'The trail away from the village is churned with signs of panic and pursuit. A closer tracking effort can tell you more, but the direction of travel is clear.';
+    default:
+      return sceneStarter ?? 'You take in the area without committing to a detailed search. Ask a specific question, move to a landmark, or inspect a clue if you want to dig deeper.';
+  }
+}
+
+function shouldAdvanceByMovement(sceneId: string, input: string): boolean {
+  if (!isMovementOnly(input) || isDistanceQuestion(input)) return false;
+  if (sceneId === 'settlement-arrival') {
+    return input.includes('drawbridge') || input.includes('bridge') || input.includes('gate') || input.includes('enter') || input.includes('cross');
+  }
+  if (sceneId === 'road-to-nightstone') {
+    return input.includes('gate') || input.includes('palisade') || input.includes('enter') || input.includes('village');
+  }
+  if (sceneId === 'drawbridge-watchtowers' || sceneId === 'open-palisade') {
+    return input.includes('village') || input.includes('square') || input.includes('enter') || input.includes('inside');
+  }
+  return false;
 }
 
 export function deriveDmTurnFromInput(state: GameState, playerInput: string): DmTurn {
@@ -161,6 +276,43 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
         engineRequests: [],
         narration:
           'No one answers. The bell keeps ringing over the empty street, and the silence makes the damaged village feel even more exposed.',
+        needsResultBeforeNarrating: false,
+        ambient,
+      };
+    }
+
+    if (isDistanceQuestion(input)) {
+      return {
+        engineRequests: [],
+        narration: explorationPositionHint(state.sceneId),
+        needsResultBeforeNarrating: false,
+        ambient,
+      };
+    }
+
+    if (isPassiveObservation(input)) {
+      return {
+        engineRequests: [],
+        narration: explorationLookDescription(state.sceneId, scene?.starter),
+        needsResultBeforeNarrating: false,
+        ambient,
+      };
+    }
+
+    if (shouldAdvanceByMovement(state.sceneId, input)) {
+      return {
+        engineRequests: [{ kind: 'advance_scene' }],
+        narration:
+          'You move carefully, using the obvious route and watching the empty village for movement. No roll is needed just to cross open ground.',
+        needsResultBeforeNarrating: false,
+        ambient,
+      };
+    }
+
+    if (isMovementOnly(input)) {
+      return {
+        engineRequests: [],
+        narration: `${explorationPositionHint(state.sceneId)} You can move there; tell me the destination if you want to commit, or inspect a specific clue if you want a roll.`,
         needsResultBeforeNarrating: false,
         ambient,
       };

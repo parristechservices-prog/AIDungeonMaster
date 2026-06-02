@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAdventure } from '@/lib/game/adventures/registry.server';
 import { getSceneChoices, getSceneGoal } from '@/lib/game/adventures/helpers';
+import { visibleNpcsForScene } from '@/lib/game/adventures/visibility';
 import { getOrCreateSession } from '@/lib/orchestrator/session-store';
 
 /** GET session state for reconnect / debug (V0: no auth). */
@@ -53,7 +54,7 @@ export async function GET(req: Request) {
         ac: m.ac,
         conditions: m.conditions,
       })),
-      npcs: state.npcs,
+      npcs: visibleNpcsForScene(state.adventureId, state.sceneId, state.npcs),
       canonLog: state.canonLog,
       combat: state.combat,
       log: state.log.slice(-10),

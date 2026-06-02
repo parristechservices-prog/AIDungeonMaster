@@ -25,6 +25,13 @@ export type PlayBootstrap = {
   ambient: TurnResponse['ambient'];
 };
 
+type BootstrapState = NonNullable<PlayBootstrap['state']>;
+type BootstrapCharacter = BootstrapState['party'][number];
+
+function isBootstrapCharacter(value: unknown): value is BootstrapCharacter {
+  return typeof value === 'object' && value !== null && 'id' in value && typeof value.id === 'string';
+}
+
 function defaultStarter(adventureId: string): string {
   const adventure = getAdventure(adventureId);
   const first = getFirstPlayableSceneId(adventure);
@@ -62,8 +69,8 @@ export function readPlayBootstrap(): PlayBootstrap {
       if (snapshot?.state) {
         const aid = snapshot.adventureId ?? DEFAULT_ADVENTURE_ID;
         const rawState = snapshot.state as Partial<PlayBootstrap['state']> & { player?: unknown };
-        const party = (rawState.party as any[]) ?? (rawState.player ? [rawState.player as any] : []);
-        const activeCharacterId = rawState.activeCharacterId ?? (party[0] as any)?.id ?? '';
+        const party = rawState.party ?? (isBootstrapCharacter(rawState.player) ? [rawState.player] : []);
+        const activeCharacterId = rawState.activeCharacterId ?? party[0]?.id ?? '';
         const migratedState = {
           ...rawState,
           party,

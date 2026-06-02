@@ -1,0 +1,235 @@
+{
+  "id": "skt-nightstone-chapter1",
+  "title": "Giants on the Frontier - Nightstone Chapter 1 expanded",
+  "tagline": "A richer Chapter 1 play guide for Nightstone, the ruined village, the rescue path, the Dripping Caves, and the strange giant tower.",
+  "estimatedMinutes": 240,
+  "tone": "tension, investigation, and giant aftermath",
+  "recommendedCharacters": ["fighter", "ranger", "rogue", "cleric", "wizard"],
+  "levelRange": [1, 5],
+  "sourceNote": "Not official WotC content. This is an original scaffold inspired by the Nightstone chapter; use your owned book/PDF for exact narration, maps, treasure, and stat blocks.",
+  "campaignGuide": "Use this expanded Chapter 1 template to run Nightstone as a connected investigation and rescue. Open the village slowly, avoid inventing an organized guard force, and let the ringing bell be a clue, not a welcome signal. The villagers fled toward the hills and were captured by goblins in the caves. The tower of Zephyros appears after the rescue and moves the story from village aftermath into the giant conflict. Keep the book outside version control and use it for exact room keys, names, and future giant politics.",
+  "playConfig": {
+    "defaultLevel": 2,
+    "partySize": 1,
+    "defaultDifficulty": "medium",
+    "spawnMonstersOnCombatOnly": true,
+    "preferredMonsterTemplates": ["goblin", "goblin", "ogre"]
+  },
+  "chapters": [
+    {
+      "id": "nightstone-investigation",
+      "title": "Chapter 1 - Nightstone investigation",
+      "sceneIds": [
+        "road-to-nightstone",
+        "open-palisade",
+        "village-square",
+        "chapel-bell",
+        "goblin-scouts",
+        "trail-to-caves",
+        "dripping-caves",
+        "tower-of-zephyros",
+        "ending"
+      ]
+    }
+  ],
+  "sceneOrder": [
+    "road-to-nightstone",
+    "open-palisade",
+    "village-square",
+    "chapel-bell",
+    "goblin-scouts",
+    "trail-to-caves",
+    "dripping-caves",
+    "tower-of-zephyros",
+    "ending"
+  ],
+  "scenes": {
+    "road-to-nightstone": {
+      "kind": "exploration",
+      "goal": "Approach Nightstone and understand that the village has been abandoned after a recent attack.",
+      "starter": "The road climbs into wind-scoured hills. Ahead, Nightstone sits quiet behind a broken palisade, its drawbridge lowered and its square empty.",
+      "choices": [
+        "Move carefully toward the gate",
+        "Inspect the surrounding tracks",
+        "Listen for voices or bells",
+        "Look for signs of recent battle",
+        "Approach from cover"
+      ],
+      "guidance": "Set the tone with a silent, damaged frontier village. Emphasize the low hum of activity, shredded sails, and a distant bell. Avoid making the party feel welcomed. If the players ask where people are, answer that the streets are empty and the village looks abandoned. Use a moderate Investigation or Perception check to reveal fresh tracks leading inward. Advance to the next scene once they commit to entering Nightstone."
+    },
+    "open-palisade": {
+      "kind": "exploration",
+      "goal": "Enter Nightstone and confirm that the palisade and gate mean the village was overwhelmed, not defended.",
+      "starter": "The palisade gate is open. Streaks of fresh mud and blood darken the timbers, but no watch is posted and no answering shout comes from inside.",
+      "choices": [
+        "Cross the drawbridge",
+        "Examine the gate structure",
+        "Scan the tops of the walls",
+        "Search for hidden tracks",
+        "Call into the village"
+      ],
+      "guidance": "This scene is about the first impression of Nightstone. The defenders did not greet the party; the place feels abandoned and unsafe. If the party searches, let them find evidence of people fleeing and something large striking the village. Guide them toward the village square or the chapel bell rather than into random buildings."
+    },
+    "village-square": {
+      "kind": "exploration",
+      "goal": "Discover the missing megalith, damaged homes, and a pattern of forced evacuation.",
+      "starter": "The village square is littered with smashed stone and overturned carts. A wide patch of bare earth marks where the central megalith once stood.",
+      "choices": [
+        "Inspect the megalith site",
+        "Search the ruined cottages",
+        "Look for bodies or dropped supplies",
+        "Check the inn or stable",
+        "Follow the bell sound"
+      ],
+      "guidance": "Use this scene to show that Nightstone was attacked from above and that the villagers fled. Do not invent new reasons for the evacuation; keep it consistent with giants and panic. A successful Investigation or History check can reveal that the stone was removed or shattered, and that the damage came from a powerful force. Keep official location names vague and refer the player to their book for exact maps and treasures."
+    },
+    "chapel-bell": {
+      "kind": "exploration",
+      "goal": "Track the ringing bell and understand that it is part of the mystery rather than a normal alarm.",
+      "starter": "A slow, lonely bell rings from the village chapel. It sounds more like a signal from a frightened survivor than a welcome alarm.",
+      "choices": [
+        "Enter the chapel",
+        "Climb toward the bell tower",
+        "Search the yard for tracks",
+        "Call out from the doorway",
+        "Check nearby houses"
+      ],
+      "guidance": "The bell should feel eerie. If the party approaches carefully, let them notice that the ringing continues despite no obvious guard force. It can hint that someone is trapped or that the place is watched. Use a Stealth or Perception check to detect movement; use the book for exact text if the party finds a clue or a hidden survivor. Once the bell's meaning is clear, move the story along."
+    },
+    "goblin-scouts": {
+      "kind": "combat",
+      "goal": "Confront the goblins looting the village and learn the direction the villagers were forced to go.",
+      "starter": "Small goblins slip between ruined cottages with stolen goods, keeping to the shadows and avoiding the bell's sound.",
+      "choices": [
+        "Set an ambush",
+        "Advance boldly",
+        "Demand answers",
+        "Attempt to capture one alive",
+        "Let them flee and follow" 
+      ],
+      "guidance": "Run the goblins as opportunistic looters using the abandoned village. They may fight, flee, or bargain. At least one should reveal that the villagers ran toward the hills and that goblins took captives into nearby caves. This scene should transition the party from village exploration into the rescue path."
+    },
+    "trail-to-caves": {
+      "kind": "exploration",
+      "goal": "Follow tracks from Nightstone to the cave entrance and prepare for a rescue mission.",
+      "starter": "The trail leads away from the burned-out cottages into the foothills, with a mix of boot prints, dragged packs, and smaller goblin footprints heading toward a damp cave mouth.",
+      "choices": [
+        "Track the footprints carefully",
+        "Scout the area ahead",
+        "Rest and regroup",
+        "Set a trap for pursuers",
+        "Question a goblin captive"
+      ],
+      "guidance": "This connective scene helps the party shift from the village to the caves. Allow Survival or Investigation checks to reveal signs of a forced march, a struggle, and a guarded entrance. Keep the actual cave layout for the book. Use this scene to build tension and set up the rescue; then advance when the party is ready to enter the Dripping Caves."
+    },
+    "dripping-caves": {
+      "kind": "combat",
+      "goal": "Rescue the captured villagers from goblins and their stronger allies in the caves.",
+      "starter": "The cave smells of damp stone, smoke, and uneasy captives. Echoes of snarling voices and chained prisoners come from deeper chambers.",
+      "choices": [
+        "Sneak deeper into the cave",
+        "Create a distraction",
+        "Rush to the captive area",
+        "Call out to the prisoners",
+        "Confront the goblin leader" 
+      ],
+      "guidance": "This is the rescue encounter. The caverns are controlled by goblins and may include one stronger brute. Allow for stealth, social rescue, or combat solutions. The exact cave rooms and prisoner locations belong to the book; use this scene to capture the general encounter and to empower the party to free some captives. Record who was rescued and what the party learns from them."
+    },
+    "tower-of-zephyros": {
+      "kind": "social",
+      "goal": "Encounter the giant tower and use it as the bridge to the next giant-focused chapter.",
+      "starter": "After the caves, a massive tower appears on the horizon, gliding over the hills like a slow storm cloud.",
+      "choices": [
+        "Approach the tower",
+        "Ask the giant about Nightstone",
+        "Request a ride onward",
+        "Prepare for a new threat",
+        "Review the rescued villagers' story"
+      ],
+      "guidance": "This scene should launch the next act of the campaign. The giant tower is a dramatic transition. Use your owned book for the giant's exact personality, the tower's interior, and the destination. The key point is to link the rescue at Nightstone with the larger giant crisis and motivate the party to continue."
+    }
+  },
+  "sceneEncounters": {
+    "goblin-scouts": {
+      "templates": ["goblin", "goblin"],
+      "difficulty": "easy"
+    },
+    "dripping-caves": {
+      "auto": true,
+      "difficulty": "medium",
+      "preferredTemplates": ["goblin", "goblin", "ogre"]
+    }
+  },
+  "endingMessage": "The party has reached the end of Chapter 1: Nightstone is quiet again, the villagers are rescued, and the tower of Zephyros now promises a new direction. Record the giant facts, any rescued villagers, and the next destination.",
+  "npcs": [
+    {
+      "id": "npc-nightstone-survivor",
+      "name": "Nightstone survivor",
+      "description": "A frightened villager rescued from the caves or found near the village.",
+      "disposition": "friendly",
+      "knowledge": [
+        "The village was struck by a giant force and then looted by goblins.",
+        "The villagers fled toward the hills and were taken into the Dripping Caves."
+      ]
+    },
+    {
+      "id": "npc-goblin-captive",
+      "name": "Captured goblin",
+      "description": "A nervous goblin scout who can reveal where the villagers were taken.",
+      "disposition": "hostile",
+      "knowledge": [
+        "We took prisoners from Nightstone into the caves.",
+        "Goblins are holding captives in the dripping caverns under the hill."
+      ]
+    },
+    {
+      "id": "npc-tower-messenger",
+      "name": "Tower messenger",
+      "description": "A giant envoy or otherworldly herald connected to the tower of Zephyros.",
+      "disposition": "neutral",
+      "knowledge": [
+        "The tower is a moving stronghold tied to the giant crisis.",
+        "The party's next goal is beyond Nightstone, toward the giant's circle."
+      ]
+    }
+  ],
+  "monsters": [
+    {
+      "id": "goblin-scout",
+      "name": "Goblin Scout",
+      "ac": 13,
+      "maxHp": 7,
+      "attackBonus": 4,
+      "damage": "1d6+2"
+    },
+    {
+      "id": "goblin-brute",
+      "name": "Goblin Brute",
+      "ac": 14,
+      "maxHp": 22,
+      "attackBonus": 5,
+      "damage": "1d8+3"
+    },
+    {
+      "id": "ogre-guard",
+      "name": "Ogre Guard",
+      "ac": 11,
+      "maxHp": 59,
+      "attackBonus": 6,
+      "damage": "2d8+4"
+    }
+  ],
+  "mock": {
+    "socialNpcId": "npc-nightstone-survivor",
+    "socialNpcName": "a Nightstone survivor",
+    "socialSuccess": "The survivor shares useful details about the attack, the caves, and the tower, making the next objective clear.",
+    "socialFailure": "The survivor is too shaken to answer clearly and needs more reassurance before they explain anything important.",
+    "explorationSuccess": "Your investigation confirms the village was evacuated under duress, traces lead toward the hills, and the next step is to follow the cave trail.",
+    "explorationFailure": "You sense something is wrong and the village is not safe, but the full story is still hidden. Try another detail or move to the next clue.",
+    "socialSkill": "persuasion",
+    "explorationSkill": "investigation",
+    "socialDc": 14,
+    "explorationDc": 12,
+    "canonFactOnSocialSuccess": "Villagers from Nightstone were captured and taken into the Dripping Caves."
+  }
+}
