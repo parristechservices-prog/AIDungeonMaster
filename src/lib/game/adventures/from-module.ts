@@ -8,7 +8,7 @@ export function moduleFileToAdventure(
 ): Adventure {
   const scenes: Record<string, AdventureScene> = {};
   for (const [id, scene] of Object.entries(module.scenes)) {
-    scenes[id] = { kind: scene.kind, ...scene };
+    scenes[id] = { ...scene };
   }
 
   const monsters = module.monsters.map((m) => ({

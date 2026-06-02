@@ -1,10 +1,6 @@
 import { getBackground } from './backgrounds';
 import { buildCharacter } from './characters/templates';
-import {
-  DEFAULT_ADVENTURE_ID,
-  getAdventure,
-  getFirstPlayableSceneId,
-} from './adventures/registry.server';
+import { DEFAULT_ADVENTURE_ID, getAdventure, getFirstPlayableSceneId } from './adventures/registry.server';
 import type { CanonFact, GameState, NewGameOptions } from './types';
 
 export type { NewGameOptions };

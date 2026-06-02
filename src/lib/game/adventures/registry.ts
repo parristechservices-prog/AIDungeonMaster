@@ -1,6 +1,8 @@
 import { buildBuiltinRegistry, DEFAULT_ADVENTURE_ID } from './builtin-registry';
 import type { Adventure } from './types';
 
+export { getFirstPlayableSceneId } from './helpers';
+
 let cache: Map<string, Adventure> | null = null;
 
 function registry(): Map<string, Adventure> {

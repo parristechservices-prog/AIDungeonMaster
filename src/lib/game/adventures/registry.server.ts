@@ -1,8 +1,8 @@
-import 'server-only';
-
 import { buildBuiltinRegistry } from './builtin-registry';
 import { loadPrivateAdventures, loadTemplateAdventures } from './load-modules.server';
 import type { Adventure } from './types';
+
+export { getFirstPlayableSceneId } from './helpers';
 
 export const DEFAULT_ADVENTURE_ID = 'brindlehook-inn';
 

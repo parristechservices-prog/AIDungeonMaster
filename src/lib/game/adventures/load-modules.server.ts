@@ -1,5 +1,3 @@
-import 'server-only';
-
 import { existsSync, readdirSync, readFileSync } from 'fs';
 import path from 'path';
 import { adventureModuleSchema } from './module-schema';
