@@ -49,17 +49,20 @@ export default function PlayPage() {
 
     const markdown = [
       `# Adventure Recap: ${adventureTitle}`,
-      `**Character:** ${state.player.name} (${state.player.className} Level 3)`,
+      `**Party:** ${state.party.map(p => `${p.name} (${p.race} ${p.className})`).join(', ')}`,
       `**Session ID:** ${sessionId}`,
       '',
       '## The Journey So Far',
       history.join('\n\n'),
       '',
-      '## Character Stats',
-      `- **HP:** ${state.player.hp}/${state.player.maxHp}`,
-      `- **AC:** ${state.player.ac}`,
-      `- **Gold:** ${state.player.gold}gp`,
-      `- **Inventory:** ${state.player.inventory.join(', ') || 'None'}`,
+      '## Party Status',
+      ...state.party.map(p => [
+        `### ${p.name}`,
+        `- **HP:** ${p.hp}/${p.maxHp}`,
+        `- **AC:** ${p.ac}`,
+        `- **Gold:** ${p.gold}gp`,
+        `- **Inventory:** ${p.inventory.join(', ') || 'None'}`,
+      ].join('\n')),
       '',
       '## Canon Log (Key Facts)',
       state.canonLog.map(f => `- [${f.importance.toUpperCase()}] ${f.content}`).join('\n'),
@@ -132,6 +135,10 @@ export default function PlayPage() {
             manualRoll
           }),
         });
+        const contentType = res.headers.get('content-type') ?? '';
+        if (!contentType.includes('application/json')) {
+          throw new Error('Non-JSON turn response');
+        }
         const data = (await res.json()) as TurnResponse;
         if (!data.ok) throw new Error('Turn failed');
 
@@ -140,7 +147,7 @@ export default function PlayPage() {
         setSceneId(data.sceneId);
         setSceneGoal(data.sceneGoal);
         setMode(data.mode);
-        setChoices(data.nextChoices);
+        setChoices(data.nextChoices ?? []);
         setRecentRolls(data.recentRolls ?? []);
         setWarnings(data.narrationWarnings ?? []);
         if (data.ambient) setAmbient(data.ambient);
@@ -160,7 +167,7 @@ export default function PlayPage() {
         const lines = [
           ...(data.sceneStarter ? [`— ${data.sceneStarter}`] : []),
           data.narration,
-          ...data.engineResults.map((r) => `• ${r.summary}`),
+          ...(data.engineResults?.map((r) => `• ${r.summary}`) ?? []),
           ...(data.narrationWarnings?.length ? [`(DM note: ${data.narrationWarnings[0]})`] : []),
           `Turn ${data.recap.turnNumber} saved.`,
           data.nextHook,
@@ -172,7 +179,7 @@ export default function PlayPage() {
         setBusy(false);
       }
     },
-    [busy, sessionId],
+    [busy, physicalDice, sessionId],
   );
 
   function handleNewGame() {
@@ -229,7 +236,7 @@ export default function PlayPage() {
           <DiceResults rolls={recentRolls} />
           <CombatHUD
             combat={state?.combat ?? { active: false, initiative: [], turnIndex: 0 }}
-            playerName={state?.player.name ?? 'Hero'}
+            playerName={state?.party?.find(p => p.id === state.activeCharacterId)?.name ?? state?.party?.[0]?.name ?? 'Hero'}
             monsters={state?.monsters ?? []}
           />
           <InputBox
@@ -297,7 +304,7 @@ export default function PlayPage() {
         <EndingScreen
           sessionId={sessionId}
           adventureTitle={adventureTitle}
-          playerName={state?.player.name ?? 'Hero'}
+          playerName={state?.party[0].name ?? 'Hero'}
           onNewGame={handleNewGame}
         />
       )}

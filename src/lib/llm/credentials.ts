@@ -19,6 +19,6 @@ export function hasLlmCredentials(): boolean {
   return Boolean(process.env.OPENAI_API_KEY?.trim());
 }
 
-export function useMockFlavorPrefix(): boolean {
+export function shouldUseMockFlavorPrefix(): boolean {
   return (process.env.PARTYQUEST_MOCK_FLAVOR ?? '').toLowerCase() === 'true';
 }

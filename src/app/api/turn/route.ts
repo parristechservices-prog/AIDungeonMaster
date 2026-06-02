@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { useMockFlavorPrefix } from '@/lib/llm/credentials';
+import { shouldUseMockFlavorPrefix } from '@/lib/llm/credentials';
 import { generateDmTurn } from '@/lib/llm/provider';
 import { buildSystemPrompt } from '@/lib/llm/system-prompt';
 import { validateNarrationAgainstState } from '@/lib/llm/validate-narration';
@@ -26,90 +26,107 @@ export async function POST(req: Request) {
   const manualRoll = typeof body?.manualRoll === 'number' ? body.manualRoll : undefined;
   const physicalDice = Boolean(body?.physicalDice);
 
-  let state = getOrCreateSession(sessionId);
-  
-  let rawTurn: any;
-  let aiUsed = false;
-  let fallbackUsed = false;
+  try {
+    let state = getOrCreateSession(sessionId);
 
-  // Check if we are resolving a pending turn with a manual roll
-  const pending = getPendingTurn(sessionId);
-  if (pending && manualRoll !== undefined) {
-    rawTurn = pending;
-    clearPendingTurn(sessionId);
-  } else {
-    const recentRecaps = getRecaps(sessionId).slice(-5);
-    const systemPrompt =
-      buildSystemPrompt(state) +
-      (recentRecaps.length > 0
-        ? `\n\n## RECENT CONVERSATION HISTORY\n${recentRecaps.map((r) => `Turn ${r.turnNumber} Narration: ${r.narration}`).join('\n')}`
-        : '');
+    let rawTurn: unknown;
+    let aiUsed = false;
+    let fallbackUsed = false;
 
-    const aiTurn = await generateDmTurn({
-      systemPrompt,
-      playerInput,
+    // Check if we are resolving a pending turn with a manual roll.
+    const pending = getPendingTurn(sessionId);
+    if (pending && manualRoll !== undefined) {
+      rawTurn = pending;
+      clearPendingTurn(sessionId);
+    } else {
+      const recentRecaps = getRecaps(sessionId).slice(-5);
+      const systemPrompt =
+        buildSystemPrompt(state) +
+        (recentRecaps.length > 0
+          ? `\n\n## RECENT CONVERSATION HISTORY\n${recentRecaps.map((r) => `Turn ${r.turnNumber} Narration: ${r.narration}`).join('\n')}`
+          : '');
+
+      const aiTurn = await generateDmTurn({
+        systemPrompt,
+        playerInput,
+      });
+      aiUsed = Boolean(aiTurn);
+      fallbackUsed = !aiTurn;
+      rawTurn = aiTurn ?? deriveDmTurnFromInput(state, playerInput);
+    }
+
+    const turn = runTurn(state, rawTurn, {
+      mode: fallbackUsed ? 'table_rules' : 'ai_director',
+      aiUsed,
+      fallbackUsed,
+      physicalDice,
+      manualRoll,
     });
-    aiUsed = Boolean(aiTurn);
-    fallbackUsed = !aiTurn;
-    rawTurn = aiTurn ?? deriveDmTurnFromInput(state, playerInput);
+
+    if (turn.response.needsManualRoll) {
+      savePendingTurn(sessionId, rawTurn);
+    }
+
+    state = turn.state;
+
+    // Periodic Canon Log Summarization.
+    if (state.canonLog.length >= 20) {
+      const summarized = await summarizeCanonLog(state.canonLog);
+      state = { ...state, canonLog: summarized };
+    }
+
+    saveSession(state);
+    const turnNumber = nextTurnNumber(sessionId);
+
+    const narration =
+      fallbackUsed && shouldUseMockFlavorPrefix()
+        ? `The wind shifts and the tale steadies itself. ${turn.response.narration}`
+        : turn.response.narration;
+
+    const narrationWarnings = validateNarrationAgainstState(narration, state);
+    if (narrationWarnings.length > 0) {
+      writeDevLog({ type: 'narration_validation', sessionId, warnings: narrationWarnings });
+    }
+
+    const recap = buildRecap({
+      state,
+      turnNumber,
+      narration,
+      outcome: turn.response.engineResults[0]?.summary ?? turn.response.narration,
+      consequences: turn.response.engineResults.map((r) => r.summary),
+      nextChoices: turn.response.nextChoices,
+      nextHook: turn.response.nextHook,
+      mode: turn.response.mode,
+      aiUsed: turn.response.aiUsed,
+      fallbackUsed: turn.response.fallbackUsed,
+    });
+    saveRecap(sessionId, recap);
+
+    const response = {
+      ...turn.response,
+      narration,
+      narrationWarnings,
+      sessionId,
+      recap,
+    };
+
+    writeDevLog({ type: 'turn', sessionId, playerInput, response });
+    return NextResponse.json(response);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown turn processing error';
+    writeDevLog({
+      type: 'turn_error',
+      sessionId,
+      playerInput,
+      error: message,
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        sessionId,
+        error: 'Turn processing failed. Please try that action again.',
+      },
+      { status: 500 },
+    );
   }
-
-  const turn = runTurn(state, rawTurn, {
-    mode: fallbackUsed ? 'table_rules' : 'ai_director',
-    aiUsed,
-    fallbackUsed,
-    physicalDice,
-    manualRoll,
-  });
-  
-  if (turn.response.needsManualRoll) {
-     savePendingTurn(sessionId, rawTurn);
-   }
- 
-   state = turn.state;
-   
-   // Periodic Canon Log Summarization
-   if (state.canonLog.length >= 20) {
-     const summarized = await summarizeCanonLog(state.canonLog);
-     state = { ...state, canonLog: summarized };
-   }
- 
-   saveSession(state);
-  const turnNumber = nextTurnNumber(sessionId);
-
-  const narration =
-    fallbackUsed && useMockFlavorPrefix()
-      ? `The wind shifts and the tale steadies itself. ${turn.response.narration}`
-      : turn.response.narration;
-
-  const narrationWarnings = validateNarrationAgainstState(narration, state);
-  if (narrationWarnings.length > 0) {
-    writeDevLog({ type: 'narration_validation', sessionId, warnings: narrationWarnings });
-  }
-
-  const recap = buildRecap({
-    state,
-    turnNumber,
-    narration,
-    outcome: turn.response.engineResults[0]?.summary ?? turn.response.narration,
-    consequences: turn.response.engineResults.map((r) => r.summary),
-    nextChoices: turn.response.nextChoices,
-    nextHook: turn.response.nextHook,
-    mode: turn.response.mode,
-    aiUsed: turn.response.aiUsed,
-    fallbackUsed: turn.response.fallbackUsed,
-  });
-  saveRecap(sessionId, recap);
-
-  const response = {
-    ...turn.response,
-    narration,
-    narrationWarnings,
-    sessionId,
-    recap,
-  };
-
-  writeDevLog({ type: 'turn', sessionId, playerInput, response });
-
-  return NextResponse.json(response);
 }
