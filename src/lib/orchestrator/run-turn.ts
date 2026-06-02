@@ -1,4 +1,5 @@
 import { resolveEngineRequest } from '@/lib/engine';
+import type { EngineRequest } from '@/lib/engine/types';
 import { dmTurnSchema, type DmTurn } from '@/lib/llm/contracts';
 import { getScenario } from '@/lib/game/scenarios';
 import type { GameState } from '@/lib/game/types';
@@ -6,6 +7,22 @@ import { mockNarrationAfterResult } from '@/lib/orchestrator/mock-dm';
 
 /** Matches `engineRequests` max in `dmTurnSchema`. */
 export const MAX_ENGINE_REQUESTS_PER_TURN = 5;
+
+type LlmEngineRequest = DmTurn['engineRequests'][number];
+
+/** LLM schema omits manualRoll; inject it for physical-dice resolution. */
+function toEngineRequest(request: LlmEngineRequest, manualRoll?: number): EngineRequest {
+  if (manualRoll === undefined) {
+    return request as EngineRequest;
+  }
+  if (request.kind === 'skill_check') {
+    return { ...request, manualRoll };
+  }
+  if (request.kind === 'player_attack') {
+    return { ...request, manualRoll };
+  }
+  return request as EngineRequest;
+}
 
 export type TurnResult = {
   ok: boolean;
@@ -70,12 +87,15 @@ export function runTurn(
   let manualRollContext: TurnResult['manualRollContext'] | undefined;
 
   for (const request of limitedRequests) {
-    // Inject manual roll if provided and relevant
-    if (context.manualRoll !== undefined && (request.kind === 'skill_check' || request.kind === 'player_attack')) {
-      request.manualRoll = context.manualRoll;
-    }
+    const manualRoll =
+      context.manualRoll !== undefined &&
+      (request.kind === 'skill_check' || request.kind === 'player_attack')
+        ? context.manualRoll
+        : undefined;
 
-    const resolved = resolveEngineRequest(state, request, { physicalDice: context.physicalDice });
+    const resolved = resolveEngineRequest(state, toEngineRequest(request, manualRoll), {
+      physicalDice: context.physicalDice,
+    });
     state = resolved.state;
     engineResults.push({ kind: request.kind, ...resolved.result });
 
