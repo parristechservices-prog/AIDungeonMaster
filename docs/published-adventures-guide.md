@@ -7,6 +7,10 @@ audience: Josh (rights holder for personal copy — do not redistribute)
 
 # Published adventures in PartyQuest
 
+> **Accuracy note (2026-06-02):** Private JSON module loading, module validation, scaffolding, dev-only module import, and `/start` private-module selection are implemented. This guide still describes future optional work for richer encounter packs, Open5e imports, local authoring UI, and local-only RAG.
+
+> Status: Current app supports private module loading and gitignored private module files. This guide explains the repo-safe workflow for using owned adventure books privately.
+
 You own *Storm King's Thunder* — that lets **you** run it at your table. It does **not** let this app (or a public GitHub repo) **store, ship, or auto-extract** the book’s text, maps, art, or stat blocks for other people. Wizards of the Coast’s **SRD** (mechanics under CC) is separate from **adventure products** (copyright, not in the SRD).
 
 PartyQuest’s V0 spec already commits to: **SRD mechanics + original scenario flavour, no official adventures in the repo.**
@@ -39,9 +43,9 @@ This guide is how to get SKT-style play **legally** and **technically** without 
 
 ## How PartyQuest would support this (architecture)
 
-Today: one **hardcoded** `Scenario` = 3 scenes (`social` → `exploration` → `combat`) in TypeScript.
+Current app: built-in scenarios and JSON adventure modules both load through the adventure registry. Private modules live at `content/private/<module-id>/module.json` and are gitignored.
 
-SKT needs a **campaign layer**:
+SKT-sized campaigns use the **module layer**:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -61,47 +65,49 @@ SKT needs a **campaign layer**:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Module file shape (target)
+### Module file shape
 
 Store under `content/private/storm-kings-thunder/` (gitignored):
 
 ```yaml
-# module.meta.yaml — facts YOU summarize, not pasted chapters
-id: skt-private
-title: "Giants campaign (private)"
-levelRange: [1, 5]   # start with a slice, not the whole book
-source: "Owned physical/digital; not for distribution"
-
-chapters:
-  - id: ch01-nightstone
-    scenes:
-      - id: nightstone-arrival
-        type: social
-        goal: "Learn what happened to the village."
-        guidance: "Hook from ch1; keep to facts in your notes."
-        encounters: []
-      - id: goblin-ambush
-        type: combat
-        encounterRef: enc-goblin-skt-01
+{
+  "id": "skt-private",
+  "title": "Giants campaign (private)",
+  "tagline": "Private notes from your owned book",
+  "estimatedMinutes": 120,
+  "tone": "frontier fantasy",
+  "recommendedCharacters": ["fighter"],
+  "levelRange": [1, 5],
+  "sceneOrder": ["nightstone-arrival", "goblin-ambush", "ending"],
+  "scenes": {
+    "nightstone-arrival": {
+      "kind": "exploration",
+      "goal": "Learn what happened to the settlement.",
+      "starter": "A short original/paraphrased opening written in your own words.",
+      "choices": ["Cross the drawbridge", "Follow the ringing bell"],
+      "guidance": "Brief facts and DCs from your notes, not pasted book text."
+    }
+  }
+}
 ```
 
-Encounters reference **engine monsters** (SRD or your stat summaries), not PDF text.
+See `content/templates/example-frontier/module.json` and `src/lib/game/adventures/module-schema.ts` for the full current JSON schema. Encounters reference **engine monsters** or your private stat summaries, not PDF text.
 
 ### Phased delivery
 
 | Phase | Scope | Outcome |
 |-------|--------|---------|
-| **1** | `.gitignore` + private folder + loader API | App can load `content/private/*/module.meta.yaml` locally |
-| **2** | Scene graph > 3 scenes | `sceneId` is dynamic; chapter/scene navigation |
-| **3** | Encounter library | CR-based encounters; SKT fights you define privately |
-| **4** | Optional **local-only RAG** | Desktop script indexes PDF on your PC; never uploads to Vercel |
-| **5** | Official integration | D&D Beyond / WotC only if you get a proper license |
+| **1** | `.gitignore` + private folder + JSON loader API | Done |
+| **2** | Scene graph > 3 scenes | Done; `sceneId` is dynamic and modules define `sceneOrder` |
+| **3** | Encounter library | Partial; simple scene encounter specs and balancer exist, richer encounter packs are planned |
+| **4** | Optional **local-only RAG** | Planned; desktop script would index PDF on your PC and never upload to Vercel |
+| **5** | Official integration | Future only; D&D Beyond / WotC requires a proper license |
 
 **Storm King’s Thunder** is a full campaign (levels 1–11+, many chapters). Realistic first milestone: **Chapter 1 (Nightstone)** as a private module, solo or small party, not the entire book in v1.
 
 ---
 
-## Practical workflow for SKT (today, no code change)
+## Practical workflow for SKT
 
 1. Keep the PDF **outside git** (or in gitignored `content/private/`).
 2. Play **Brindlehook-style** one-shots in the app to harden the engine.
@@ -110,7 +116,7 @@ Encounters reference **engine monsters** (SRD or your stat summaries), not PDF t
    - 2–3 canon facts
    - DCs and skills
    - Monster IDs + counts (SRD names where possible)
-4. When Phase 1 loader exists, paste that into `module.meta.yaml`.
+4. Paste those notes into `content/private/<module-id>/module.json` or import the JSON through the dev-only `/start` module import UI.
 5. Use the book for read-aloud, maps, and art; use the app for **dice, HP, and structured memory**.
 
 ---
@@ -147,10 +153,10 @@ Until then: **private modules + SRD engine + your book at the table**.
 
 ## Next engineering tasks (repo-safe)
 
-1. Gitignore `content/private/` and `*.pdf` under `docs/`.
-2. `loadPrivateModule(moduleId)` reading gitignored YAML.
-3. Replace fixed `SceneId` union with `string` scene keys for modules.
-4. Catalog API: list only modules present in `content/private/`.
+1. Add richer encounter packs or `encounters.yaml` references.
+2. Import and validate SRD/Open5e monster data.
+3. Build a local scene/module editor.
+4. Add optional `PARTYQUEST_LOCAL_RAG_URL` support for a localhost-only PDF index.
 5. Document SRD attribution in README when importing Open5e data.
 
 ---

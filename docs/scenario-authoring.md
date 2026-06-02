@@ -2,9 +2,12 @@
 doc: Scenario & module authoring
 project: PartyQuest
 date: 2026-06-02
+status: current guide
 ---
 
 # Module authoring
+
+> This guide describes the current private module workflow and scene schema for authoring scenarios compatible with the repo.
 
 ## Quick start (SKT or any owned book)
 

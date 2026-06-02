@@ -1,139 +1,83 @@
 # 10 Ways to Improve AIDungeonMaster
 
-This document outlines ten strategic improvements to enhance the immersion, mechanics, and user experience of the AIDungeonMaster platform.
+> Status as of 2026-06-02. Use `docs/todo.md` for the immediate implementation backlog. "Implemented" means a usable version exists in the app; "Partial" means a visible feature or backend slice still needs polish.
 
----
+## 1. Immersive Ambient Audio System - Partial
 
-### 1. Immersive Ambient Audio System (Partial)
 **Concept:** Add a dynamic soundscape engine that responds to the narrative state.
-- **Current:** LLM can set `ambient` on turns; UI shows a **scene mood indicator** (no audio playback yet).
-- **Next:** Royalty-free loops + Web Audio crossfade, or keep honest “mood only” labeling until audio ships.
-- **See:** `docs/audit-2026-06-02.md`, `docs/full-improvement-plan.md` §7.
 
-### 2. "Appeal the DM" Mechanism (Partial)
-**Concept:** A safety valve for when the AI makes a mechanical or narrative error.
-- **Current:** System prompt handles `[APPEAL]` input; feature flag on home page.
-- **Next:** Play-screen button + guided appeal text (shipped in Phase A).
-- **See:** `docs/audit-2026-06-02.md`, `docs/full-improvement-plan.md` §6.
+**Current:** LLM turns can set `ambient`, and the play UI shows a scene mood indicator through `AmbientAudio.tsx`. It explicitly says audio is coming soon.
 
-### 3. Tactical Spatial Combat Grid (Planned)
-**Concept:** Moving beyond theater-of-the-mind for complex encounters.
-- **Implementation:** A 2D grid tracked by the rules engine. The LLM handles the "fluff," while the engine handles movement, line-of-sight, and area-of-effect calculations.
-- **Benefit:** Provides tactical depth for players who enjoy the "game" aspect of D&D 5e.
+**Next:** Add royalty-free loops, Web Audio crossfades, mute/volume controls, and stored preferences.
 
-### 4. DM Persona Profiles (Implemented)
-**Concept:** Allowing players to customize their narrator.
-- **Implementation:** Selectable "DM Voices" (e.g., "The Gritty Realist," "The Epic Narrator," "The Whimsical Guide") that modify the system prompt's narration style and difficulty.
-- **Benefit:** Personalizes the experience and increases replayability.
+## 2. Appeal The DM - Implemented For V0
 
-### 5. Multiplayer Session Support (Planned)
-**Concept:** Expanding the app for groups.
-- **Implementation:** Support for multiple connected players with automated turn tracking and private "whisper" channels between the DM and individual players.
-- **Benefit:** Transitions the app from a solo toy to a viable platform for virtual game nights.
+**Concept:** Give players a safety valve when the AI makes a mechanical or narrative error.
 
-### 6. Physical Dice Integration (Implemented)
-**Concept:** Bridging the gap between digital and physical play.
-- **Implementation:** A "Roll Manually" option where players can use their own physical dice and input the results. The engine validates that the result is mathematically possible for that character. Supports Advantage/Disadvantage in the manual roll UI.
-- **Benefit:** Satisfies players who miss the tactile feel of rolling real dice while maintaining mechanical integrity.
+**Current:** The system prompt recognizes `[APPEAL]`, the feature flag is enabled, and the play screen has an appeal button that sends a guided appeal message.
 
-### 7. Smart Canon Log Summarization (Implemented)
-**Concept:** Solving the "long-context drift" problem.
-- **Implementation:** An LLM-powered background process that periodically summarizes the Canon Log, archiving flavor details while keeping critical plot points and NPC statuses in the active context.
-- **Benefit:** Ensures long campaigns remain coherent and prevents the DM from forgetting established facts.
+**Next:** Add richer appeal state, optional retcon tracking, and better UI for reviewing the ruling under dispute.
 
-### 8. Automated Encounter Balancer (Implemented)
-**Concept:** Ensuring fair and challenging combat.
-- **Implementation:** A backend utility using official 5e Challenge Rating (CR) formulas to generate monster encounters, rather than relying on the LLM to "vibe" the difficulty.
-- **Benefit:** Prevents accidental TPKs (Total Party Kills) and ensures combat is appropriately challenging for the party's level.
+## 3. Tactical Spatial Combat Grid - Planned
 
-### 9. Interactive Tutorial Adventure (Implemented)
-**Concept:** A guided onboarding experience.
-- **Implementation:** A scripted "Session 0" adventure that walks new players through skill checks, combat actions, and how to effectively "prompt" the AI DM.
-- **Benefit:** Lowers the barrier to entry for players who are new to D&D or AI-driven games.
+**Concept:** Move beyond theater-of-the-mind for complex encounters.
 
-### 10. Rich Session Recaps (Implemented)
-**Concept:** Enhancing continuity between play sessions.
-- **Implementation:** Automatically generated narrative summaries at the end of every session, highlighting key NPCs met, items found, and unresolved plot hooks to be displayed when the player resumes. Supports exporting recaps to Markdown files.
-- **Benefit:** Helps players remember their journey and provides a sense of progress and accomplishment.
+**Current:** Not implemented. Combat does not track grid positions, movement, line of sight, cover, or area effects.
 
-toolName: view_folder
-            
-status: success
-          
-c:\Users\joshu_w0zb8cp\Projects\AIDungeonMaster\docs
-          
+**Next:** Add engine-owned spatial state only after action economy and conditions are more complete.
 
-        
-            
-toolName: view_files
-            
-status: success
-          
-            
-filePath: c:\Users\joshu_w0zb8cp\Projects\AIDungeonMaster\docs\v0-feature-spec.md
-          
+## 4. DM Persona Profiles - Implemented
 
-        
-            
-toolName: view_files
-            
-status: success
-          
-            
-filePath: c:\Users\joshu_w0zb8cp\Projects\AIDungeonMaster\docs\ai-dm-app-gaps-and-next-steps.md
-          
+**Concept:** Let players customize narrator tone.
 
-        
-            
-toolName: view_folder
-            
-status: success
-          
-c:\Users\joshu_w0zb8cp\Projects\AIDungeonMaster\src\test
-          
+**Current:** `/start` exposes persona choices, and `buildSystemPrompt` injects the selected persona.
 
-        
-            
-toolName: view_files
-            
-status: success
-          
-            
-filePath: c:\Users\joshu_w0zb8cp\Projects\AIDungeonMaster\src\test\validate-narration.test.ts
-          
+**Next:** Add prompt evals per persona so tone changes do not break mechanics.
 
-        
-            
-toolName: view_files
-            
-status: success
-          
-            
-filePath: c:\Users\joshu_w0zb8cp\Projects\AIDungeonMaster\docs\TEN_IMPROVEMENTS.md
-          
-After reviewing all the project documentation, including the [v0-feature-spec.md](file:///c%3A/Users/joshu_w0zb8cp/Projects/AIDungeonMaster/docs/v0-feature-spec.md), [ai-dm-app-gaps-and-next-steps.md](file:///c%3A/Users/joshu_w0zb8cp/Projects/AIDungeonMaster/docs/ai-dm-app-gaps-and-next-steps.md), and the recently updated [TEN_IMPROVEMENTS.md](file:///c%3A/Users/joshu_w0zb8cp/Projects/AIDungeonMaster/docs/TEN_IMPROVEMENTS.md), here is the roadmap of what remains to be done:
+## 5. Multiplayer Session Support - Planned
 
-**Immediate Technical Enhancements**
-- **Physical Dice Integration**: Add a "Manual Roll" mode where players can roll real dice and input the results, with engine validation to ensure the result is mathematically possible.
-- **Smart Canon Log Summarization**: Implement an LLM-powered process to summarize older facts in the Canon Log. This prevents "long-context drift" where the DM forgets early-session details as the conversation grows.
-- **Automated Encounter Balancer**: Build a utility that uses official 5e Challenge Rating (CR) formulas to generate balanced monster encounters instead of relying on hand-authored scenarios.
+**Concept:** Expand from solo/party-on-one-device play to group play.
 
-**User Experience & Onboarding**
-- **Interactive Tutorial (Session 0)**: Create a scripted onboarding adventure that teaches new players how to interact with the AI DM, perform skill checks, and manage their character sheet.
-- **Accessibility - First-Class Transcripts**: Ensure every piece of DM narration is recorded in a prominent, screen-reader-friendly transcript for deaf or hard-of-hearing players.
-- **Silence Handling & Nudges**: Implement "pacing nudges" where the app gently prompts the player with suggestions if there has been no input for a certain period.
+**Current:** The start screen can create a party of up to 4 character templates, but there are no rooms, accounts, WebSockets, separate player clients, whispers, or host controls.
 
-**Multiplayer & Social Features**
-- **Multiplayer Room Support**: Implement WebSockets for real-time group play, including room codes and a lobby system.
-- **Whispers & Secrets**: Create private channels where the DM can send information to only one player (e.g., a secret Perception check or a hidden backstory detail).
-- **Host Succession**: Logic to automatically transfer "Host" powers if the original creator of the session disconnects.
+**Next:** Add real-time room state, player identities, action queueing, and private channels.
 
-**Advanced Combat & Rules**
-- **Tactical Spatial Grid**: Transition from "theater-of-the-mind" to a basic 2D grid for tracking positioning, distances, and area-of-effect spells in combat.
-- **Custom House Rules**: Add a settings panel for common house rules (e.g., max-damage criticals, inspiration as a metacurrency, or custom resting rules).
-- **Expanded SRD Content**: Integrate more character classes, levels, and a wider library of spells and monsters beyond the current V0 subset.
+## 6. Physical Dice Integration - Implemented For Core Rolls
 
-**Observability & Sustainability**
-- **Analytics & Fun Metrics**: Build tracking for session length, return rates, and "drop-off points" to measure where players get bored or confused.
-- **Cost Caps & Metering**: Implement per-user API budget caps to prevent runaway costs from power users or bots.
-- **Prompt Versioning & Eval Framework**: Create a formal system for versioning the DM prompts and running them against a suite of "eval" scenarios to catch regressions.
+**Concept:** Let players roll real dice and enter the natural d20 result.
+
+**Current:** `physicalDice` is feature-flagged on, the play UI has a physical dice toggle, `ManualRollModal` collects d20 results, and the engine can resolve skill checks, attacks, and death saves from manual rolls.
+
+**Next:** Harden pending-turn recovery, add clearer validation for advantage/disadvantage entries, and test more multi-request edge cases.
+
+## 7. Smart Canon Log Summarization - Partial
+
+**Concept:** Reduce long-context drift by summarizing older canon facts.
+
+**Current:** `/api/turn` calls `summarizeCanonLog` when the canon log grows, preserving high-priority facts and summarizing lower-priority facts through the configured LLM if available. Without credentials, facts are left unchanged.
+
+**Next:** Make summarization deterministic/testable, add prompt versioning, and protect against losing important medium-priority facts.
+
+## 8. Automated Encounter Balancer - Partial
+
+**Concept:** Generate balanced combat from rules-owned monster data instead of relying on the LLM.
+
+**Current:** `buildBalancedEncounter` exists and module adventure encounters can auto-spawn from preferred monster templates and difficulty. The algorithm is simple and uses a small local monster library.
+
+**Next:** Import a broader SRD/Open5e monster set, add tests for XP thresholds and party size, and support encounter packs.
+
+## 9. Interactive Tutorial Adventure - Implemented For V0
+
+**Concept:** Teach new players how to talk, investigate, and fight.
+
+**Current:** A `tutorial` scenario exists with social, exploration, and combat scenes, choices, NPC guidance, and mock DCs. The play page also has an onboarding banner.
+
+**Next:** Add stronger first-run guidance, inline failed-check help, and completion metrics.
+
+## 10. Rich Session Recaps - Partial
+
+**Concept:** Preserve continuity and give players a souvenir of the session.
+
+**Current:** Turns save recap objects, `/api/recap` exposes the latest recap, and the play UI can export a Markdown recap including party status and canon facts.
+
+**Next:** Add durable recap storage in production, richer ending summaries, and shareable links after cloud persistence exists.

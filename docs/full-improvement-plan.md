@@ -2,11 +2,14 @@
 doc: Full improvement plan (every product surface)
 project: PartyQuest / AIDungeonMaster
 date: 2026-06-02
+status: current
 audience: developers, product, coding agents
 companions: audit-2026-06-02.md, ai-dm-app-gaps-and-next-steps.md, v0-feature-spec.md
 ---
 
 # Full improvement plan
+
+> **Accuracy note (2026-06-02):** This is a roadmap of desired improvements by surface. It includes target states that are not yet implemented. For the concise current backlog, see `docs/todo.md`.
 
 Concrete ways to improve **every major surface** of the app: architecture, engine, LLM, mock DM, API, UI, persistence, audio, testing, ops, and future multiplayer. Ordered by leverage for the current V0 solo text prototype.
 
@@ -43,13 +46,13 @@ Concrete ways to improve **every major surface** of the app: architecture, engin
 
 | Goal | Approach | Done when |
 |------|----------|-----------|
-| Prompt as versioned files | `src/lib/llm/prompts/dm-system.v0.3.ts` + changelog header | Prompt diff visible in git |
+| Prompt as versioned files | Current prompt is inline in `src/lib/llm/system-prompt.ts`; move to `src/lib/llm/prompts/dm-system.v0.3.ts` + changelog header | Prompt diff visible in git |
 | Eval harness | `evals/scenarios/*.json` — input, expected `engineRequests`, optional narration regex | `pnpm eval` runs on CI |
 | Structured output hardening | Retry once on Zod failure with “fix JSON only” message | &lt;1% fallback rate with keys |
-| Safety classifier | Small model or rules pass on narration before display | Blocked content never reaches UI |
+| Safety classifier | Current numeric validator only logs warnings; add small model, moderation endpoint, or rules pass before display | Blocked content never reaches UI |
 | Cost control | Token estimate per turn; daily cap per session/IP | Graceful “limit reached” message |
 | Context budget | Summarize recaps older than N turns; always inject full canon log | 50-turn session without contradiction spike |
-| Provider abstraction | Interface `LlmProvider` with Groq/OpenAI/mock implementations | Unit tests don’t hit network |
+| Provider abstraction | Current provider wrapper is a single function; introduce `LlmProvider` with Groq/OpenAI/mock implementations | Unit tests don’t hit network |
 
 ---
 
