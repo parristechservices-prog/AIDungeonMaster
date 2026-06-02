@@ -13,6 +13,7 @@ import { NarrationPanel } from '@/components/play/NarrationPanel';
 import { OnboardingBanner } from '@/components/play/OnboardingBanner';
 import { AppealButton } from '@/components/play/AppealButton';
 import { AmbientAudio } from '@/components/play/AmbientAudio';
+import { ManualRollModal } from '@/components/play/ManualRollModal';
 import { isFeatureEnabled } from '@/lib/config/features';
 import { DEFAULT_ADVENTURE_ID, getScenario } from '@/lib/game/scenarios';
 import type { TurnResponse } from '@/lib/play/types';
@@ -38,6 +39,8 @@ export default function PlayPage() {
   const [turnCount, setTurnCount] = useState(0);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [ambient, setAmbient] = useState<TurnResponse['ambient']>('none');
+  const [physicalDice, setPhysicalDice] = useState(false);
+  const [manualRollContext, setManualRollContext] = useState<TurnResponse['manualRollContext'] | null>(null);
 
   useEffect(() => {
     const boot = readPlayBootstrap();
@@ -73,19 +76,27 @@ export default function PlayPage() {
   }, []);
 
   const sendTurn = useCallback(
-    async (rawInput: string) => {
+    async (rawInput: string, manualRoll?: number) => {
       const nextInput = rawInput.trim();
-      if (!nextInput || busy || !sessionId) return;
+      if (!nextInput && manualRoll === undefined) return;
+      if (busy || !sessionId) return;
 
-      setInput('');
+      if (manualRoll === undefined) {
+        setInput('');
+        setHistory((h) => [...h, `> ${nextInput}`]);
+      }
       setBusy(true);
-      setHistory((h) => [...h, `> ${nextInput}`]);
 
       try {
         const res = await fetch('/api/turn', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ sessionId, playerInput: nextInput }),
+          body: JSON.stringify({ 
+            sessionId, 
+            playerInput: nextInput, 
+            physicalDice,
+            manualRoll
+          }),
         });
         const data = (await res.json()) as TurnResponse;
         if (!data.ok) throw new Error('Turn failed');
@@ -101,6 +112,12 @@ export default function PlayPage() {
         if (data.ambient) setAmbient(data.ambient);
         setTurnCount((n) => n + 1);
         if (data.state) setState(data.state);
+
+        if (data.needsManualRoll && data.manualRollContext) {
+          setManualRollContext(data.manualRollContext);
+        } else {
+          setManualRollContext(null);
+        }
 
         if (isFeatureEnabled('clientSessionSnapshot')) {
           saveClientSnapshot(sessionId, data);
@@ -193,6 +210,24 @@ export default function PlayPage() {
               }}
             />
           )}
+
+          {isFeatureEnabled('physicalDice') && (
+            <div className="mt-4 flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                id="physical-dice"
+                checked={physicalDice}
+                onChange={(e) => setPhysicalDice(e.target.checked)}
+                className="rounded border-zinc-300 dark:border-zinc-700"
+              />
+              <label
+                htmlFor="physical-dice"
+                className="cursor-pointer text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+              >
+                Use physical dice for rolls
+              </label>
+            </div>
+          )}
           <ChoiceButtons choices={choices} busy={busy} onPick={(c) => sendTurn(c)} />
         </section>
 
@@ -207,7 +242,14 @@ export default function PlayPage() {
         </aside>
 
         <AmbientAudio type={ambient} />
-      </main>
+
+      {manualRollContext && (
+        <ManualRollModal 
+          context={manualRollContext} 
+          onSubmit={(roll) => sendTurn('', roll)} 
+        />
+      )}
+    </main>
 
       {sceneId === 'ending' && (
         <EndingScreen

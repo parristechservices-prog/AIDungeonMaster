@@ -14,8 +14,6 @@ export type TurnResponse = {
   nextHook: string;
   narration: string;
   ambient?: 'none' | 'tavern' | 'dungeon' | 'combat' | 'exploration' | 'boss_fight';
-  aiUsed?: boolean;
-  fallbackUsed?: boolean;
   needsManualRoll?: boolean;
   manualRollContext?: {
     kind: 'skill_check' | 'player_attack';
