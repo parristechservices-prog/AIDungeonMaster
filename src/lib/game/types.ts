@@ -20,6 +20,8 @@ export type Character = {
   weapon: { name: string; attackBonus: number; damage: string };
   gold: number;
   inventory: string[];
+  deathSaves: { success: number; failure: number };
+  unconscious: boolean;
 };
 
 export type Monster = {

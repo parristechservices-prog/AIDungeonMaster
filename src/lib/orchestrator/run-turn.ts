@@ -23,6 +23,9 @@ function toEngineRequest(request: LlmEngineRequest, manualRoll?: number): Engine
   if (request.kind === 'player_attack') {
     return { ...request, manualRoll };
   }
+  if (request.kind === 'death_save') {
+    return { ...request, manualRoll };
+  }
   return request as EngineRequest;
 }
 
@@ -45,6 +48,8 @@ export type TurnResult = {
     kind: 'skill_check' | 'player_attack';
     formula: string;
     dc?: number;
+    advantage?: boolean;
+    disadvantage?: boolean;
   };
   engineResults: Array<{ kind: string; summary: string; ok: boolean; breakdown?: import('@/lib/engine/types').RollBreakdown; critical?: boolean }>;
   recentRolls: import('@/lib/engine/types').RollBreakdown[];

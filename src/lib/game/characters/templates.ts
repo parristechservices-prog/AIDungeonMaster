@@ -26,6 +26,8 @@ const fighter: Character = {
   weapon: { name: 'Longsword', attackBonus: 5, damage: '1d8+3' },
   gold: 15,
   inventory: ['Chain Shirt', 'Longsword', 'Explorer\'s Pack', 'Healing Potion'],
+  deathSaves: { success: 0, failure: 0 },
+  unconscious: false,
 };
 
 const wizard: Character = {
@@ -47,6 +49,8 @@ const wizard: Character = {
   weapon: { name: 'Quarterstaff', attackBonus: 2, damage: '1d6+2' },
   gold: 10,
   inventory: ['Arcane Focus', 'Spellbook', 'Scholar\'s Pack', 'Healing Potion'],
+  deathSaves: { success: 0, failure: 0 },
+  unconscious: false,
 };
 
 const rogue: Character = {
@@ -65,6 +69,8 @@ const rogue: Character = {
   weapon: { name: 'Rapier', attackBonus: 5, damage: '1d8+3' },
   gold: 25,
   inventory: ['Leather Armor', 'Rapier', 'Thieves\' Tools', 'Dark Cloak', 'Healing Potion'],
+  deathSaves: { success: 0, failure: 0 },
+  unconscious: false,
 };
 
 const cleric: Character = {
@@ -86,6 +92,8 @@ const cleric: Character = {
   weapon: { name: 'Mace', attackBonus: 4, damage: '1d6+2' },
   gold: 12,
   inventory: ['Chain Shirt', 'Shield', 'Holy Symbol', 'Healing Potion', 'Healing Potion'],
+  deathSaves: { success: 0, failure: 0 },
+  unconscious: false,
 };
 
 export const CHARACTER_TEMPLATES: CharacterTemplate[] = [

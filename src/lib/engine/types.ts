@@ -8,10 +8,11 @@ export type Skill =
   | 'stealth' | 'survival';
 
 export type EngineRequest =
-  | { kind: 'skill_check'; skill: Skill; dc: number; reason: string; manualRoll?: number }
+  | { kind: 'skill_check'; skill: Skill; dc: number; reason: string; manualRoll?: number; advantage?: boolean; disadvantage?: boolean }
   | { kind: 'start_combat' }
-  | { kind: 'player_attack'; targetId: string; manualRoll?: number }
+  | { kind: 'player_attack'; targetId: string; manualRoll?: number; advantage?: boolean; disadvantage?: boolean }
   | { kind: 'monster_turn' }
+  | { kind: 'death_save'; manualRoll?: number }
   | { kind: 'use_feature'; featureId: string }
   | { kind: 'cast_spell'; spellName: string; level: number; targetId?: string }
   | { kind: 'short_rest' }
@@ -25,6 +26,11 @@ export type RollBreakdown = {
   rolls: number[];
   modifier: number;
   total: number;
+  advantage?: boolean;
+  disadvantage?: boolean;
+  keptRoll?: number;
+  dc?: number;
+  ok?: boolean;
 };
 
 export type EngineResult = {
@@ -37,5 +43,7 @@ export type EngineResult = {
     kind: 'skill_check' | 'player_attack';
     formula: string;
     dc?: number;
+    advantage?: boolean;
+    disadvantage?: boolean;
   };
 };

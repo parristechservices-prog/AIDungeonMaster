@@ -20,16 +20,24 @@ export function resolveEngineRequest(
             ok: false,
             summary: `Waiting for manual ${request.skill} roll...`,
             needsManualRoll: true,
-            manualRollContext: { kind: 'skill_check', formula: `1d20+${mod}`, dc: request.dc },
+            manualRollContext: {
+              kind: 'skill_check',
+              formula: `1d20+${mod}`,
+              dc: request.dc,
+              advantage: request.advantage,
+              disadvantage: request.disadvantage,
+            },
           },
         };
       }
 
       const breakdown = request.manualRoll !== undefined 
         ? { formula: `1d20+${mod}`, rolls: [request.manualRoll], modifier: mod, total: request.manualRoll + mod }
-        : rollFormula('1d20', mod);
+        : rollFormula('1d20', mod, { advantage: request.advantage, disadvantage: request.disadvantage });
       
       const ok = breakdown.total >= request.dc;
+      breakdown.dc = request.dc;
+      breakdown.ok = ok;
       const inCombatScene =
         getSceneKind(getAdventure(state.adventureId), state.sceneId) === 'combat';
       const next = ok && !inCombatScene ? advanceScene(state) : state;
@@ -66,16 +74,25 @@ export function resolveEngineRequest(
             ok: false,
             summary: `Waiting for manual attack roll against ${target.name}...`,
             needsManualRoll: true,
-            manualRollContext: { kind: 'player_attack', formula: `1d20+${attackMod}`, dc: target.ac },
+            manualRollContext: {
+              kind: 'player_attack',
+              formula: `1d20+${attackMod}`,
+              dc: target.ac,
+              advantage: request.advantage,
+              disadvantage: request.disadvantage,
+            },
           },
         };
       }
 
       const toHit = request.manualRoll !== undefined
-        ? { formula: `1d20+${attackMod}`, rolls: [request.manualRoll], modifier: attackMod, total: request.manualRoll + attackMod }
-        : rollFormula('1d20', attackMod);
+        ? { formula: `1d20+${attackMod}`, rolls: [request.manualRoll], modifier: attackMod, total: request.manualRoll + attackMod, dc: target.ac }
+        : rollFormula('1d20', attackMod, { advantage: request.advantage, disadvantage: request.disadvantage });
       
-      const critical = toHit.rolls[0] === 20;
+      toHit.dc = target.ac;
+      const critical = toHit.rolls[0] === 20 || (request.advantage && (toHit.rolls[0] === 20 || toHit.rolls[1] === 20));
+      toHit.ok = toHit.total >= target.ac || critical;
+
       if (toHit.total < target.ac && !critical) {
         return { state: appendLog(state, `Attack missed ${target.name}.`), result: { ok: false, summary: 'Attack missed.', breakdown: toHit } };
       }
@@ -98,8 +115,81 @@ export function resolveEngineRequest(
       }
       const dmg = rollFormula('1d6', 1);
       const hp = Math.max(0, state.player.hp - dmg.total);
-      const next = { ...state, player: { ...state.player, hp } };
-      return { state: appendLog(next, `${attacker.name} hit for ${dmg.total}.`), result: { ok: true, summary: `${attacker.name} hit you.`, breakdown: dmg } };
+      const unconscious = hp === 0;
+      const next = { ...state, player: { ...state.player, hp, unconscious } };
+      return { 
+        state: appendLog(next, `${attacker.name} hit for ${dmg.total}.${unconscious ? ' You have fallen unconscious!' : ''}`), 
+        result: { ok: true, summary: `${attacker.name} hit you.${unconscious ? ' You are unconscious!' : ''}`, breakdown: dmg } 
+      };
+    }
+    case 'death_save': {
+      if (!state.player.unconscious) return { state, result: { ok: false, summary: 'You are not unconscious.' } };
+
+      if (options?.physicalDice && request.manualRoll === undefined) {
+        return {
+          state,
+          result: {
+            ok: false,
+            summary: 'Waiting for manual Death Save...',
+            needsManualRoll: true,
+            manualRollContext: { kind: 'skill_check', formula: '1d20' }, // Reusing skill_check kind for UI
+          },
+        };
+      }
+
+      const breakdown = request.manualRoll !== undefined
+        ? { formula: '1d20', rolls: [request.manualRoll], modifier: 0, total: request.manualRoll }
+        : rollFormula('1d20', 0);
+      
+      const natural = breakdown.rolls[0];
+      let { success, failure } = state.player.deathSaves;
+      let hp = 0;
+      let unconscious = true;
+      let msg = '';
+
+      if (natural === 20) {
+        success = 0;
+        failure = 0;
+        hp = 1;
+        unconscious = false;
+        msg = 'Critical Success! You regain 1 HP and are no longer unconscious.';
+      } else if (natural === 1) {
+        failure += 2;
+        msg = 'Critical Failure! You mark 2 failures.';
+      } else if (natural >= 10) {
+        success += 1;
+        msg = 'Success! You mark 1 success.';
+      } else {
+        failure += 1;
+        msg = 'Failure. You mark 1 failure.';
+      }
+
+      let dead = false;
+      if (failure >= 3) {
+        dead = true;
+        msg += ' You have died.';
+      } else if (success >= 3) {
+        success = 0;
+        failure = 0;
+        unconscious = true; // Still unconscious but stable
+        msg += ' You are now stable.';
+      }
+
+      const next = { 
+        ...state, 
+        player: { 
+          ...state.player, 
+          hp, 
+          unconscious, 
+          deathSaves: { success, failure } 
+        },
+        sceneId: dead ? 'ending' : state.sceneId
+      };
+      
+      return { 
+        state: appendLog(next, `Death Save: ${msg}`), 
+        result: { ok: natural >= 10, summary: msg, breakdown } 
+      };
     }
     case 'use_feature': {
       const idx = state.player.features.findIndex((f) => f.id === request.featureId);
@@ -139,8 +229,42 @@ export function resolveEngineRequest(
         next = { ...state, player: { ...state.player, spellSlots } };
       }
 
-      const summary = `Cast ${request.spellName} (Level ${level})`;
-      return { state: appendLog(next, summary), result: { ok: true, summary } };
+      let summary = `Cast ${request.spellName} (Level ${level})`;
+      let breakdown: RollBreakdown | undefined;
+
+      const spellName = request.spellName.toLowerCase();
+      
+      // Basic Spell Logic
+      if (spellName.includes('cure wounds')) {
+        breakdown = rollFormula(`${level}d8`, 3); // Assuming +3 modifier
+        const hp = Math.min(next.player.maxHp, next.player.hp + breakdown.total);
+        const unconscious = hp > 0 ? false : next.player.unconscious;
+        const deathSaves = hp > 0 ? { success: 0, failure: 0 } : next.player.deathSaves;
+        next = { ...next, player: { ...next.player, hp, unconscious, deathSaves } };
+        summary = `Cure Wounds restored ${breakdown.total} HP.`;
+      } else if (spellName.includes('healing word')) {
+        breakdown = rollFormula(`${level}d4`, 3);
+        const hp = Math.min(next.player.maxHp, next.player.hp + breakdown.total);
+        const unconscious = hp > 0 ? false : next.player.unconscious;
+        const deathSaves = hp > 0 ? { success: 0, failure: 0 } : next.player.deathSaves;
+        next = { ...next, player: { ...next.player, hp, unconscious, deathSaves } };
+        summary = `Healing Word restored ${breakdown.total} HP.`;
+      } else if (spellName.includes('magic missile')) {
+        const missileCount = 2 + level; // 3 missiles at level 1, +1 per level
+        breakdown = rollFormula(`${missileCount}d4`, missileCount); // Each missile is 1d4+1
+        if (request.targetId) {
+          const monsters = next.monsters.map(m => 
+            m.id === request.targetId ? { ...m, hp: Math.max(0, m.hp - (breakdown?.total ?? 0)) } : m
+          );
+          next = { ...next, monsters };
+          const target = next.monsters.find(m => m.id === request.targetId);
+          summary = `Magic Missile hit ${target?.name} for ${breakdown.total} damage.`;
+        } else {
+          summary = `Magic Missile fired ${missileCount} darts for ${breakdown.total} total damage.`;
+        }
+      }
+
+      return { state: appendLog(next, summary), result: { ok: true, summary, breakdown } };
     }
     case 'short_rest': {
       const features = state.player.features.map(f => f.rechargeOn === 'short_rest' ? { ...f, usesRemaining: f.usesMax } : f);
@@ -202,13 +326,40 @@ function d20() {
   return Math.floor(Math.random() * 20) + 1;
 }
 
-function rollFormula(formula: string, fallbackMod = 0): RollBreakdown {
+function rollFormula(
+  formula: string,
+  fallbackMod = 0,
+  options?: { advantage?: boolean; disadvantage?: boolean }
+): RollBreakdown {
   const match = formula.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
   if (!match) return { formula, rolls: [], modifier: fallbackMod, total: fallbackMod };
   const count = Number(match[1]);
   const sides = Number(match[2]);
   const inlineMod = match[3] ? Number(match[3]) : fallbackMod;
-  const rolls = Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1);
-  const total = rolls.reduce((a, b) => a + b, 0) + inlineMod;
-  return { formula, rolls, modifier: inlineMod, total };
+
+  let rolls = Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1);
+  let keptRoll = rolls[0];
+
+  if (count === 1 && sides === 20) {
+    if (options?.advantage) {
+      const secondRoll = Math.floor(Math.random() * sides) + 1;
+      rolls = [rolls[0], secondRoll];
+      keptRoll = Math.max(...rolls);
+    } else if (options?.disadvantage) {
+      const secondRoll = Math.floor(Math.random() * sides) + 1;
+      rolls = [rolls[0], secondRoll];
+      keptRoll = Math.min(...rolls);
+    }
+  }
+
+  const total = (count === 1 && sides === 20 ? keptRoll : rolls.reduce((a, b) => a + b, 0)) + inlineMod;
+  return {
+    formula,
+    rolls,
+    modifier: inlineMod,
+    total,
+    advantage: options?.advantage,
+    disadvantage: options?.disadvantage,
+    keptRoll: count === 1 && sides === 20 ? keptRoll : undefined,
+  };
 }

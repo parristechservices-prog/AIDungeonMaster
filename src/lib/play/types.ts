@@ -19,6 +19,8 @@ export type TurnResponse = {
     kind: 'skill_check' | 'player_attack';
     formula: string;
     dc?: number;
+    advantage?: boolean;
+    disadvantage?: boolean;
   };
   narrationWarnings?: string[];
   engineResults: {

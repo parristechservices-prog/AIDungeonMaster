@@ -44,7 +44,37 @@ export default function PlayPage() {
   const [physicalDice, setPhysicalDice] = useState(false);
   const [manualRollContext, setManualRollContext] = useState<TurnResponse['manualRollContext'] | null>(null);
 
-  useEffect(() => {
+  const handleExportRecap = useCallback(() => {
+    if (!state) return;
+
+    const markdown = [
+      `# Adventure Recap: ${adventureTitle}`,
+      `**Character:** ${state.player.name} (${state.player.className} Level 3)`,
+      `**Session ID:** ${sessionId}`,
+      '',
+      '## The Journey So Far',
+      history.join('\n\n'),
+      '',
+      '## Character Stats',
+      `- **HP:** ${state.player.hp}/${state.player.maxHp}`,
+      `- **AC:** ${state.player.ac}`,
+      `- **Gold:** ${state.player.gold}gp`,
+      `- **Inventory:** ${state.player.inventory.join(', ') || 'None'}`,
+      '',
+      '## Canon Log (Key Facts)',
+      state.canonLog.map(f => `- [${f.importance.toUpperCase()}] ${f.content}`).join('\n'),
+    ].join('\n');
+
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `recap-${sessionId}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [state, adventureTitle, sessionId, history]);
     const boot = readPlayBootstrap();
     setSessionId(boot.sessionId);
 
@@ -164,15 +194,23 @@ export default function PlayPage() {
     <>
       <main className="mx-auto grid max-w-6xl grid-cols-1 gap-6 p-6 md:grid-cols-[2fr_1fr]">
         <section className="rounded-lg border border-zinc-300 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-          <header>
-            <h1 className="text-2xl font-bold">{adventureTitle}</h1>
-            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-              Scene: <b>{sceneId}</b> · {sceneGoal}
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              Mode: {mode === 'ai_director' ? 'AI Director' : 'Table rules'}
-              {turnCount > 0 ? ` · Turn ${turnCount}` : ''}
-            </p>
+          <header className="flex justify-between items-start">
+            <div>
+              <h1 className="text-2xl font-bold">{adventureTitle}</h1>
+              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                Scene: <b>{sceneId}</b> · {sceneGoal}
+              </p>
+              <p className="mt-1 text-xs text-zinc-500">
+                Mode: {mode === 'ai_director' ? 'AI Director' : 'Table rules'}
+                {turnCount > 0 ? ` · Turn ${turnCount}` : ''}
+              </p>
+            </div>
+            <button
+              onClick={handleExportRecap}
+              className="rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+            >
+              Export Recap
+            </button>
           </header>
 
           {showOnboarding && turnCount === 0 && (

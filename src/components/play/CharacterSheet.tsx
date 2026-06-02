@@ -14,9 +14,23 @@ export function CharacterSheet({ state }: Props) {
   return (
     <>
       <p className="mt-2">{state.player.name}</p>
-      <p>HP: {state.player.hp}/{state.player.maxHp}</p>
-      <p>AC: {state.player.ac}</p>
-      <p>Gold: {state.player.gold}gp</p>
+      <div className="flex flex-col gap-1">
+        <p className={`font-medium ${state.player.hp === 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
+          HP: {state.player.hp}/{state.player.maxHp}
+          {state.player.unconscious && ' (Unconscious)'}
+        </p>
+        {state.player.unconscious && (
+          <div className="text-[10px] bg-red-50 dark:bg-red-950/30 p-1.5 rounded border border-red-200 dark:border-red-900">
+            <p className="font-bold uppercase tracking-wider mb-1">Death Saves</p>
+            <div className="flex gap-4">
+              <span>Success: {state.player.deathSaves.success}/3</span>
+              <span>Failure: {state.player.deathSaves.failure}/3</span>
+            </div>
+          </div>
+        )}
+        <p>AC: {state.player.ac}</p>
+        <p>Gold: {state.player.gold}gp</p>
+      </div>
 
       <p className="mt-2 font-semibold">Inventory</p>
       <div className="max-h-32 overflow-y-auto text-xs">

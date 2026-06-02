@@ -7,6 +7,8 @@ type Props = {
     kind: 'skill_check' | 'player_attack';
     formula: string;
     dc?: number;
+    advantage?: boolean;
+    disadvantage?: boolean;
   };
   onSubmit: (roll: number) => void;
 };
@@ -32,9 +34,21 @@ export function ManualRollModal({ context, onSubmit }: Props) {
         
         <div className="mt-4 rounded-md bg-zinc-100 p-3 dark:bg-zinc-800">
           <p className="text-xs uppercase tracking-wider text-zinc-500">Requirements</p>
-          <div className="mt-1 flex justify-between text-sm">
-            <span>Formula: <code className="font-mono">{context.formula}</code></span>
-            {context.dc && <span>Target DC: <code className="font-mono">{context.dc}</code></span>}
+          <div className="mt-1 flex flex-col gap-1 text-sm">
+            <div className="flex justify-between">
+              <span>Formula: <code className="font-mono">{context.formula}</code></span>
+              {context.dc && <span>Target DC: <code className="font-mono">{context.dc}</code></span>}
+            </div>
+            {context.advantage && (
+              <div className="text-green-600 dark:text-green-400 font-semibold">
+                ★ Rolling with ADVANTAGE (Roll twice, take highest)
+              </div>
+            )}
+            {context.disadvantage && (
+              <div className="text-red-600 dark:text-red-400 font-semibold">
+                ⚠ Rolling with DISADVANTAGE (Roll twice, take lowest)
+              </div>
+            )}
           </div>
         </div>
 
