@@ -4,6 +4,8 @@ export type SceneId = string;
 export const BUILTIN_SCENE_IDS = ['social', 'exploration', 'combat', 'ending'] as const;
 export type BuiltinSceneId = (typeof BUILTIN_SCENE_IDS)[number];
 
+export type Condition = 'blinded' | 'charmed' | 'deafened' | 'frightened' | 'grappled' | 'incapacitated' | 'invisible' | 'paralyzed' | 'petrified' | 'poisoned' | 'prone' | 'restrained' | 'stunned' | 'unconscious' | 'blessed' | 'shielded' | 'guiding_bolt_target';
+
 export type Character = {
   id: string;
   name: string;
@@ -22,6 +24,7 @@ export type Character = {
   inventory: string[];
   deathSaves: { success: number; failure: number };
   unconscious: boolean;
+  conditions: Condition[];
 };
 
 export type Monster = {
@@ -32,6 +35,7 @@ export type Monster = {
   hp: number;
   attackBonus: number;
   damage: string;
+  conditions: Condition[];
 };
 
 export type NPC = {

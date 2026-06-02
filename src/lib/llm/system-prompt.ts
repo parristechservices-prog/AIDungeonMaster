@@ -51,6 +51,7 @@ export function buildSystemPrompt(state: GameState): string {
     '- The engine owns ALL mechanics and truth. Never invent HP, dice rolls, or stats.',
     '- If an action requires a roll, use "engineRequests" with "skill_check" or "player_attack".',
     '- You can grant "advantage": true or "disadvantage": true on checks/attacks if situational factors warrant it.',
+    '- Use "apply_condition" or "remove_condition" to manage status effects like blinded, prone, restrained, blessed, or shielded.',
     '- If the player is unconscious (HP 0), they MUST use "death_save" on their turn until they stabilize or die.',
     '- If a player uses a feature (like Second Wind) or casts a spell, use "use_feature" or "cast_spell".',
     '- If the player rests, use "short_rest" or "long_rest".',
@@ -68,6 +69,7 @@ export function buildSystemPrompt(state: GameState): string {
     `Abilities: ${abilitiesList}`,
     `Skills: ${skillsList || 'None trained'}`,
     `HP: ${player.hp}/${player.maxHp}, AC: ${player.ac}, Prof Bonus: +${player.proficiencyBonus}`,
+    player.conditions.length > 0 ? `CONDITIONS: ${player.conditions.join(', ')}` : '',
     player.unconscious ? `STATUS: UNCONSCIOUS (Death Saves: ${player.deathSaves.success} Successes, ${player.deathSaves.failure} Failures)` : '',
     `Gold: ${player.gold ?? 0}gp`,
     `Inventory: ${(player.inventory || []).join(', ') || 'Empty'}`,
@@ -87,7 +89,7 @@ export function buildSystemPrompt(state: GameState): string {
     '',
     '## MONSTERS (combat only)',
     state.monsters.length > 0
-      ? state.monsters.map((m) => `- id: ${m.id}, name: ${m.name}, hp: ${m.hp}/${m.maxHp}, ac: ${m.ac}`).join('\n')
+      ? state.monsters.map((m) => `- id: ${m.id}, name: ${m.name}, hp: ${m.hp}/${m.maxHp}, ac: ${m.ac}${m.conditions.length > 0 ? `, conditions: ${m.conditions.join(', ')}` : ''}`).join('\n')
       : 'None active.',
     '',
     '## MEMORY & FACTS',

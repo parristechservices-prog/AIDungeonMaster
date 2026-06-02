@@ -4,6 +4,10 @@ import type { GameState } from '@/lib/game/types';
 import { advanceScene } from '@/lib/game/state';
 import type { EngineRequest, EngineResult, RollBreakdown } from './types';
 
+function hasCondition(creature: { conditions: import('@/lib/game/types').Condition[] }, condition: import('@/lib/game/types').Condition): boolean {
+  return creature.conditions.includes(condition);
+}
+
 export function resolveEngineRequest(
   state: GameState,
   request: EngineRequest,
@@ -13,6 +17,15 @@ export function resolveEngineRequest(
     case 'skill_check': {
       const mod = state.player.skills[request.skill] ?? 0;
       
+      let advantage = request.advantage;
+      let disadvantage = request.disadvantage;
+      let bonusFormula = undefined;
+
+      if (hasCondition(state.player, 'poisoned')) disadvantage = true;
+      if (hasCondition(state.player, 'restrained') && (request.skill === 'acrobatics' || request.skill === 'athletics')) disadvantage = true;
+      if (hasCondition(state.player, 'blinded') && (request.skill === 'perception')) disadvantage = true;
+      if (hasCondition(state.player, 'blessed')) bonusFormula = '1d4';
+
       if (options?.physicalDice && request.manualRoll === undefined) {
         return {
           state,
@@ -22,10 +35,10 @@ export function resolveEngineRequest(
             needsManualRoll: true,
             manualRollContext: {
               kind: 'skill_check',
-              formula: `1d20+${mod}`,
+              formula: `1d20+${mod}${bonusFormula ? '+1d4' : ''}`,
               dc: request.dc,
-              advantage: request.advantage,
-              disadvantage: request.disadvantage,
+              advantage,
+              disadvantage,
             },
           },
         };
@@ -33,7 +46,7 @@ export function resolveEngineRequest(
 
       const breakdown = request.manualRoll !== undefined 
         ? { formula: `1d20+${mod}`, rolls: [request.manualRoll], modifier: mod, total: request.manualRoll + mod }
-        : rollFormula('1d20', mod, { advantage: request.advantage, disadvantage: request.disadvantage });
+        : rollFormula('1d20', mod, { advantage, disadvantage, bonusFormula });
       
       const ok = breakdown.total >= request.dc;
       breakdown.dc = request.dc;
@@ -66,6 +79,22 @@ export function resolveEngineRequest(
       if (!target) return { state, result: { ok: false, summary: 'No valid target.' } };
 
       const attackMod = state.player.weapon.attackBonus;
+      let advantage = request.advantage;
+      let disadvantage = request.disadvantage;
+      let bonusFormula = undefined;
+
+      // Attacker conditions
+      if (hasCondition(state.player, 'blinded')) disadvantage = true;
+      if (hasCondition(state.player, 'poisoned')) disadvantage = true;
+      if (hasCondition(state.player, 'prone')) disadvantage = true;
+      if (hasCondition(state.player, 'restrained')) disadvantage = true;
+      if (hasCondition(state.player, 'blessed')) bonusFormula = '1d4';
+
+      // Target conditions
+      if (hasCondition(target, 'blinded')) advantage = true;
+      if (hasCondition(target, 'paralyzed') || hasCondition(target, 'stunned') || hasCondition(target, 'unconscious')) advantage = true;
+      if (hasCondition(target, 'restrained')) advantage = true;
+      if (hasCondition(target, 'guiding_bolt_target')) advantage = true;
 
       if (options?.physicalDice && request.manualRoll === undefined) {
         return {
@@ -76,10 +105,10 @@ export function resolveEngineRequest(
             needsManualRoll: true,
             manualRollContext: {
               kind: 'player_attack',
-              formula: `1d20+${attackMod}`,
+              formula: `1d20+${attackMod}${bonusFormula ? '+1d4' : ''}`,
               dc: target.ac,
-              advantage: request.advantage,
-              disadvantage: request.disadvantage,
+              advantage,
+              disadvantage,
             },
           },
         };
@@ -87,7 +116,7 @@ export function resolveEngineRequest(
 
       const toHit = request.manualRoll !== undefined
         ? { formula: `1d20+${attackMod}`, rolls: [request.manualRoll], modifier: attackMod, total: request.manualRoll + attackMod, dc: target.ac }
-        : rollFormula('1d20', attackMod, { advantage: request.advantage, disadvantage: request.disadvantage });
+        : rollFormula('1d20', attackMod, { advantage, disadvantage, bonusFormula });
       
       toHit.dc = target.ac;
       const critical = toHit.rolls[0] === 20 || (request.advantage && (toHit.rolls[0] === 20 || toHit.rolls[1] === 20));
@@ -109,8 +138,27 @@ export function resolveEngineRequest(
     case 'monster_turn': {
       const attacker = state.monsters.find((m) => m.hp > 0);
       if (!attacker) return { state, result: { ok: true, summary: 'No monsters remain.' } };
-      const toHit = rollFormula('1d20', attacker.attackBonus);
-      if (toHit.total < state.player.ac) {
+      
+      let advantage = false;
+      let disadvantage = false;
+      let bonusFormula = undefined;
+
+      // Attacker conditions
+      if (hasCondition(attacker, 'blinded')) disadvantage = true;
+      if (hasCondition(attacker, 'poisoned')) disadvantage = true;
+      if (hasCondition(attacker, 'prone')) disadvantage = true;
+      if (hasCondition(attacker, 'restrained')) disadvantage = true;
+      if (hasCondition(attacker, 'blessed')) bonusFormula = '1d4';
+
+      // Target (player) conditions
+      if (hasCondition(state.player, 'blinded')) advantage = true;
+      if (hasCondition(state.player, 'paralyzed') || hasCondition(state.player, 'stunned') || hasCondition(state.player, 'unconscious')) advantage = true;
+      if (hasCondition(state.player, 'restrained')) advantage = true;
+
+      const playerAc = hasCondition(state.player, 'shielded') ? state.player.ac + 5 : state.player.ac;
+
+      const toHit = rollFormula('1d20', attacker.attackBonus, { advantage, disadvantage, bonusFormula });
+      if (toHit.total < playerAc) {
         return { state: appendLog(state, `${attacker.name} missed.`), result: { ok: false, summary: `${attacker.name} missed.`, breakdown: toHit } };
       }
       const dmg = rollFormula('1d6', 1);
@@ -250,19 +298,47 @@ export function resolveEngineRequest(
         next = { ...next, player: { ...next.player, hp, unconscious, deathSaves } };
         summary = `Healing Word restored ${breakdown.total} HP.`;
       } else if (spellName.includes('magic missile')) {
-        const missileCount = 2 + level; // 3 missiles at level 1, +1 per level
-        breakdown = rollFormula(`${missileCount}d4`, missileCount); // Each missile is 1d4+1
-        if (request.targetId) {
-          const monsters = next.monsters.map(m => 
-            m.id === request.targetId ? { ...m, hp: Math.max(0, m.hp - (breakdown?.total ?? 0)) } : m
-          );
-          next = { ...next, monsters };
-          const target = next.monsters.find(m => m.id === request.targetId);
-          summary = `Magic Missile hit ${target?.name} for ${breakdown.total} damage.`;
-        } else {
-          summary = `Magic Missile fired ${missileCount} darts for ${breakdown.total} total damage.`;
-        }
-      }
+         const missileCount = 2 + level; // 3 missiles at level 1, +1 per level
+         breakdown = rollFormula(`${missileCount}d4`, missileCount); // Each missile is 1d4+1
+         if (request.targetId) {
+           const monsters = next.monsters.map(m => 
+             m.id === request.targetId ? { ...m, hp: Math.max(0, m.hp - (breakdown?.total ?? 0)) } : m
+           );
+           next = { ...next, monsters };
+           const target = next.monsters.find(m => m.id === request.targetId);
+           summary = `Magic Missile hit ${target?.name} for ${breakdown.total} damage.`;
+         } else {
+           summary = `Magic Missile fired ${missileCount} darts for ${breakdown.total} total damage.`;
+         }
+       } else if (spellName.includes('shield')) {
+         // Apply shielded condition to player
+         if (!next.player.conditions.includes('shielded')) {
+           next = { ...next, player: { ...next.player, conditions: [...next.player.conditions, 'shielded' as const] } };
+         }
+         summary = `Cast Shield. AC increased by 5 until next turn.`;
+       } else if (spellName.includes('bless')) {
+         // Apply blessed condition to player
+         if (!next.player.conditions.includes('blessed')) {
+           next = { ...next, player: { ...next.player, conditions: [...next.player.conditions, 'blessed' as const] } };
+         }
+         summary = `Cast Bless. You now add 1d4 to attack rolls and saving throws.`;
+       } else if (spellName.includes('guiding bolt')) {
+         breakdown = rollFormula(`${3 + level}d6`, 3); // 4d6 at level 1
+         if (request.targetId) {
+            const monsters = next.monsters.map(m => {
+              if (m.id === request.targetId) {
+                const conditions = m.conditions.includes('guiding_bolt_target') ? m.conditions : [...m.conditions, 'guiding_bolt_target' as const];
+                return { ...m, hp: Math.max(0, m.hp - (breakdown?.total ?? 0)), conditions };
+              }
+              return m;
+            });
+            next = { ...next, monsters };
+            const target = next.monsters.find(m => m.id === request.targetId);
+            summary = `Guiding Bolt hit ${target?.name} for ${breakdown.total} damage and granted advantage on the next attack.`;
+         } else {
+            summary = `Guiding Bolt fired for ${breakdown.total} damage.`;
+         }
+       }
 
       return { state: appendLog(next, summary), result: { ok: true, summary, breakdown } };
     }
@@ -315,6 +391,50 @@ export function resolveEngineRequest(
       const next = { ...state, player: { ...state.player, gold, inventory } };
       return { state: next, result: { ok: true, summary: 'Inventory updated.' } };
     }
+    case 'apply_condition': {
+      let next = state;
+      let targetName = '';
+      
+      if (request.targetId === state.player.id) {
+        if (!state.player.conditions.includes(request.condition)) {
+          next = { ...state, player: { ...state.player, conditions: [...state.player.conditions, request.condition] } };
+        }
+        targetName = state.player.name;
+      } else {
+        const monsters = state.monsters.map(m => {
+          if (m.id === request.targetId && !m.conditions.includes(request.condition)) {
+            targetName = m.name;
+            return { ...m, conditions: [...m.conditions, request.condition] };
+          }
+          return m;
+        });
+        next = { ...state, monsters };
+      }
+      
+      const summary = `${targetName} is now ${request.condition}.`;
+      return { state: appendLog(next, summary), result: { ok: true, summary } };
+    }
+    case 'remove_condition': {
+      let next = state;
+      let targetName = '';
+      
+      if (request.targetId === state.player.id) {
+        next = { ...state, player: { ...state.player, conditions: state.player.conditions.filter(c => c !== request.condition) } };
+        targetName = state.player.name;
+      } else {
+        const monsters = state.monsters.map(m => {
+          if (m.id === request.targetId) {
+            targetName = m.name;
+            return { ...m, conditions: m.conditions.filter(c => c !== request.condition) };
+          }
+          return m;
+        });
+        next = { ...state, monsters };
+      }
+      
+      const summary = `${targetName} is no longer ${request.condition}.`;
+      return { state: appendLog(next, summary), result: { ok: true, summary } };
+    }
   }
 }
 
@@ -329,7 +449,7 @@ function d20() {
 function rollFormula(
   formula: string,
   fallbackMod = 0,
-  options?: { advantage?: boolean; disadvantage?: boolean }
+  options?: { advantage?: boolean; disadvantage?: boolean; bonusFormula?: string }
 ): RollBreakdown {
   const match = formula.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
   if (!match) return { formula, rolls: [], modifier: fallbackMod, total: fallbackMod };
@@ -352,7 +472,13 @@ function rollFormula(
     }
   }
 
-  const total = (count === 1 && sides === 20 ? keptRoll : rolls.reduce((a, b) => a + b, 0)) + inlineMod;
+  let total = (count === 1 && sides === 20 ? keptRoll : rolls.reduce((a, b) => a + b, 0)) + inlineMod;
+  
+  if (options?.bonusFormula) {
+    const bonusBreakdown = rollFormula(options.bonusFormula);
+    total += bonusBreakdown.total;
+  }
+
   return {
     formula,
     rolls,

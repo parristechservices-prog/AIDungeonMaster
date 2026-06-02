@@ -1,4 +1,4 @@
-import type { NPC, CanonFact } from '../game/types';
+import type { NPC, CanonFact, Condition } from '../game/types';
 
 export type Skill =
   | 'acrobatics' | 'animal_handling' | 'arcana' | 'athletics'
@@ -19,7 +19,9 @@ export type EngineRequest =
   | { kind: 'long_rest' }
   | { kind: 'update_npc'; npcId: string; disposition?: NPC['disposition']; knowledge?: string }
   | { kind: 'add_canon_fact'; content: string; importance: CanonFact['importance'] }
-  | { kind: 'update_inventory'; add?: string[]; remove?: string[]; goldDelta?: number };
+  | { kind: 'update_inventory'; add?: string[]; remove?: string[]; goldDelta?: number }
+  | { kind: 'apply_condition'; targetId: string; condition: Condition }
+  | { kind: 'remove_condition'; targetId: string; condition: Condition };
 
 export type RollBreakdown = {
   formula: string;

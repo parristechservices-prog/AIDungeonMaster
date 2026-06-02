@@ -10,6 +10,7 @@ export const MONSTER_LIBRARY: Record<string, MonsterTemplate> = {
     attackBonus: 4,
     damage: '1d6+2',
     cr: 0.25,
+    conditions: [],
   },
   skeleton: {
     name: 'Skeleton',
@@ -18,6 +19,7 @@ export const MONSTER_LIBRARY: Record<string, MonsterTemplate> = {
     attackBonus: 4,
     damage: '1d6+2',
     cr: 0.25,
+    conditions: [],
   },
   wolf: {
     name: 'Wolf',
@@ -26,6 +28,7 @@ export const MONSTER_LIBRARY: Record<string, MonsterTemplate> = {
     attackBonus: 4,
     damage: '2d4+2',
     cr: 0.25,
+    conditions: [],
   },
   orc: {
     name: 'Orc',
@@ -34,6 +37,7 @@ export const MONSTER_LIBRARY: Record<string, MonsterTemplate> = {
     attackBonus: 5,
     damage: '1d12+3',
     cr: 0.5,
+    conditions: [],
   },
   bugbear: {
     name: 'Bugbear',
@@ -42,6 +46,7 @@ export const MONSTER_LIBRARY: Record<string, MonsterTemplate> = {
     attackBonus: 4,
     damage: '2d8+2',
     cr: 1,
+    conditions: [],
   },
   hobgoblin: {
     name: 'Hobgoblin',
@@ -50,6 +55,7 @@ export const MONSTER_LIBRARY: Record<string, MonsterTemplate> = {
     attackBonus: 3,
     damage: '1d8+1',
     cr: 0.5,
+    conditions: [],
   },
   bandit: {
     name: 'Bandit',
@@ -58,6 +64,7 @@ export const MONSTER_LIBRARY: Record<string, MonsterTemplate> = {
     attackBonus: 3,
     damage: '1d6+1',
     cr: 0.125,
+    conditions: [],
   },
   ogre: {
     name: 'Ogre',
@@ -66,6 +73,7 @@ export const MONSTER_LIBRARY: Record<string, MonsterTemplate> = {
     attackBonus: 6,
     damage: '2d8+4',
     cr: 2,
+    conditions: [],
   },
   ape: {
     name: 'Ape',
@@ -74,6 +82,7 @@ export const MONSTER_LIBRARY: Record<string, MonsterTemplate> = {
     attackBonus: 5,
     damage: '1d6+4',
     cr: 0.5,
+    conditions: [],
   },
 };
 
@@ -83,5 +92,6 @@ export function getMonster(templateId: string): Monster {
     ...template,
     id: `${templateId}-${Math.random().toString(36).slice(2, 9)}`,
     hp: template.maxHp,
+    conditions: [],
   };
 }

@@ -14,6 +14,7 @@ export function moduleFileToAdventure(
   const monsters = module.monsters.map((m) => ({
     ...m,
     hp: m.hp ?? m.maxHp,
+    conditions: [],
   }));
 
   return {

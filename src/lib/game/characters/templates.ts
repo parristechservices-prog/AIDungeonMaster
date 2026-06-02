@@ -29,6 +29,7 @@ const fighter: Character = {
   inventory: ['Chain Shirt', 'Longsword', 'Explorer\'s Pack', 'Healing Potion'],
   deathSaves: { success: 0, failure: 0 },
   unconscious: false,
+  conditions: [],
 };
 
 const wizard: Character = {
@@ -52,6 +53,7 @@ const wizard: Character = {
   inventory: ['Arcane Focus', 'Spellbook', 'Scholar\'s Pack', 'Healing Potion'],
   deathSaves: { success: 0, failure: 0 },
   unconscious: false,
+  conditions: [],
 };
 
 const rogue: Character = {
@@ -72,6 +74,7 @@ const rogue: Character = {
   inventory: ['Leather Armor', 'Rapier', 'Thieves\' Tools', 'Dark Cloak', 'Healing Potion'],
   deathSaves: { success: 0, failure: 0 },
   unconscious: false,
+  conditions: [],
 };
 
 const cleric: Character = {
@@ -95,6 +98,7 @@ const cleric: Character = {
   inventory: ['Chain Shirt', 'Shield', 'Holy Symbol', 'Healing Potion', 'Healing Potion'],
   deathSaves: { success: 0, failure: 0 },
   unconscious: false,
+  conditions: [],
 };
 
 export const CHARACTER_TEMPLATES: CharacterTemplate[] = [

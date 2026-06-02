@@ -59,7 +59,7 @@ export const tutorial: Scenario = {
     },
   ],
   buildMonsters: () => [
-    { id: 'dummy-1', name: 'Training Construct', ac: 10, maxHp: 15, hp: 15, attackBonus: 2, damage: '1d4' },
+    { id: 'dummy-1', name: 'Training Construct', ac: 10, maxHp: 15, hp: 15, attackBonus: 2, damage: '1d4', conditions: [] },
   ],
   mock: {
     socialNpcId: 'npc-kaelen',

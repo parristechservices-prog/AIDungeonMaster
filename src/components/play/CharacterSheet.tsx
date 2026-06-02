@@ -30,6 +30,15 @@ export function CharacterSheet({ state }: Props) {
         )}
         <p>AC: {state.player.ac}</p>
         <p>Gold: {state.player.gold}gp</p>
+        {state.player.conditions.length > 0 && (
+          <div className="mt-1 flex flex-wrap gap-1">
+            {state.player.conditions.map(c => (
+              <span key={c} className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                {c}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <p className="mt-2 font-semibold">Inventory</p>
@@ -66,9 +75,20 @@ export function CharacterSheet({ state }: Props) {
       <p className="mt-3 font-semibold">Enemies</p>
       {state.monsters.length > 0 ? (
         state.monsters.map((m) => (
-          <p key={m.id}>
-            {m.name}: {m.hp}/{m.maxHp} HP (AC {m.ac})
-          </p>
+          <div key={m.id} className="mb-1">
+            <p>
+              {m.name}: {m.hp}/{m.maxHp} HP (AC {m.ac})
+            </p>
+            {m.conditions.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {m.conditions.map(c => (
+                  <span key={c} className="rounded bg-zinc-100 px-1 py-0.5 text-[9px] font-bold uppercase text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                    {c}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         ))
       ) : (
         <p className="italic text-zinc-500">None visible.</p>

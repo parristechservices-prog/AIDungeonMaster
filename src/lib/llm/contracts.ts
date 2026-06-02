@@ -8,6 +8,8 @@ const skillSchema = z.enum([
   'stealth', 'survival',
 ]);
 
+const conditionSchema = z.enum(['blinded', 'charmed', 'deafened', 'frightened', 'grappled', 'incapacitated', 'invisible', 'paralyzed', 'petrified', 'poisoned', 'prone', 'restrained', 'stunned', 'unconscious', 'blessed', 'shielded', 'guiding_bolt_target']);
+
 const engineRequestSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('skill_check'), skill: skillSchema, dc: z.number().int().min(1).max(30), reason: z.string(), advantage: z.boolean().optional(), disadvantage: z.boolean().optional() }),
   z.object({ kind: z.literal('start_combat') }),
@@ -21,6 +23,8 @@ const engineRequestSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('update_npc'), npcId: z.string(), disposition: z.enum(['friendly', 'neutral', 'hostile']).optional(), knowledge: z.string().optional() }),
   z.object({ kind: z.literal('add_canon_fact'), content: z.string(), importance: z.enum(['low', 'medium', 'high']) }),
   z.object({ kind: z.literal('update_inventory'), add: z.array(z.string()).optional(), remove: z.array(z.string()).optional(), goldDelta: z.number().optional() }),
+  z.object({ kind: z.literal('apply_condition'), targetId: z.string(), condition: conditionSchema }),
+  z.object({ kind: z.literal('remove_condition'), targetId: z.string(), condition: conditionSchema }),
 ]);
 
 export const dmTurnSchema = z.object({

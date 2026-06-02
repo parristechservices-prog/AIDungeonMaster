@@ -44,8 +44,9 @@ export type TurnResponse = {
       spellSlots: GameState['player']['spellSlots'];
       gold: number;
       inventory: string[];
+      conditions: import('@/lib/game/types').Condition[];
     };
-    monsters: { id: string; name: string; hp: number; maxHp: number; ac: number }[];
+    monsters: { id: string; name: string; hp: number; maxHp: number; ac: number; conditions: import('@/lib/game/types').Condition[] }[];
     npcs: GameState['npcs'];
     canonLog: GameState['canonLog'];
     combat: GameState['combat'];
