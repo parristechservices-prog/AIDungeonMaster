@@ -21,11 +21,28 @@ describe('hasLlmCredentials', () => {
     expect(hasLlmCredentials()).toBe(true);
   });
 
+  it('returns true when multiple Groq keys are configured', () => {
+    delete process.env.PARTYQUEST_FORCE_MOCK;
+    process.env.PARTYQUEST_LLM_PROVIDER = 'groq';
+    process.env.GROQ_API_KEYS = 'key1,key2';
+    expect(hasLlmCredentials()).toBe(true);
+  });
+
+  it('returns true when provider list includes openai and OpenAI key is set', () => {
+    delete process.env.PARTYQUEST_FORCE_MOCK;
+    process.env.PARTYQUEST_LLM_PROVIDER = 'groq,openai';
+    process.env.GROQ_API_KEY = '';
+    process.env.OPENAI_API_KEY = 'test-openai';
+    expect(hasLlmCredentials()).toBe(true);
+  });
+
   it('returns false when no keys are set', () => {
     delete process.env.PARTYQUEST_FORCE_MOCK;
     process.env.PARTYQUEST_LLM_PROVIDER = 'groq';
     process.env.GROQ_API_KEY = '';
+    process.env.GROQ_API_KEYS = '';
     process.env.OPENAI_API_KEY = '';
+    process.env.OPENAI_API_KEYS = '';
     expect(hasLlmCredentials()).toBe(false);
   });
 });

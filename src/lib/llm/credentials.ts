@@ -6,17 +6,28 @@ export function hasLlmCredentials(): boolean {
     return false;
   }
 
-  const provider = (process.env.PARTYQUEST_LLM_PROVIDER ?? 'groq').toLowerCase();
+  const providerList = (process.env.PARTYQUEST_LLM_PROVIDER ?? 'groq')
+    .split(',')
+    .map((provider) => provider.trim().toLowerCase())
+    .filter(Boolean);
+
+  return providerList.some((provider) => getProviderApiKeys(provider).length > 0);
+}
+
+function getProviderApiKeys(provider: string): string[] {
+  const keys: string[] = [];
 
   if (provider === 'openai') {
-    return Boolean(process.env.OPENAI_API_KEY?.trim());
+    keys.push(...(process.env.OPENAI_API_KEYS?.split(',') ?? []).map((k) => k.trim()));
+    if (process.env.OPENAI_API_KEY?.trim()) keys.unshift(process.env.OPENAI_API_KEY.trim());
   }
 
-  if (Boolean(process.env.GROQ_API_KEY?.trim())) {
-    return true;
+  if (provider === 'groq') {
+    keys.push(...(process.env.GROQ_API_KEYS?.split(',') ?? []).map((k) => k.trim()));
+    if (process.env.GROQ_API_KEY?.trim()) keys.unshift(process.env.GROQ_API_KEY.trim());
   }
 
-  return Boolean(process.env.OPENAI_API_KEY?.trim());
+  return keys.filter(Boolean);
 }
 
 export function shouldUseMockFlavorPrefix(): boolean {
