@@ -8,18 +8,19 @@ export type Skill =
   | 'stealth' | 'survival';
 
 export type EngineRequest =
-  | { kind: 'skill_check'; skill: Skill; dc: number; reason: string; manualRoll?: number; advantage?: boolean; disadvantage?: boolean }
+  | { kind: 'skill_check'; characterId?: string; skill: Skill; dc: number; reason: string; manualRoll?: number; advantage?: boolean; disadvantage?: boolean }
   | { kind: 'start_combat' }
-  | { kind: 'player_attack'; targetId: string; manualRoll?: number; advantage?: boolean; disadvantage?: boolean }
+  | { kind: 'player_attack'; characterId?: string; targetId: string; manualRoll?: number; advantage?: boolean; disadvantage?: boolean }
   | { kind: 'monster_turn' }
-  | { kind: 'death_save'; manualRoll?: number }
-  | { kind: 'use_feature'; featureId: string }
-  | { kind: 'cast_spell'; spellName: string; level: number; targetId?: string }
+  | { kind: 'death_save'; characterId?: string; manualRoll?: number }
+  | { kind: 'use_feature'; characterId?: string; featureId: string }
+  | { kind: 'cast_spell'; characterId?: string; spellName: string; level: number; targetId?: string }
   | { kind: 'short_rest' }
   | { kind: 'long_rest' }
+  | { kind: 'advance_scene' }
   | { kind: 'update_npc'; npcId: string; disposition?: NPC['disposition']; knowledge?: string }
   | { kind: 'add_canon_fact'; content: string; importance: CanonFact['importance'] }
-  | { kind: 'update_inventory'; add?: string[]; remove?: string[]; goldDelta?: number }
+  | { kind: 'update_inventory'; characterId?: string; add?: string[]; remove?: string[]; goldDelta?: number }
   | { kind: 'apply_condition'; targetId: string; condition: Condition }
   | { kind: 'remove_condition'; targetId: string; condition: Condition };
 

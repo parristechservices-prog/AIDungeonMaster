@@ -32,20 +32,26 @@ export type TurnResponse = {
   }[];
   recentRolls: RollBreakdown[];
   state: {
-    player: {
+    party: {
+      id: string;
       name: string;
+      race: string;
       className: string;
+      subclass?: string;
+      level: number;
       hp: number;
       maxHp: number;
       ac: number;
+      proficiencyBonus: number;
       unconscious: boolean;
       deathSaves: { success: number; failure: number };
-      features: GameState['player']['features'];
-      spellSlots: GameState['player']['spellSlots'];
+      features: import('@/lib/game/types').Character['features'];
+      spellSlots: import('@/lib/game/types').Character['spellSlots'];
       gold: number;
       inventory: string[];
       conditions: import('@/lib/game/types').Condition[];
-    };
+    }[];
+    activeCharacterId: string;
     monsters: { id: string; name: string; hp: number; maxHp: number; ac: number; conditions: import('@/lib/game/types').Condition[] }[];
     npcs: GameState['npcs'];
     canonLog: GameState['canonLog'];

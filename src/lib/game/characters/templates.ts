@@ -14,8 +14,10 @@ export type CharacterTemplate = {
 const fighter: Character = {
   id: 'pc-fighter-1',
   name: 'Seren Ashfall',
+  race: 'Human',
   level: 3,
   className: 'Fighter',
+  subclass: 'Champion',
   ac: 17,
   maxHp: 28,
   hp: 28,
@@ -35,8 +37,10 @@ const fighter: Character = {
 const wizard: Character = {
   id: 'pc-wizard-1',
   name: 'Kaelen Thorne',
+  race: 'Elf',
   level: 3,
   className: 'Wizard',
+  subclass: 'Evocation',
   ac: 12,
   maxHp: 17,
   hp: 17,
@@ -59,8 +63,10 @@ const wizard: Character = {
 const rogue: Character = {
   id: 'pc-rogue-1',
   name: 'Tamsin Vex',
+  race: 'Halfling',
   level: 3,
   className: 'Rogue',
+  subclass: 'Thief',
   ac: 15,
   maxHp: 20,
   hp: 20,
@@ -80,8 +86,10 @@ const rogue: Character = {
 const cleric: Character = {
   id: 'pc-cleric-1',
   name: 'Brother Aldric',
+  race: 'Dwarf',
   level: 3,
   className: 'Cleric',
+  subclass: 'Life Domain',
   ac: 16,
   maxHp: 24,
   hp: 24,
@@ -96,6 +104,56 @@ const cleric: Character = {
   weapon: { name: 'Mace', attackBonus: 4, damage: '1d6+2' },
   gold: 12,
   inventory: ['Chain Shirt', 'Shield', 'Holy Symbol', 'Healing Potion', 'Healing Potion'],
+  deathSaves: { success: 0, failure: 0 },
+  unconscious: false,
+  conditions: [],
+};
+
+const paladin: Character = {
+  id: 'pc-paladin-1',
+  name: 'Valerius Lightbringer',
+  race: 'Human',
+  level: 3,
+  className: 'Paladin',
+  subclass: 'Oath of Devotion',
+  ac: 18,
+  maxHp: 28,
+  hp: 28,
+  proficiencyBonus: 2,
+  abilities: { str: 16, dex: 10, con: 14, int: 8, wis: 12, cha: 15 },
+  skills: { athletics: 5, persuasion: 4, religion: 2, insight: 3 },
+  features: [{ id: 'lay_on_hands', name: 'Lay on Hands', usesMax: 15, usesRemaining: 15, rechargeOn: 'long_rest' }],
+  spellSlots: {
+    1: { max: 3, remaining: 3 },
+  },
+  weapon: { name: 'Warhammer', attackBonus: 5, damage: '1d8+3' },
+  gold: 15,
+  inventory: ['Plate Mail', 'Warhammer', 'Shield', 'Holy Symbol'],
+  deathSaves: { success: 0, failure: 0 },
+  unconscious: false,
+  conditions: [],
+};
+
+const ranger: Character = {
+  id: 'pc-ranger-1',
+  name: 'Elowen Swiftstep',
+  race: 'Elf',
+  level: 3,
+  className: 'Ranger',
+  subclass: 'Hunter',
+  ac: 15,
+  maxHp: 24,
+  hp: 24,
+  proficiencyBonus: 2,
+  abilities: { str: 10, dex: 16, con: 12, int: 11, wis: 14, cha: 10 },
+  skills: { stealth: 5, survival: 4, perception: 4, athletics: 2, nature: 2 },
+  features: [{ id: 'favored_enemy', name: 'Favored Enemy', usesMax: 99, usesRemaining: 99, rechargeOn: 'long_rest' }],
+  spellSlots: {
+    1: { max: 3, remaining: 3 },
+  },
+  weapon: { name: 'Longbow', attackBonus: 7, damage: '1d8+3' },
+  gold: 15,
+  inventory: ['Leather Armor', 'Longbow', 'Shortsword', 'Quiver (20 arrows)'],
   deathSaves: { success: 0, failure: 0 },
   unconscious: false,
   conditions: [],
@@ -134,6 +192,22 @@ export const CHARACTER_TEMPLATES: CharacterTemplate[] = [
     suggestedAdventures: ['crypt-of-whispers', 'brindlehook-inn'],
     create: () => structuredClone(cleric),
   },
+  {
+    id: 'paladin',
+    label: 'Paladin',
+    className: 'Paladin',
+    description: 'Holy warrior who smites foes and heals allies with Lay on Hands.',
+    suggestedAdventures: ['crypt-of-whispers', 'brindlehook-inn'],
+    create: () => structuredClone(paladin),
+  },
+  {
+    id: 'ranger',
+    label: 'Ranger',
+    className: 'Ranger',
+    description: 'Master of the wilderness with expert tracking and ranged combat.',
+    suggestedAdventures: ['smugglers-cove', 'brindlehook-inn'],
+    create: () => structuredClone(ranger),
+  },
 ];
 
 export function getCharacterTemplate(id: string): CharacterTemplate | undefined {
@@ -142,12 +216,18 @@ export function getCharacterTemplate(id: string): CharacterTemplate | undefined 
 
 export function buildCharacter(
   characterId: string,
-  options?: { playerName?: string; level?: number },
+  options?: { playerName?: string; level?: number; race?: string; subclass?: string },
 ): Character {
   const template = getCharacterTemplate(characterId) ?? getCharacterTemplate('fighter')!;
   let character = template.create();
   if (options?.playerName?.trim()) {
     character.name = options.playerName.trim().slice(0, 40);
+  }
+  if (options?.race) {
+    character.race = options.race;
+  }
+  if (options?.subclass) {
+    character.subclass = options.subclass;
   }
   if (options?.level !== undefined) {
     character = applyCharacterLevel(character, options.level);

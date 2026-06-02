@@ -53,9 +53,10 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
       ['perception', 'stealth', 'athletics', 'persuasion', 'insight', 'investigation', 'religion', 'deception'] as const
     ).find((s) => input.includes(s));
 
+    const activeChar = state.party.find(p => p.id === state.activeCharacterId) || state.party[0];
     const info = skillName
-      ? `Your ${skillName} skill bonus is +${state.player.skills[skillName] ?? 0}.`
-      : `You have ${state.player.hp}/${state.player.maxHp} HP and AC ${state.player.ac}.`;
+      ? `Your ${skillName} skill bonus is +${activeChar.skills[skillName] ?? 0}.`
+      : `You have ${activeChar.hp}/${activeChar.maxHp} HP and AC ${activeChar.ac}.`;
 
     return {
       engineRequests: [],
@@ -65,12 +66,13 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
     };
   }
 
-  const feature = state.player.features.find(
+  const activeChar = state.party.find(p => p.id === state.activeCharacterId) || state.party[0];
+  const feature = activeChar.features.find(
     (f) => input.includes(f.id.replace(/_/g, ' ')) || input.includes(f.name.toLowerCase()),
   );
   if (feature) {
     return {
-      engineRequests: [{ kind: 'use_feature', featureId: feature.id }],
+      engineRequests: [{ kind: 'use_feature', characterId: activeChar.id, featureId: feature.id }],
       narration: `You invoke ${feature.name}.`,
       needsResultBeforeNarrating: true,
       ambient,
@@ -103,6 +105,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
         engineRequests: [
           {
             kind: 'skill_check',
+            characterId: activeChar.id,
             skill: mock.socialSkill,
             dc: mock.socialDc,
             reason: `Convince ${mock.socialNpcName} to share what they know.`,
@@ -142,6 +145,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
       engineRequests: [
         {
           kind: 'skill_check',
+          characterId: activeChar.id,
           skill: mock.explorationSkill,
           dc: mock.explorationDc,
           reason: 'Search the area for a lead.',
@@ -165,7 +169,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
   if (input.includes('attack') || input.includes('strike') || input.includes('hit')) {
     const living = state.monsters.find((m) => m.hp > 0);
     return {
-      engineRequests: living ? [{ kind: 'player_attack', targetId: living.id }, { kind: 'monster_turn' }] : [],
+      engineRequests: living ? [{ kind: 'player_attack', characterId: activeChar.id, targetId: living.id }, { kind: 'monster_turn' }] : [],
       narration: 'You lunge forward.',
       needsResultBeforeNarrating: true,
       ambient: 'combat',

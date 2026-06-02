@@ -56,8 +56,24 @@ export function getOrCreateSession(sessionId: string): GameState {
         
         // Migration: Ensure new fields exist in loaded state
         const defaults = createInitialState(sessionId);
-        if (state.player && state.player.gold === undefined) state.player.gold = defaults.player.gold;
-        if (state.player && !state.player.inventory) state.player.inventory = defaults.player.inventory;
+        
+        // Handle player -> party migration while keeping compatibility aliases.
+        if (state.player && !state.party) {
+          state.party = [state.player];
+        }
+        if (state.characterTemplateId && !state.characterTemplateIds) {
+          state.characterTemplateIds = [state.characterTemplateId];
+        }
+        if (!state.player && state.party && state.party.length > 0) {
+          state.player = state.party[0];
+        }
+        if (!state.characterTemplateId && state.characterTemplateIds?.length > 0) {
+          state.characterTemplateId = state.characterTemplateIds[0];
+        }
+        if (!state.activeCharacterId && state.party && state.party.length > 0) {
+          state.activeCharacterId = state.party[0].id;
+        }
+
         if (!state.npcs) state.npcs = defaults.npcs;
         if (!state.canonLog) state.canonLog = defaults.canonLog;
 

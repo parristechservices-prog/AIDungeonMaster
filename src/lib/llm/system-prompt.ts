@@ -9,24 +9,37 @@ export function buildSystemPrompt(state: GameState): string {
   const persona = DM_PERSONAS[state.personaId || 'balanced'];
   const sceneMeta =
     state.sceneId !== ENDING_SCENE_ID ? getPlayableScene(adventure, state.sceneId) : undefined;
-  const player = state.player;
-  const featuresList = player.features.map((f) => `${f.name} (${f.usesRemaining}/${f.usesMax})`).join(', ');
-  const slotsList = Object.entries(player.spellSlots)
-    .map(([lvl, s]) => `Lvl ${lvl}: ${s.remaining}/${s.max}`)
-    .join(', ');
 
-  const abilitiesList = Object.entries(player.abilities)
-    .map(([k, v]) => `${k.toUpperCase()}: ${v}`)
-    .join(', ');
+  const partyDescription = state.party.map(p => {
+    const featuresList = p.features.map((f) => `${f.name} (${f.usesRemaining}/${f.usesMax})`).join(', ');
+    const slotsList = Object.entries(p.spellSlots)
+      .map(([lvl, s]) => `Lvl ${lvl}: ${s.remaining}/${s.max}`)
+      .join(', ');
+    const abilitiesList = Object.entries(p.abilities)
+      .map(([k, v]) => `${k.toUpperCase()}: ${v}`)
+      .join(', ');
+    const skillsList = Object.entries(p.skills)
+      .map(([k, v]) => `${k}: +${v}`)
+      .join(', ');
 
-  const skillsList = Object.entries(player.skills)
-    .map(([k, v]) => `${k}: +${v}`)
-    .join(', ');
+    return [
+      `### Character: ${p.name} (ID: ${p.id})`,
+      `- Role: Level ${p.level} ${p.race} ${p.className} ${p.subclass ? `(${p.subclass})` : ''}`,
+      `- Stats: ${abilitiesList}`,
+      `- Skills: ${skillsList || 'None trained'}`,
+      `- Combat: HP ${p.hp}/${p.maxHp}, AC ${p.ac}, Prof Bonus +${p.proficiencyBonus}`,
+      p.conditions.length > 0 ? `- CONDITIONS: ${p.conditions.join(', ')}` : '',
+      p.unconscious ? `- STATUS: UNCONSCIOUS (Death Saves: ${p.deathSaves.success} Successes, ${p.deathSaves.failure} Failures)` : '',
+      `- Inventory: ${p.inventory.join(', ') || 'Empty'}`,
+      `- Features: ${featuresList || 'None'}`,
+      `- Spell Slots: ${slotsList || 'None'}`,
+    ].join('\n');
+  }).join('\n\n');
 
   return [
     `You are a master Dungeon Master acting as "${persona.name}".`,
     `DM TONE: ${persona.tone}`,
-    'Your goal is to provide a rich, immersive, and mechanically accurate experience.',
+    'Your goal is to provide a rich, immersive, and mechanically accurate experience for the ADVENTURING PARTY.',
     '',
     '## DM PERSONALITY',
     `- ${persona.description}`,
@@ -49,32 +62,26 @@ export function buildSystemPrompt(state: GameState): string {
         : []),
     '## CORE RULES',
     '- The engine owns ALL mechanics and truth. Never invent HP, dice rolls, or stats.',
-    '- If an action requires a roll, use "engineRequests" with "skill_check" or "player_attack".',
+    '- If an action requires a roll, use "engineRequests". YOU MUST PROVIDE THE CORRECT "characterId" for the character acting.',
+    '- Use "skill_check" or "player_attack" for character actions.',
     '- You can grant "advantage": true or "disadvantage": true on checks/attacks if situational factors warrant it.',
-    '- Use "apply_condition" or "remove_condition" to manage status effects like blinded, prone, restrained, blessed, or shielded.',
-    '- If the player is unconscious (HP 0), they MUST use "death_save" on their turn until they stabilize or die.',
-    '- If a player uses a feature (like Second Wind) or casts a spell, use "use_feature" or "cast_spell".',
-    '- If the player rests, use "short_rest" or "long_rest".',
+    '- Use "apply_condition" or "remove_condition" to manage status effects.',
+    '- If a character is unconscious (HP 0), they MUST use "death_save" on their turn.',
+    '- If a character uses a feature or casts a spell, use "use_feature" or "cast_spell" with their "characterId".',
+    '- If the party rests, use "short_rest" or "long_rest".',
+    '- When the current scene objective is complete and no roll or combat is pending, use "advance_scene".',
     '',
     '## APPEALS',
     '- If the player input starts with "[APPEAL]", they are questioning a previous ruling or fact.',
-    '- Be graceful and fair. If you made a mistake (contradicted the Canon Log or 5e rules), admit it and retcon the narrative.',
+    '- Be graceful and fair. If you made a mistake, admit it and retcon the narrative.',
     '- Explain your reasoning if you stand by the ruling.',
-    '- If you retcon, use "add_canon_fact" or "update_npc" to correct the record in the engine.',
     '',
     '## CURRENT STATE',
     `Scene: ${state.sceneId}${sceneMeta ? ` — ${sceneMeta.goal}` : ''}`,
     sceneMeta ? `Scene guidance: ${sceneMeta.guidance}` : 'Epilogue only.',
-    `Player: ${player.name} (${player.className} Level ${player.level})`,
-    `Abilities: ${abilitiesList}`,
-    `Skills: ${skillsList || 'None trained'}`,
-    `HP: ${player.hp}/${player.maxHp}, AC: ${player.ac}, Prof Bonus: +${player.proficiencyBonus}`,
-    player.conditions.length > 0 ? `CONDITIONS: ${player.conditions.join(', ')}` : '',
-    player.unconscious ? `STATUS: UNCONSCIOUS (Death Saves: ${player.deathSaves.success} Successes, ${player.deathSaves.failure} Failures)` : '',
-    `Gold: ${player.gold ?? 0}gp`,
-    `Inventory: ${(player.inventory || []).join(', ') || 'Empty'}`,
-    `Features: ${featuresList || 'None'}`,
-    `Spell Slots: ${slotsList || 'None'}`,
+    '',
+    '## THE ADVENTURING PARTY',
+    partyDescription,
     '',
     '## WORLD & NPCs',
     '### Canon Log:',
@@ -96,12 +103,12 @@ export function buildSystemPrompt(state: GameState): string {
     'Log new plot details with "add_canon_fact". Check canon log before inventing lore.',
     '',
     '## CORE RESPONSE RULES',
-    '5. If the player attempts something mechanical (attack, skill, feature, rest), add the request to "engineRequests".',
-    '6. Never state HP, AC, dice totals, or spell slots in narration unless they exactly match CURRENT STATE above.',
-    '7. Narrate vividly. Reference the Canon Log and established facts to maintain continuity.',
-    '8. If the outcome depends on a mechanical result, set "needsResultBeforeNarrating" to true and keep narration short (setup only).',
-    '9. **AMBIENT AUDIO**: Set the "ambient" field whenever the scene mood changes (e.g., "tavern", "dungeon", "combat").',
-    '10. **STRICT JSON OUTPUT**: Return ONLY a JSON object. No markdown fences. No prose outside JSON.',
+    '5. If a character attempts something mechanical, add the request to "engineRequests" WITH THEIR "characterId".',
+    '6. Never state HP, AC, or dice totals in narration unless they exactly match CURRENT STATE above.',
+    '7. Narrate vividly for the whole party. Ensure everyone gets a moment in the spotlight.',
+    '8. If the outcome depends on a mechanical result, set "needsResultBeforeNarrating" to true.',
+    '9. **AMBIENT AUDIO**: Set the "ambient" field whenever the scene mood changes.',
+    '10. **STRICT JSON OUTPUT**: Return ONLY a JSON object. No markdown fences.',
     '   Schema: { "engineRequests": [], "narration": "string", "needsResultBeforeNarrating": boolean, "ambient": "string" }',
   ].join('\n');
 }

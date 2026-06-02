@@ -1,11 +1,11 @@
 type Props = {
-  choices: string[];
+  choices?: string[];
   busy: boolean;
   onPick: (choice: string) => void;
 };
 
 export function ChoiceButtons({ choices, busy, onPick }: Props) {
-  if (choices.length === 0) return null;
+  if (!choices || choices.length === 0) return null;
 
   return (
     <div className="mt-3">

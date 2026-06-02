@@ -44,19 +44,35 @@ export default function PlayPage() {
   const [physicalDice, setPhysicalDice] = useState(false);
   const [manualRollContext, setManualRollContext] = useState<TurnResponse['manualRollContext'] | null>(null);
 
+  async function hydrateSession(nextSessionId: string) {
+    const res = await fetch(`/api/session?sessionId=${encodeURIComponent(nextSessionId)}`);
+    const data = await res.json();
+    if (!data.ok || !data.state) return;
+
+    setAdventureId(data.adventureId);
+    setAdventureTitle(data.adventureTitle);
+    setSceneId(data.sceneId);
+    setSceneGoal(data.sceneGoal);
+    setChoices(data.nextChoices ?? []);
+    setMode(data.mode ?? 'table_rules');
+    setState(data.state);
+  }
+
   const handleExportRecap = useCallback(() => {
     if (!state) return;
 
+    const party = state.party ?? [];
+    const canonLog = state.canonLog ?? [];
     const markdown = [
       `# Adventure Recap: ${adventureTitle}`,
-      `**Party:** ${state.party.map(p => `${p.name} (${p.race} ${p.className})`).join(', ')}`,
+      `**Party:** ${party.map(p => `${p.name} (${p.race} ${p.className})`).join(', ')}`,
       `**Session ID:** ${sessionId}`,
       '',
       '## The Journey So Far',
       history.join('\n\n'),
       '',
       '## Party Status',
-      ...state.party.map(p => [
+      ...party.map(p => [
         `### ${p.name}`,
         `- **HP:** ${p.hp}/${p.maxHp}`,
         `- **AC:** ${p.ac}`,
@@ -65,7 +81,7 @@ export default function PlayPage() {
       ].join('\n')),
       '',
       '## Canon Log (Key Facts)',
-      state.canonLog.map(f => `- [${f.importance.toUpperCase()}] ${f.content}`).join('\n'),
+      canonLog.map(f => `- [${f.importance.toUpperCase()}] ${f.content}`).join('\n'),
     ].join('\n');
 
     const blob = new Blob([markdown], { type: 'text/markdown' });
@@ -86,10 +102,23 @@ export default function PlayPage() {
     const openingRaw = sessionStorage.getItem('partyquest-opening');
     if (openingRaw) {
       try {
-        const { opening, title } = JSON.parse(openingRaw) as { opening: string; title: string };
+        const { opening, title, adventureId: openingAdventureId, state: openingState, sceneId: openingSceneId, sceneGoal: openingSceneGoal, nextChoices } = JSON.parse(openingRaw) as {
+          opening: string;
+          title: string;
+          adventureId?: string;
+          state?: TurnResponse['state'];
+          sceneId?: TurnResponse['sceneId'];
+          sceneGoal?: string;
+          nextChoices?: string[];
+        };
         sessionStorage.removeItem('partyquest-opening');
         setAdventureTitle(title);
         setHistory([opening]);
+        if (openingAdventureId) setAdventureId(openingAdventureId);
+        if (openingState) setState(openingState);
+        if (openingSceneId) setSceneId(openingSceneId);
+        if (openingSceneGoal) setSceneGoal(openingSceneGoal);
+        if (nextChoices) setChoices(nextChoices);
       } catch {
         setHistory(boot.history);
       }
@@ -109,6 +138,11 @@ export default function PlayPage() {
       setAdventureId(boot.adventureId);
       setAdventureTitle(boot.adventureTitle ?? getAdventure(boot.adventureId).title);
       setSceneGoal(boot.sceneGoal);
+    }
+    if (!boot.state && boot.sessionId) {
+      hydrateSession(boot.sessionId).catch(() => {
+        // Keep local bootstrap fallback if reconnect state is unavailable.
+      });
     }
   }, []);
 
@@ -150,7 +184,7 @@ export default function PlayPage() {
         setChoices(data.nextChoices ?? []);
         setRecentRolls(data.recentRolls ?? []);
         setWarnings(data.narrationWarnings ?? []);
-        if (data.ambient) setAmbient(data.ambient);
+        setAmbient(data.ambient ?? 'none');
         setTurnCount((n) => n + 1);
         if (data.state) setState(data.state);
 
@@ -304,7 +338,7 @@ export default function PlayPage() {
         <EndingScreen
           sessionId={sessionId}
           adventureTitle={adventureTitle}
-          playerName={state?.party[0].name ?? 'Hero'}
+          playerName={state?.party?.[0]?.name ?? 'Hero'}
           onNewGame={handleNewGame}
         />
       )}

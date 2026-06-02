@@ -6,8 +6,8 @@ const sceneSchema = z.object({
   kind: sceneKindSchema,
   goal: z.string().min(1).max(500),
   starter: z.string().min(1).max(2000),
-  choices: z.array(z.string()).max(12),
-  guidance: z.string().max(2000),
+  choices: z.array(z.string()).max(20),
+  guidance: z.string().max(3000),
 });
 
 const npcSchema = z.object({
@@ -31,7 +31,7 @@ const monsterSchema = z.object({
 const chapterSchema = z.object({
   id: z.string().min(1).max(64),
   title: z.string().min(1).max(120),
-  sceneIds: z.array(z.string().min(1)).min(1).max(50),
+  sceneIds: z.array(z.string().min(1)).min(1).max(100),
 });
 
 const sceneEncounterSchema = z.object({
@@ -68,20 +68,20 @@ export const adventureModuleSchema = z
     id: z.string().regex(/^[a-z0-9-]+$/),
     title: z.string().min(1).max(120),
     tagline: z.string().max(300),
-    estimatedMinutes: z.number().int().min(5).max(600),
+    estimatedMinutes: z.number().int().min(5).max(5000),
     tone: z.string().max(80),
     recommendedCharacters: z.array(z.string()).min(1).max(8),
     levelRange: z.tuple([z.number().int().min(1).max(20), z.number().int().min(1).max(20)]).optional(),
     sourceNote: z.string().max(500).optional(),
-    campaignGuide: z.string().max(3000).optional(),
+    campaignGuide: z.string().max(8000).optional(),
     playConfig: playConfigSchema.optional(),
     sceneEncounters: z.record(z.string(), sceneEncounterSchema).optional(),
-    chapters: z.array(chapterSchema).max(20).optional(),
-    sceneOrder: z.array(z.string().min(1)).min(2).max(50),
+    chapters: z.array(chapterSchema).max(30).optional(),
+    sceneOrder: z.array(z.string().min(1)).min(2).max(200),
     scenes: z.record(z.string(), sceneSchema),
-    endingMessage: z.string().max(2000),
-    npcs: z.array(npcSchema).max(40),
-    monsters: z.array(monsterSchema).min(1).max(30),
+    endingMessage: z.string().max(3000),
+    npcs: z.array(npcSchema).max(80),
+    monsters: z.array(monsterSchema).min(1).max(60),
     mock: mockSchema,
   })
   .superRefine((data, ctx) => {

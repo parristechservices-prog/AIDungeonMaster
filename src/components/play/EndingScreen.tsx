@@ -53,9 +53,9 @@ export function EndingScreen({ sessionId, adventureTitle, playerName, onNewGame 
             <p>
               <span className="font-semibold">Outcome:</span> {recap.outcome}
             </p>
-            {recap.consequences.length > 0 && (
+            {recap.consequences?.length > 0 && (
               <ul className="list-inside list-disc text-zinc-700 dark:text-zinc-300">
-                {recap.consequences.map((c) => (
+                {(recap.consequences ?? []).map((c) => (
                   <li key={c}>{c}</li>
                 ))}
               </ul>

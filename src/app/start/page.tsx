@@ -123,7 +123,15 @@ function StartContent() {
 
       sessionStorage.setItem(
         'partyquest-opening',
-        JSON.stringify({ opening: data.opening, title: data.title }),
+        JSON.stringify({
+          opening: data.opening,
+          title: data.title,
+          adventureId: data.adventureId,
+          sceneId: data.sceneId,
+          sceneGoal: data.sceneGoal,
+          nextChoices: data.nextChoices,
+          state: data.state,
+        }),
       );
       router.push('/play');
     } catch {

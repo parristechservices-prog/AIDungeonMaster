@@ -1,11 +1,24 @@
 import { getSceneKind } from '@/lib/game/adventures/helpers';
 import { getAdventure } from '@/lib/game/adventures/registry.server';
-import type { GameState } from '@/lib/game/types';
+import type { GameState, Character, Monster } from '@/lib/game/types';
 import { advanceScene } from '@/lib/game/state';
 import type { EngineRequest, EngineResult, RollBreakdown } from './types';
 
 function hasCondition(creature: { conditions: import('@/lib/game/types').Condition[] }, condition: import('@/lib/game/types').Condition): boolean {
   return creature.conditions.includes(condition);
+}
+
+function updateCharacterInParty(state: GameState, id: string, updater: (c: Character) => Character): GameState {
+  const party = state.party.map(p => p.id === id ? updater(p) : p);
+  return {
+    ...state,
+    party,
+    player: party[0],
+  };
+}
+
+function requestedCharacterId(state: GameState, characterId?: string): string {
+  return characterId ?? state.activeCharacterId ?? state.party[0]?.id;
 }
 
 export function resolveEngineRequest(
@@ -15,23 +28,26 @@ export function resolveEngineRequest(
 ): { state: GameState; result: EngineResult } {
   switch (request.kind) {
     case 'skill_check': {
-      const mod = state.player.skills[request.skill] ?? 0;
+      const char = state.party.find(p => p.id === requestedCharacterId(state, request.characterId));
+      if (!char) return { state, result: { ok: false, summary: 'Character not found.' } };
+
+      const mod = char.skills[request.skill] ?? 0;
       
       let advantage = request.advantage;
       let disadvantage = request.disadvantage;
       let bonusFormula = undefined;
 
-      if (hasCondition(state.player, 'poisoned')) disadvantage = true;
-      if (hasCondition(state.player, 'restrained') && (request.skill === 'acrobatics' || request.skill === 'athletics')) disadvantage = true;
-      if (hasCondition(state.player, 'blinded') && (request.skill === 'perception')) disadvantage = true;
-      if (hasCondition(state.player, 'blessed')) bonusFormula = '1d4';
+      if (hasCondition(char, 'poisoned')) disadvantage = true;
+      if (hasCondition(char, 'restrained') && (request.skill === 'acrobatics' || request.skill === 'athletics')) disadvantage = true;
+      if (hasCondition(char, 'blinded') && (request.skill === 'perception')) disadvantage = true;
+      if (hasCondition(char, 'blessed')) bonusFormula = '1d4';
 
       if (options?.physicalDice && request.manualRoll === undefined) {
         return {
           state,
           result: {
             ok: false,
-            summary: `Waiting for manual ${request.skill} roll...`,
+            summary: `Waiting for manual ${request.skill} roll for ${char.name}...`,
             needsManualRoll: true,
             manualRollContext: {
               kind: 'skill_check',
@@ -55,40 +71,46 @@ export function resolveEngineRequest(
         getSceneKind(getAdventure(state.adventureId), state.sceneId) === 'combat';
       const next = ok && !inCombatScene ? advanceScene(state) : state;
       return {
-        state: appendLog(next, `${request.skill} check ${ok ? 'passed' : 'failed'} (${breakdown.total} vs DC ${request.dc})`),
+        state: appendLog(next, `${char.name}: ${request.skill} check ${ok ? 'passed' : 'failed'} (${breakdown.total} vs DC ${request.dc})`),
         result: { ok, summary: `${request.reason}: ${ok ? 'success' : 'failure'}`, breakdown },
       };
     }
     case 'start_combat': {
       const init = [
-        { actorId: state.player.id, roll: d20() + 1 },
+        ...state.party.map((p) => ({ actorId: p.id, roll: d20() + Math.floor((p.abilities.dex - 10) / 2) })),
         ...state.monsters.map((m) => ({ actorId: m.id, roll: d20() + 1 })),
       ].sort((a, b) => b.roll - a.roll);
+      
       const adventure = getAdventure(state.adventureId);
       const combatSceneId =
         adventure.sceneOrder.find((id) => adventure.scenes[id]?.kind === 'combat') ?? 'combat';
+      
       const next = {
         ...state,
         combat: { active: true, initiative: init, turnIndex: 0 },
         sceneId: combatSceneId,
+        activeCharacterId: init[0].actorId,
       };
-      return { state: appendLog(next, 'Combat started.'), result: { ok: true, summary: 'Initiative rolled.' } };
+      return { state: appendLog(next, 'Combat started. Roll for initiative!'), result: { ok: true, summary: 'Initiative rolled.' } };
     }
     case 'player_attack': {
+      const char = state.party.find(p => p.id === requestedCharacterId(state, request.characterId));
+      if (!char) return { state, result: { ok: false, summary: 'Character not found.' } };
+
       const target = state.monsters.find((m) => m.id === request.targetId && m.hp > 0);
       if (!target) return { state, result: { ok: false, summary: 'No valid target.' } };
 
-      const attackMod = state.player.weapon.attackBonus;
+      const attackMod = char.weapon.attackBonus;
       let advantage = request.advantage;
       let disadvantage = request.disadvantage;
       let bonusFormula = undefined;
 
       // Attacker conditions
-      if (hasCondition(state.player, 'blinded')) disadvantage = true;
-      if (hasCondition(state.player, 'poisoned')) disadvantage = true;
-      if (hasCondition(state.player, 'prone')) disadvantage = true;
-      if (hasCondition(state.player, 'restrained')) disadvantage = true;
-      if (hasCondition(state.player, 'blessed')) bonusFormula = '1d4';
+      if (hasCondition(char, 'blinded')) disadvantage = true;
+      if (hasCondition(char, 'poisoned')) disadvantage = true;
+      if (hasCondition(char, 'prone')) disadvantage = true;
+      if (hasCondition(char, 'restrained')) disadvantage = true;
+      if (hasCondition(char, 'blessed')) bonusFormula = '1d4';
 
       // Target conditions
       if (hasCondition(target, 'blinded')) advantage = true;
@@ -101,7 +123,7 @@ export function resolveEngineRequest(
           state,
           result: {
             ok: false,
-            summary: `Waiting for manual attack roll against ${target.name}...`,
+            summary: `Waiting for manual attack roll from ${char.name} against ${target.name}...`,
             needsManualRoll: true,
             manualRollContext: {
               kind: 'player_attack',
@@ -122,8 +144,8 @@ export function resolveEngineRequest(
       const critical = toHit.rolls[0] === 20 || (request.advantage && (toHit.rolls[0] === 20 || toHit.rolls[1] === 20));
       toHit.ok = toHit.total >= target.ac || critical;
 
-      if (toHit.total < target.ac && !critical) {
-        return { state: appendLog(state, `Attack missed ${target.name}.`), result: { ok: false, summary: 'Attack missed.', breakdown: toHit } };
+      if (!toHit.ok) {
+        return { state: appendLog(state, `${char.name} missed ${target.name}.`), result: { ok: false, summary: 'Attack missed.', breakdown: toHit } };
       }
       const damage = rollFormula(critical ? '2d8' : '1d8', 3);
       const monsters = state.monsters.map((m) => m.id === target.id ? { ...m, hp: Math.max(0, m.hp - damage.total) } : m);
@@ -131,7 +153,7 @@ export function resolveEngineRequest(
       const allDown = monsters.every((m) => m.hp <= 0);
       if (allDown) next = advanceScene({ ...next, combat: { ...next.combat, active: false } });
       return {
-        state: appendLog(next, `${state.player.name} hit ${target.name} for ${damage.total}.`),
+        state: appendLog(next, `${char.name} hit ${target.name} for ${damage.total}.`),
         result: { ok: true, summary: `Hit ${target.name} for ${damage.total} damage.`, breakdown: damage, critical },
       };
     }
@@ -139,6 +161,12 @@ export function resolveEngineRequest(
       const attacker = state.monsters.find((m) => m.hp > 0);
       if (!attacker) return { state, result: { ok: true, summary: 'No monsters remain.' } };
       
+      // Target a random conscious player
+      const consciousPlayers = state.party.filter(p => !p.unconscious);
+      const target = consciousPlayers.length > 0 
+        ? consciousPlayers[Math.floor(Math.random() * consciousPlayers.length)]
+        : state.party[0];
+
       let advantage = false;
       let disadvantage = false;
       let bonusFormula = undefined;
@@ -150,37 +178,41 @@ export function resolveEngineRequest(
       if (hasCondition(attacker, 'restrained')) disadvantage = true;
       if (hasCondition(attacker, 'blessed')) bonusFormula = '1d4';
 
-      // Target (player) conditions
-      if (hasCondition(state.player, 'blinded')) advantage = true;
-      if (hasCondition(state.player, 'paralyzed') || hasCondition(state.player, 'stunned') || hasCondition(state.player, 'unconscious')) advantage = true;
-      if (hasCondition(state.player, 'restrained')) advantage = true;
+      // Target conditions
+      if (hasCondition(target, 'blinded')) advantage = true;
+      if (hasCondition(target, 'paralyzed') || hasCondition(target, 'stunned') || hasCondition(target, 'unconscious')) advantage = true;
+      if (hasCondition(target, 'restrained')) advantage = true;
 
-      const playerAc = hasCondition(state.player, 'shielded') ? state.player.ac + 5 : state.player.ac;
+      const targetAc = hasCondition(target, 'shielded') ? target.ac + 5 : target.ac;
 
       const toHit = rollFormula('1d20', attacker.attackBonus, { advantage, disadvantage, bonusFormula });
-      if (toHit.total < playerAc) {
-        return { state: appendLog(state, `${attacker.name} missed.`), result: { ok: false, summary: `${attacker.name} missed.`, breakdown: toHit } };
+      if (toHit.total < targetAc) {
+        return { state: appendLog(state, `${attacker.name} missed ${target.name}.`), result: { ok: false, summary: `${attacker.name} missed.`, breakdown: toHit } };
       }
       const dmg = rollFormula('1d6', 1);
-      const hp = Math.max(0, state.player.hp - dmg.total);
+      const hp = Math.max(0, target.hp - dmg.total);
       const unconscious = hp === 0;
-      const next = { ...state, player: { ...state.player, hp, unconscious } };
+      
+      const next = updateCharacterInParty(state, target.id, (c) => ({ ...c, hp, unconscious }));
+      
       return { 
-        state: appendLog(next, `${attacker.name} hit for ${dmg.total}.${unconscious ? ' You have fallen unconscious!' : ''}`), 
-        result: { ok: true, summary: `${attacker.name} hit you.${unconscious ? ' You are unconscious!' : ''}`, breakdown: dmg } 
+        state: appendLog(next, `${attacker.name} hit ${target.name} for ${dmg.total}.${unconscious ? ` ${target.name} has fallen unconscious!` : ''}`), 
+        result: { ok: true, summary: `${attacker.name} hit ${target.name}.${unconscious ? ` ${target.name} is unconscious!` : ''}`, breakdown: dmg } 
       };
     }
     case 'death_save': {
-      if (!state.player.unconscious) return { state, result: { ok: false, summary: 'You are not unconscious.' } };
+      const char = state.party.find(p => p.id === requestedCharacterId(state, request.characterId));
+      if (!char) return { state, result: { ok: false, summary: 'Character not found.' } };
+      if (!char.unconscious) return { state, result: { ok: false, summary: `${char.name} is not unconscious.` } };
 
       if (options?.physicalDice && request.manualRoll === undefined) {
         return {
           state,
           result: {
             ok: false,
-            summary: 'Waiting for manual Death Save...',
+            summary: `Waiting for manual Death Save for ${char.name}...`,
             needsManualRoll: true,
-            manualRollContext: { kind: 'skill_check', formula: '1d20' }, // Reusing skill_check kind for UI
+            manualRollContext: { kind: 'skill_check', formula: '1d20' },
           },
         };
       }
@@ -190,7 +222,7 @@ export function resolveEngineRequest(
         : rollFormula('1d20', 0);
       
       const natural = breakdown.rolls[0];
-      let { success, failure } = state.player.deathSaves;
+      let { success, failure } = char.deathSaves;
       let hp = 0;
       let unconscious = true;
       let msg = '';
@@ -200,72 +232,81 @@ export function resolveEngineRequest(
         failure = 0;
         hp = 1;
         unconscious = false;
-        msg = 'Critical Success! You regain 1 HP and are no longer unconscious.';
+        msg = 'Critical Success! Regains 1 HP and is no longer unconscious.';
       } else if (natural === 1) {
         failure += 2;
-        msg = 'Critical Failure! You mark 2 failures.';
+        msg = 'Critical Failure! Marks 2 failures.';
       } else if (natural >= 10) {
         success += 1;
-        msg = 'Success! You mark 1 success.';
+        msg = 'Success! Marks 1 success.';
       } else {
         failure += 1;
-        msg = 'Failure. You mark 1 failure.';
+        msg = 'Failure. Marks 1 failure.';
       }
 
       let dead = false;
       if (failure >= 3) {
         dead = true;
-        msg += ' You have died.';
+        msg += ' Has died.';
       } else if (success >= 3) {
         success = 0;
         failure = 0;
-        unconscious = true; // Still unconscious but stable
-        msg += ' You are now stable.';
+        unconscious = true; // Stable
+        msg += ' Is now stable.';
       }
 
-      const next = { 
-        ...state, 
-        player: { 
-          ...state.player, 
-          hp, 
-          unconscious, 
-          deathSaves: { success, failure } 
-        },
-        sceneId: dead ? 'ending' : state.sceneId
-      };
+      let next = updateCharacterInParty(state, char.id, (c) => ({ 
+        ...c, hp, unconscious, deathSaves: { success, failure } 
+      }));
+
+      const allDead = next.party.every(p => p.hp <= 0 && p.deathSaves.failure >= 3);
+      if (allDead) next = { ...next, sceneId: 'ending' };
       
       return { 
-        state: appendLog(next, `Death Save: ${msg}`), 
+        state: appendLog(next, `${char.name} Death Save: ${msg}`), 
         result: { ok: natural >= 10, summary: msg, breakdown } 
       };
     }
     case 'use_feature': {
-      const idx = state.player.features.findIndex((f) => f.id === request.featureId);
+      const char = state.party.find(p => p.id === requestedCharacterId(state, request.characterId));
+      if (!char) return { state, result: { ok: false, summary: 'Character not found.' } };
+
+      const idx = char.features.findIndex((f) => f.id === request.featureId);
       if (idx < 0) return { state, result: { ok: false, summary: `Feature ${request.featureId} not found.` } };
-      const feature = state.player.features[idx];
+      const feature = char.features[idx];
       if (feature.usesRemaining <= 0) return { state, result: { ok: false, summary: `No uses of ${feature.name} remaining.` } };
       
       let next = state;
-      let summary = `${feature.name} used.`;
+      let summary = `${char.name} used ${feature.name}.`;
       let breakdown: RollBreakdown | undefined;
 
       // Logic for specific features
       if (feature.id === 'second_wind') {
-        breakdown = rollFormula('1d10', state.player.level);
-        const hp = Math.min(state.player.maxHp, state.player.hp + breakdown.total);
-        next = { ...state, player: { ...state.player, hp } };
-        summary = `Second Wind restored ${breakdown.total} HP.`;
+        breakdown = rollFormula('1d10', char.level);
+        const hp = Math.min(char.maxHp, char.hp + breakdown.total);
+        next = updateCharacterInParty(state, char.id, (c) => ({ ...c, hp }));
+        summary = `${char.name} used Second Wind and restored ${breakdown.total} HP.`;
+      } else if (feature.id === 'lay_on_hands') {
+          // Simplistic implementation for now
+          const amount = Math.min(feature.usesRemaining, 5);
+          next = updateCharacterInParty(state, char.id, (c) => ({ ...c, hp: Math.min(c.maxHp, c.hp + amount) }));
+          summary = `${char.name} used Lay on Hands and restored ${amount} HP.`;
       }
 
-      const features = next.player.features.map((f, i) => i === idx ? { ...f, usesRemaining: f.usesRemaining - 1 } : f);
-      next = { ...next, player: { ...next.player, features } };
+      next = updateCharacterInParty(next, char.id, (c) => {
+        const features = c.features.map((f, i) => i === idx ? { ...f, usesRemaining: f.usesRemaining - 1 } : f);
+        return { ...c, features };
+      });
       
       return { state: appendLog(next, summary), result: { ok: true, summary, breakdown } };
     }
     case 'cast_spell': {
+      const char = state.party.find(p => p.id === requestedCharacterId(state, request.characterId));
+      if (!char) return { state, result: { ok: false, summary: 'Character not found.' } };
+
       const level = request.level;
-      const slot = state.player.spellSlots[level];
-      if (level > 0) { // Cantrips don't use slots
+      const slot = char.spellSlots[level];
+      if (level > 0) {
         if (!slot || slot.remaining <= 0) {
           return { state, result: { ok: false, summary: `No level ${level} spell slots remaining.` } };
         }
@@ -273,87 +314,96 @@ export function resolveEngineRequest(
 
       let next = state;
       if (level > 0) {
-        const spellSlots = { ...state.player.spellSlots, [level]: { ...slot, remaining: slot.remaining - 1 } };
-        next = { ...state, player: { ...state.player, spellSlots } };
+        next = updateCharacterInParty(state, char.id, (c) => {
+          const spellSlots = { ...c.spellSlots, [level]: { ...slot, remaining: slot.remaining - 1 } };
+          return { ...c, spellSlots };
+        });
       }
 
-      let summary = `Cast ${request.spellName} (Level ${level})`;
+      let summary = `${char.name} cast ${request.spellName} (Level ${level})`;
       let breakdown: RollBreakdown | undefined;
-
       const spellName = request.spellName.toLowerCase();
       
       // Basic Spell Logic
-      if (spellName.includes('cure wounds')) {
-        breakdown = rollFormula(`${level}d8`, 3); // Assuming +3 modifier
-        const hp = Math.min(next.player.maxHp, next.player.hp + breakdown.total);
-        const unconscious = hp > 0 ? false : next.player.unconscious;
-        const deathSaves = hp > 0 ? { success: 0, failure: 0 } : next.player.deathSaves;
-        next = { ...next, player: { ...next.player, hp, unconscious, deathSaves } };
-        summary = `Cure Wounds restored ${breakdown.total} HP.`;
-      } else if (spellName.includes('healing word')) {
-        breakdown = rollFormula(`${level}d4`, 3);
-        const hp = Math.min(next.player.maxHp, next.player.hp + breakdown.total);
-        const unconscious = hp > 0 ? false : next.player.unconscious;
-        const deathSaves = hp > 0 ? { success: 0, failure: 0 } : next.player.deathSaves;
-        next = { ...next, player: { ...next.player, hp, unconscious, deathSaves } };
-        summary = `Healing Word restored ${breakdown.total} HP.`;
+      if (spellName.includes('cure wounds') || spellName.includes('healing word')) {
+        const dice = spellName.includes('cure wounds') ? 'd8' : 'd4';
+        breakdown = rollFormula(`${level}${dice}`, 3);
+        
+        // Target can be self or another character
+        const targetId = request.targetId || char.id;
+        next = updateCharacterInParty(next, targetId, (c) => {
+          const hp = Math.min(c.maxHp, c.hp + (breakdown?.total ?? 0));
+          const unconscious = hp > 0 ? false : c.unconscious;
+          const deathSaves = hp > 0 ? { success: 0, failure: 0 } : c.deathSaves;
+          return { ...c, hp, unconscious, deathSaves };
+        });
+        const target = next.party.find(p => p.id === targetId);
+        summary = `${char.name} cast ${spellName} on ${target?.name}, restoring ${breakdown.total} HP.`;
       } else if (spellName.includes('magic missile')) {
-         const missileCount = 2 + level; // 3 missiles at level 1, +1 per level
-         breakdown = rollFormula(`${missileCount}d4`, missileCount); // Each missile is 1d4+1
+         const missileCount = 2 + level;
+         breakdown = rollFormula(`${missileCount}d4`, missileCount);
          if (request.targetId) {
            const monsters = next.monsters.map(m => 
              m.id === request.targetId ? { ...m, hp: Math.max(0, m.hp - (breakdown?.total ?? 0)) } : m
            );
            next = { ...next, monsters };
            const target = next.monsters.find(m => m.id === request.targetId);
-           summary = `Magic Missile hit ${target?.name} for ${breakdown.total} damage.`;
-         } else {
-           summary = `Magic Missile fired ${missileCount} darts for ${breakdown.total} total damage.`;
+           summary = `${char.name}'s Magic Missile hit ${target?.name} for ${breakdown.total} damage.`;
          }
        } else if (spellName.includes('shield')) {
-         // Apply shielded condition to player
-         if (!next.player.conditions.includes('shielded')) {
-           next = { ...next, player: { ...next.player, conditions: [...next.player.conditions, 'shielded' as const] } };
-         }
-         summary = `Cast Shield. AC increased by 5 until next turn.`;
+         next = updateCharacterInParty(next, char.id, (c) => ({
+           ...c, conditions: c.conditions.includes('shielded') ? c.conditions : [...c.conditions, 'shielded' as const]
+         }));
+         summary = `${char.name} cast Shield.`;
        } else if (spellName.includes('bless')) {
-         // Apply blessed condition to player
-         if (!next.player.conditions.includes('blessed')) {
-           next = { ...next, player: { ...next.player, conditions: [...next.player.conditions, 'blessed' as const] } };
-         }
-         summary = `Cast Bless. You now add 1d4 to attack rolls and saving throws.`;
-       } else if (spellName.includes('guiding bolt')) {
-         breakdown = rollFormula(`${3 + level}d6`, 3); // 4d6 at level 1
-         if (request.targetId) {
-            const monsters = next.monsters.map(m => {
-              if (m.id === request.targetId) {
-                const conditions = m.conditions.includes('guiding_bolt_target') ? m.conditions : [...m.conditions, 'guiding_bolt_target' as const];
-                return { ...m, hp: Math.max(0, m.hp - (breakdown?.total ?? 0)), conditions };
-              }
-              return m;
-            });
-            next = { ...next, monsters };
-            const target = next.monsters.find(m => m.id === request.targetId);
-            summary = `Guiding Bolt hit ${target?.name} for ${breakdown.total} damage and granted advantage on the next attack.`;
-         } else {
-            summary = `Guiding Bolt fired for ${breakdown.total} damage.`;
-         }
+         // Simplistic: blesses the whole party for now
+         const party = next.party.map(p => ({
+           ...p, conditions: p.conditions.includes('blessed') ? p.conditions : [...p.conditions, 'blessed' as const]
+         }));
+         next = {
+           ...next,
+           party,
+         };
+         summary = `${char.name} cast Bless on the party.`;
        }
 
       return { state: appendLog(next, summary), result: { ok: true, summary, breakdown } };
     }
     case 'short_rest': {
-      const features = state.player.features.map(f => f.rechargeOn === 'short_rest' ? { ...f, usesRemaining: f.usesMax } : f);
-      const next = { ...state, player: { ...state.player, features } };
-      return { state: appendLog(next, 'Took a short rest. Features recharged.'), result: { ok: true, summary: 'Short rest complete.' } };
+      const party = state.party.map(p => ({
+        ...p,
+        features: p.features.map(f => f.rechargeOn === 'short_rest' ? { ...f, usesRemaining: f.usesMax } : f)
+      }));
+      const next = {
+        ...state,
+        party,
+        player: party[0],
+      };
+      return { state: appendLog(next, 'The party took a short rest.'), result: { ok: true, summary: 'Short rest complete.' } };
     }
     case 'long_rest': {
-      const features = state.player.features.map(f => ({ ...f, usesRemaining: f.usesMax }));
-      const spellSlots = Object.fromEntries(
-        Object.entries(state.player.spellSlots).map(([lvl, s]) => [lvl, { ...s, remaining: s.max }])
-      );
-      const next = { ...state, player: { ...state.player, hp: state.player.maxHp, features, spellSlots } };
-      return { state: appendLog(next, 'Took a long rest. HP, features, and slots restored.'), result: { ok: true, summary: 'Long rest complete.' } };
+      const party = state.party.map(p => ({
+        ...p,
+        hp: p.maxHp,
+        features: p.features.map(f => ({ ...f, usesRemaining: f.usesMax })),
+        spellSlots: Object.fromEntries(
+          Object.entries(p.spellSlots).map(([lvl, s]) => [lvl, { ...s, remaining: s.max }])
+        )
+      }));
+      const next = {
+        ...state,
+        party,
+        player: party[0],
+      };
+      return { state: appendLog(next, 'The party took a long rest. Everyone is restored.'), result: { ok: true, summary: 'Long rest complete.' } };
+    }
+    case 'advance_scene': {
+      const next = advanceScene(state);
+      const ok = next.sceneId !== state.sceneId;
+      return {
+        state: ok ? appendLog(next, `Advanced to scene ${next.sceneId}.`) : state,
+        result: { ok, summary: ok ? 'Scene advanced.' : 'No next scene available.' },
+      };
     }
     case 'update_npc': {
       const npcs = state.npcs.map((n) => {
@@ -369,7 +419,6 @@ export function resolveEngineRequest(
       return { state: { ...state, npcs }, result: { ok: true, summary: `Updated NPC ${request.npcId}` } };
     }
     case 'add_canon_fact': {
-      // Check for duplicate content in the existing log to avoid repetition
       const isDuplicate = state.canonLog.some(f => f.content === request.content);
       if (isDuplicate) return { state, result: { ok: true, summary: 'Fact already established.' } };
 
@@ -377,29 +426,29 @@ export function resolveEngineRequest(
       return { state: { ...state, canonLog: [...state.canonLog, fact] }, result: { ok: true, summary: 'Added canon fact.' } };
     }
     case 'update_inventory': {
-      const gold = state.player.gold + (request.goldDelta ?? 0);
-      let inventory = [...state.player.inventory];
-      
-      if (request.add) {
-        inventory = [...inventory, ...request.add];
-      }
-      
-      if (request.remove) {
-        inventory = inventory.filter(item => !request.remove?.includes(item));
-      }
+      const char = state.party.find(p => p.id === requestedCharacterId(state, request.characterId));
+      if (!char) return { state, result: { ok: false, summary: 'Character not found.' } };
 
-      const next = { ...state, player: { ...state.player, gold, inventory } };
+      const next = updateCharacterInParty(state, char.id, (c) => {
+        const gold = c.gold + (request.goldDelta ?? 0);
+        let inventory = [...c.inventory];
+        if (request.add) inventory = [...inventory, ...request.add];
+        if (request.remove) inventory = inventory.filter(item => !request.remove?.includes(item));
+        return { ...c, gold, inventory };
+      });
+      
       return { state: next, result: { ok: true, summary: 'Inventory updated.' } };
     }
     case 'apply_condition': {
       let next = state;
       let targetName = '';
       
-      if (request.targetId === state.player.id) {
-        if (!state.player.conditions.includes(request.condition)) {
-          next = { ...state, player: { ...state.player, conditions: [...state.player.conditions, request.condition] } };
-        }
-        targetName = state.player.name;
+      const char = state.party.find(p => p.id === request.targetId);
+      if (char) {
+        next = updateCharacterInParty(state, char.id, (c) => ({
+          ...c, conditions: c.conditions.includes(request.condition) ? c.conditions : [...c.conditions, request.condition]
+        }));
+        targetName = char.name;
       } else {
         const monsters = state.monsters.map(m => {
           if (m.id === request.targetId && !m.conditions.includes(request.condition)) {
@@ -418,14 +467,17 @@ export function resolveEngineRequest(
       let next = state;
       let targetName = '';
       
-      if (request.targetId === state.player.id) {
-        next = { ...state, player: { ...state.player, conditions: state.player.conditions.filter(c => c !== request.condition) } };
-        targetName = state.player.name;
+      const char = state.party.find(p => p.id === request.targetId);
+      if (char) {
+        next = updateCharacterInParty(state, char.id, (c) => ({
+          ...c, conditions: c.conditions.filter(con => con !== request.condition)
+        }));
+        targetName = char.name;
       } else {
         const monsters = state.monsters.map(m => {
           if (m.id === request.targetId) {
             targetName = m.name;
-            return { ...m, conditions: m.conditions.filter(c => c !== request.condition) };
+            return { ...m, conditions: m.conditions.filter(con => con !== request.condition) };
           }
           return m;
         });

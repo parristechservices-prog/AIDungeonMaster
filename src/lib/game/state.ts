@@ -9,17 +9,19 @@ export type { NewGameOptions };
 
 export function createInitialState(sessionId: string, options?: NewGameOptions): GameState {
   const adventureId = options?.adventureId ?? DEFAULT_ADVENTURE_ID;
-  const characterTemplateId = options?.characterId ?? 'fighter';
+  const characterTemplateIds = options?.characterIds ?? [options?.characterId ?? 'fighter'];
+  const playerNames = options?.playerNames ?? (options?.playerName ? [options.playerName] : []);
   const adventure = getAdventure(adventureId);
   const level =
     options?.playerLevel ??
     adventure.playConfig?.defaultLevel ??
     adventure.levelRange?.[0] ??
     3;
-  const player = buildCharacter(characterTemplateId, {
-    playerName: options?.playerName,
+  
+  const party = characterTemplateIds.map((id, i) => buildCharacter(id, {
+    playerName: playerNames[i],
     level,
-  });
+  }));
 
   const canonLog: CanonFact[] = [];
   const background = options?.backgroundId ? getBackground(options.backgroundId) : undefined;
@@ -36,14 +38,17 @@ export function createInitialState(sessionId: string, options?: NewGameOptions):
   return {
     sessionId,
     adventureId,
-    characterTemplateId,
+    characterTemplateId: characterTemplateIds[0],
+    characterTemplateIds,
     backgroundId: background?.id,
     personaId,
     sceneId: getFirstPlayableSceneId(adventure),
     log: [],
     canonLog,
-    player,
-    monsters: initialMonstersForAdventure(adventure, player.level),
+    player: party[0],
+    party,
+    activeCharacterId: party[0].id,
+    monsters: initialMonstersForAdventure(adventure, party[0].level),
     npcs: structuredClone(adventure.npcs),
     combat: { active: false, initiative: [], turnIndex: 0 },
   };
@@ -51,16 +56,34 @@ export function createInitialState(sessionId: string, options?: NewGameOptions):
 
 export function migrateGameState(state: GameState): GameState {
   const adventureId = state.adventureId ?? DEFAULT_ADVENTURE_ID;
-  const characterTemplateId = state.characterTemplateId ?? 'fighter';
+  const characterTemplateIds = state.characterTemplateIds ?? ['fighter'];
+  const characterTemplateId = state.characterTemplateId ?? characterTemplateIds[0];
   const personaId = state.personaId ?? 'balanced';
+  const party = state.party ?? (state.player ? [state.player] : []);
+  const player = state.player ?? party[0];
+  const activeCharacterId = state.activeCharacterId ?? player?.id;
+  
   if (
     state.adventureId === adventureId &&
+    state.characterTemplateIds === characterTemplateIds &&
     state.characterTemplateId === characterTemplateId &&
-    state.personaId === personaId
+    state.personaId === personaId &&
+    state.party === party &&
+    state.player === player &&
+    state.activeCharacterId === activeCharacterId
   ) {
     return state;
   }
-  return { ...state, adventureId, characterTemplateId, personaId };
+  return {
+    ...state,
+    adventureId,
+    characterTemplateId,
+    characterTemplateIds,
+    personaId,
+    party,
+    player,
+    activeCharacterId,
+  };
 }
 
 export function advanceScene(state: GameState): GameState {
@@ -77,7 +100,7 @@ export function advanceScene(state: GameState): GameState {
   if (getSceneKind(adventure, nextSceneId) === 'combat') {
     next = {
       ...next,
-      monsters: resolveCombatMonsters(adventure, nextSceneId, state.player.level),
+      monsters: resolveCombatMonsters(adventure, nextSceneId, state.party[0].level),
     };
   }
   return next;

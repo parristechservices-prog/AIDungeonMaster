@@ -34,6 +34,14 @@ npm run dev
 
 Open [http://localhost:3000/start?adventureId=skt-nightstone](http://localhost:3000/start?adventureId=skt-nightstone)
 
+### Optional: import a local module file via UI
+
+On `/start`, use **Import local module JSON (dev only)** to upload a `module.json` file from your machine.
+
+- The app validates it and saves to `content/private/<module-id>/module.json`.
+- This keeps your owned/copyrighted SKT notes local to your computer.
+- Imported modules appear in the scenario list immediately after upload.
+
 - Pick class (level 3 templates; use level slider if shown).
 - Choose **private** SKT module.
 - Play on `/play` with the PDF beside you for read-aloud and maps.

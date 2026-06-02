@@ -22,3 +22,5 @@ export function hasLlmCredentials(): boolean {
 export function shouldUseMockFlavorPrefix(): boolean {
   return (process.env.PARTYQUEST_MOCK_FLAVOR ?? '').toLowerCase() === 'true';
 }
+
+export const useMockFlavorPrefix = shouldUseMockFlavorPrefix;

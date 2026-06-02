@@ -55,17 +55,25 @@ export type TurnResult = {
   recentRolls: import('@/lib/engine/types').RollBreakdown[];
   narrationWarnings?: string[];
   state: {
-    player: {
+    party: Array<{
+      id: string;
       name: string;
+      race: string;
+      className: string;
+      subclass?: string;
       hp: number;
       maxHp: number;
       ac: number;
-      features: GameState['player']['features'];
-      spellSlots: GameState['player']['spellSlots'];
+      unconscious: boolean;
+      deathSaves: { success: number; failure: number };
+      features: import('@/lib/game/types').Character['features'];
+      spellSlots: import('@/lib/game/types').Character['spellSlots'];
       gold: number;
       inventory: string[];
-    };
-    monsters: { id: string; name: string; hp: number; maxHp: number; ac: number }[];
+      conditions: import('@/lib/game/types').Condition[];
+    }>;
+    activeCharacterId: string;
+    monsters: { id: string; name: string; hp: number; maxHp: number; ac: number; conditions: import('@/lib/game/types').Condition[] }[];
     npcs: GameState['npcs'];
     canonLog: GameState['canonLog'];
     combat: GameState['combat'];
@@ -177,17 +185,27 @@ export function runTurn(
       engineResults,
       recentRolls,
       state: {
-        player: {
-        name: state.player.name,
-        hp: state.player.hp,
-        maxHp: state.player.maxHp,
-        ac: state.player.ac,
-        features: state.player.features,
-        spellSlots: state.player.spellSlots,
-        gold: state.player.gold,
-        inventory: state.player.inventory,
-      },
-        monsters: state.monsters.map((m) => ({ id: m.id, name: m.name, hp: m.hp, maxHp: m.maxHp, ac: m.ac })),
+        party: state.party.map((p) => ({
+          id: p.id,
+          name: p.name,
+          race: p.race,
+          className: p.className,
+          subclass: p.subclass,
+          level: p.level,
+          hp: p.hp,
+          maxHp: p.maxHp,
+          ac: p.ac,
+          proficiencyBonus: p.proficiencyBonus,
+          unconscious: p.unconscious,
+          deathSaves: p.deathSaves,
+          features: p.features,
+          spellSlots: p.spellSlots,
+          gold: p.gold,
+          inventory: p.inventory,
+          conditions: p.conditions,
+        })),
+        activeCharacterId: state.activeCharacterId,
+        monsters: state.monsters.map((m) => ({ id: m.id, name: m.name, hp: m.hp, maxHp: m.maxHp, ac: m.ac, conditions: m.conditions })),
         npcs: state.npcs,
         canonLog: state.canonLog,
         combat: state.combat,

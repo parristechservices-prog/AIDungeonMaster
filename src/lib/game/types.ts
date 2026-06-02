@@ -9,8 +9,10 @@ export type Condition = 'blinded' | 'charmed' | 'deafened' | 'frightened' | 'gra
 export type Character = {
   id: string;
   name: string;
-  level: number;
+  race: string;
   className: string;
+  subclass?: string;
+  level: number;
   ac: number;
   maxHp: number;
   hp: number;
@@ -71,13 +73,18 @@ export type DMPersona = {
 export type GameState = {
   sessionId: string;
   adventureId: string;
+  /** @deprecated Use characterTemplateIds[0]. */
   characterTemplateId: string;
+  characterTemplateIds: string[];
   backgroundId?: string;
   personaId: DMPersonaId;
   sceneId: SceneId;
   log: string[];
   canonLog: CanonFact[];
+  /** @deprecated Use party[0] or activeCharacterId. */
   player: Character;
+  party: Character[];
+  activeCharacterId: string;
   monsters: Monster[];
   npcs: NPC[];
   combat: CombatState;
@@ -85,8 +92,12 @@ export type GameState = {
 
 export type NewGameOptions = {
   adventureId?: string;
+  /** @deprecated Use characterIds. */
   characterId?: string;
+  characterIds?: string[];
+  /** @deprecated Use playerNames. */
   playerName?: string;
+  playerNames?: string[];
   playerLevel?: number;
   backgroundId?: string;
   personaId?: DMPersonaId;
