@@ -20,13 +20,25 @@ export async function POST(req: Request) {
       ? body.adventureId
       : 'brindlehook-inn';
 
-  const characterIds = Array.isArray(body?.characterIds)
-    ? body.characterIds.filter((id: string) => VALID_CHARACTERS.has(id))
-    : [typeof body?.characterId === 'string' && VALID_CHARACTERS.has(body.characterId) ? body.characterId : 'fighter'];
+  const characterIds: string[] = (
+    Array.isArray(body?.characterIds)
+      ? body.characterIds.filter((id: unknown): id is string => typeof id === 'string' && VALID_CHARACTERS.has(id))
+      : [typeof body?.characterId === 'string' && VALID_CHARACTERS.has(body.characterId) ? body.characterId : 'fighter']
+  ).slice(0, 4);
+  if (characterIds.length === 0) {
+    characterIds.push('fighter');
+  }
 
-  const playerNames = Array.isArray(body?.playerNames)
-    ? body.playerNames.map((n: string) => n.slice(0, 40))
-    : [typeof body?.playerName === 'string' ? body.playerName.slice(0, 40) : 'Hero'];
+  const rawPlayerNames = Array.isArray(body?.playerNames)
+    ? body.playerNames
+    : [body?.playerName];
+  const playerNames = characterIds.map((_characterId: string, i: number) => {
+    const rawName = rawPlayerNames[i];
+    if (typeof rawName === 'string' && rawName.trim()) {
+      return rawName.trim().slice(0, 40);
+    }
+    return '';
+  });
 
   const backgroundId =
     typeof body?.backgroundId === 'string' && VALID_BACKGROUNDS.has(body.backgroundId)
