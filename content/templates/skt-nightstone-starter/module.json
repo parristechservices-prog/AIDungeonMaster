@@ -1,125 +1,127 @@
 {
   "id": "skt-nightstone-starter",
-  "title": "Giant Threat — Settlement Chapter (starter scaffold)",
-  "tagline": "Original placeholder scenes for a walled village chapter. Copy to content/private/ and replace with YOUR notes from the book you own — do not paste copyrighted text here.",
-  "estimatedMinutes": 90,
-  "tone": "frontier siege",
+  "title": "Giants on the Frontier — Chapter 1 scaffold",
+  "tagline": "Play your owned SKT Chapter 1 notes: fill YOUR NOTE fields and campaignGuide from your book. SRD monsters only in repo.",
+  "estimatedMinutes": 120,
+  "tone": "giants frontier siege",
   "recommendedCharacters": ["fighter", "cleric", "rogue", "wizard"],
   "levelRange": [1, 5],
-  "sourceNote": "Scaffold only. Rename id when copying to content/private/skt-nightstone/. Replace NPC names, goals, and DCs with your own brief notes.",
+  "sourceNote": "Not official WotC content. Copy to content/private/skt-nightstone via npm run module:scaffold",
+  "campaignGuide": "YOUR NOTE: Paste 5–15 bullet points from your book — plot hooks, NPC names you use at the table, village name, where giants fit in. Do not paste full paragraphs from the PDF into git.",
+  "playConfig": {
+    "defaultLevel": 3,
+    "partySize": 1,
+    "defaultDifficulty": "medium",
+    "spawnMonstersOnCombatOnly": true,
+    "preferredMonsterTemplates": ["goblin", "hobgoblin", "orc", "ogre"]
+  },
   "chapters": [
     {
-      "id": "ch01-settlement",
-      "title": "Chapter 1 slice — fill from your book",
+      "id": "ch01",
+      "title": "Chapter 1 — your book notes",
       "sceneIds": [
         "settlement-arrival",
+        "village-briefing",
         "breach-investigation",
-        "raider-skirmish",
+        "trail-to-hideout",
+        "goblin-ambush",
         "ending"
       ]
     }
   ],
   "sceneOrder": [
     "settlement-arrival",
+    "village-briefing",
     "breach-investigation",
-    "raider-skirmish",
+    "trail-to-hideout",
+    "goblin-ambush",
     "ending"
   ],
   "scenes": {
     "settlement-arrival": {
       "kind": "social",
-      "goal": "Learn what happened during the attack and what the villagers need.",
-      "starter": "A walled settlement looms through the rain. Villagers eye you warily from barred gates.",
-      "choices": [
-        "Speak with the village elder",
-        "Ask the gate guards what they saw",
-        "Offer your services for pay"
-      ],
-      "guidance": "YOUR NOTE: who has authority, what clue points to the next scene. Suggested DC 12–15 persuasion or insight."
+      "goal": "Reach the settlement and learn that something catastrophic happened.",
+      "starter": "Rain hammers a walled settlement. A bell tolls — too fast, too urgent.",
+      "choices": ["Seek the leader", "Talk to guards at the gate", "Look for other adventurers"],
+      "guidance": "YOUR NOTE: settlement name, who greets PCs, one hook sentence from your book."
+    },
+    "village-briefing": {
+      "kind": "social",
+      "goal": "Gather concrete facts: who is missing, what was stolen, what witnesses saw.",
+      "starter": "Candlelight and mud-stained maps cover a table. Survivors speak in half-sentences.",
+      "choices": ["Ask about the attack", "Ask about missing villagers", "Offer to help immediately"],
+      "guidance": "YOUR NOTE: key NPC names you use, 2–3 facts players should learn. DC 12–14 social."
     },
     "breach-investigation": {
       "kind": "exploration",
-      "goal": "Find physical evidence at the breach or missing-persons site.",
-      "starter": "Broken masonry and trampled mud mark where something large struck the wall.",
-      "choices": [
-        "Search the rubble for tracks",
-        "Question survivors nearby",
-        "Follow drag marks away from the wall"
-      ],
-      "guidance": "YOUR NOTE: what success reveals (one canon fact). Perception or investigation DC per your table."
+      "goal": "Examine the breach, debris, or kidnapping site for clues.",
+      "starter": "The wall is shattered at an impossible height. Scorch marks and claw-gouges remain.",
+      "choices": ["Search the rubble", "Cast a detection effect", "Interview nearby witnesses"],
+      "guidance": "YOUR NOTE: clue on success. Investigation or Perception DC from your book."
     },
-    "raider-skirmish": {
+    "trail-to-hideout": {
+      "kind": "exploration",
+      "goal": "Follow the trail toward the next location in your chapter.",
+      "starter": "Tracks lead away from the walls — boot prints, wagon ruts, or something stranger.",
+      "choices": ["Follow tracks stealthily", "March openly", "Send a scout ahead"],
+      "guidance": "YOUR NOTE: destination name, Survival/Stealth DC, complication on fail."
+    },
+    "goblin-ambush": {
       "kind": "combat",
-      "goal": "Drive off the raiding party and stabilize the settlement.",
-      "starter": "Figures scramble from cover — steel flashes in the storm-light.",
-      "choices": [
-        "Engage the nearest foe",
-        "Hold the line and protect civilians",
-        "Use terrain for cover"
-      ],
-      "guidance": "YOUR NOTE: enemy count and retreat condition. Use SRD stat blocks in monsters[] below."
+      "goal": "Survive the ambush — in many tables this is goblins/orcs before larger threats.",
+      "starter": "Arrows hiss from the rocks! Small shapes dart between boulders.",
+      "choices": ["Charge the archers", "Take cover", "Try to intimidate them to flee"],
+      "guidance": "YOUR NOTE: adjust sceneEncounters below if your book uses different foes."
     }
   },
-  "endingMessage": "The immediate threat eases. Deeper mysteries along the frontier still await — continue in your next scene notes.",
+  "sceneEncounters": {
+    "goblin-ambush": {
+      "auto": true,
+      "difficulty": "medium",
+      "preferredTemplates": ["goblin", "goblin", "hobgoblin"]
+    }
+  },
+  "endingMessage": "YOUR NOTE: one sentence chapter cliffhanger from your book — or 'Rest and level up; continue in your next module.'",
   "npcs": [
     {
-      "id": "npc-elder",
-      "name": "Village Elder",
-      "description": "Weathered leader of the settlement; cautious but desperate for help.",
+      "id": "npc-leader",
+      "name": "YOUR NOTE: leader name",
+      "description": "YOUR NOTE: one-line description",
       "disposition": "neutral",
       "knowledge": [
-        "YOUR NOTE: one fact about the attack timing.",
-        "YOUR NOTE: one fact about missing people or stolen property."
+        "YOUR NOTE: fact about the attack",
+        "YOUR NOTE: fact about missing people"
       ]
     },
     {
-      "id": "npc-captain",
-      "name": "Gate Captain",
-      "description": "Commander of the wall watch; saw the assault from the parapet.",
+      "id": "npc-witness",
+      "name": "YOUR NOTE: witness name",
+      "description": "YOUR NOTE: who saw the giants or raiders",
       "disposition": "friendly",
-      "knowledge": [
-        "YOUR NOTE: direction enemies came from.",
-        "YOUR NOTE: approximate number or size of foes."
-      ]
+      "knowledge": ["YOUR NOTE: direction enemies came from", "YOUR NOTE: time of attack"]
     }
   ],
   "monsters": [
     {
-      "id": "raider-1",
-      "name": "Raid Scout",
-      "ac": 13,
-      "maxHp": 16,
-      "attackBonus": 4,
-      "damage": "1d6+2"
-    },
-    {
-      "id": "raider-2",
-      "name": "Raid Scout",
-      "ac": 13,
-      "maxHp": 16,
-      "attackBonus": 4,
-      "damage": "1d6+2"
-    },
-    {
-      "id": "raider-brute",
-      "name": "Raid Brute",
-      "ac": 14,
-      "maxHp": 32,
-      "attackBonus": 5,
-      "damage": "1d10+3"
+      "id": "placeholder-1",
+      "name": "Placeholder",
+      "ac": 10,
+      "maxHp": 1,
+      "attackBonus": 0,
+      "damage": "1"
     }
   ],
   "mock": {
-    "socialNpcId": "npc-elder",
-    "socialNpcName": "the village elder",
-    "socialSuccess": "YOUR NOTE: success line — what the elder reveals in one or two sentences.",
-    "socialFailure": "YOUR NOTE: failure line — elder deflects until trust is earned.",
-    "explorationSuccess": "YOUR NOTE: success line — concrete clue for the next scene.",
-    "explorationFailure": "YOUR NOTE: failure line — muddy evidence, retry possible.",
+    "socialNpcId": "npc-leader",
+    "socialNpcName": "the settlement leader",
+    "socialSuccess": "YOUR NOTE: what they reveal when persuaded.",
+    "socialFailure": "YOUR NOTE: deflection until trust is earned.",
+    "explorationSuccess": "YOUR NOTE: clue found on success.",
+    "explorationFailure": "YOUR NOTE: muddy result; player can retry.",
     "socialSkill": "persuasion",
     "explorationSkill": "investigation",
     "socialDc": 13,
     "explorationDc": 13,
-    "canonFactOnSocialSuccess": "YOUR NOTE: one sentence fact to store in canon log when social check succeeds."
+    "canonFactOnSocialSuccess": "YOUR NOTE: one canon sentence for the log."
   }
 }

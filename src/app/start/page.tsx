@@ -47,6 +47,7 @@ function StartContent() {
   const [backgroundId, setBackgroundId] = useState<string>('');
   const [personaId, setPersonaId] = useState('balanced');
   const [playerName, setPlayerName] = useState('');
+  const [playerLevel, setPlayerLevel] = useState(3);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -58,6 +59,13 @@ function StartContent() {
       })
       .catch(() => setError('Could not load options.'));
   }, []);
+
+  useEffect(() => {
+    const scenario = catalog?.scenarios.find((s) => s.id === adventureId);
+    if (scenario?.levelRange) {
+      setPlayerLevel(scenario.levelRange[0]);
+    }
+  }, [adventureId, catalog]);
 
   const selectedCharacter = catalog?.characters.find((c) => c.id === characterId);
   const selectedScenario = catalog?.scenarios.find((s) => s.id === adventureId);
@@ -78,6 +86,7 @@ function StartContent() {
           adventureId,
           characterId,
           playerName: playerName.trim() || undefined,
+          playerLevel,
           backgroundId: backgroundId || undefined,
           personaId,
         }),
@@ -143,6 +152,22 @@ function StartContent() {
             maxLength={40}
           />
         </label>
+        {selectedScenario?.levelRange && (
+          <label className="mt-4 block text-sm">
+            <span className="font-medium">
+              Character level ({selectedScenario.levelRange[0]}–{selectedScenario.levelRange[1]})
+            </span>
+            <input
+              type="range"
+              min={selectedScenario.levelRange[0]}
+              max={selectedScenario.levelRange[1]}
+              value={playerLevel}
+              onChange={(e) => setPlayerLevel(Number(e.target.value))}
+              className="mt-2 w-full"
+            />
+            <span className="text-zinc-500">Level {playerLevel}</span>
+          </label>
+        )}
       </section>
 
       <section className="mt-10">

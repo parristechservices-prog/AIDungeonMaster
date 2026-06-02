@@ -34,9 +34,12 @@ export type TurnResponse = {
   state: {
     player: {
       name: string;
+      className: string;
       hp: number;
       maxHp: number;
       ac: number;
+      unconscious: boolean;
+      deathSaves: { success: number; failure: number };
       features: GameState['player']['features'];
       spellSlots: GameState['player']['spellSlots'];
       gold: number;

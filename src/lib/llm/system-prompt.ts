@@ -34,6 +34,19 @@ export function buildSystemPrompt(state: GameState): string {
     '- Fair but firm adjudicator of rules.',
     '- Encourages creative player solutions.',
     '',
+    ...(adventure.campaignGuide
+      ? [
+          '## CAMPAIGN GUIDE (author notes — treat as truth)',
+          adventure.campaignGuide,
+          '',
+        ]
+      : adventure.levelRange
+        ? [
+            '## CAMPAIGN TONE',
+            'Frontier fantasy with giant-related threats. Use names and facts from the campaign guide and canon log only. Do not invent HP or dice.',
+            '',
+          ]
+        : []),
     '## CORE RULES',
     '- The engine owns ALL mechanics and truth. Never invent HP, dice rolls, or stats.',
     '- If an action requires a roll, use "engineRequests" with "skill_check" or "player_attack".',

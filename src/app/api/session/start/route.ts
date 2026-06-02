@@ -36,7 +36,21 @@ export async function POST(req: Request) {
       ? (body.personaId as 'balanced' | 'gritty' | 'epic' | 'whimsical')
       : 'balanced';
 
-  const state = startNewGame(sessionId, { adventureId, characterId, playerName, backgroundId, personaId });
+  const adventurePreview = getAdventure(adventureId);
+  const rawLevel = typeof body?.playerLevel === 'number' ? body.playerLevel : Number(body?.playerLevel);
+  const [minL, maxL] = adventurePreview.levelRange ?? [1, 20];
+  const playerLevel = Number.isFinite(rawLevel)
+    ? Math.min(maxL, Math.max(minL, Math.round(rawLevel)))
+    : undefined;
+
+  const state = startNewGame(sessionId, {
+    adventureId,
+    characterId,
+    playerName,
+    playerLevel,
+    backgroundId,
+    personaId,
+  });
   const adventure = getAdventure(adventureId);
 
   return NextResponse.json({
@@ -51,6 +65,7 @@ export async function POST(req: Request) {
     player: {
       name: state.player.name,
       className: state.player.className,
+      level: state.player.level,
       hp: state.player.hp,
       maxHp: state.player.maxHp,
     },

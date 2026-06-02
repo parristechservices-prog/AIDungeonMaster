@@ -43,6 +43,38 @@ export const MONSTER_LIBRARY: Record<string, MonsterTemplate> = {
     damage: '2d8+2',
     cr: 1,
   },
+  hobgoblin: {
+    name: 'Hobgoblin',
+    ac: 18,
+    maxHp: 11,
+    attackBonus: 3,
+    damage: '1d8+1',
+    cr: 0.5,
+  },
+  bandit: {
+    name: 'Bandit',
+    ac: 12,
+    maxHp: 11,
+    attackBonus: 3,
+    damage: '1d6+1',
+    cr: 0.125,
+  },
+  ogre: {
+    name: 'Ogre',
+    ac: 11,
+    maxHp: 59,
+    attackBonus: 6,
+    damage: '2d8+4',
+    cr: 2,
+  },
+  ape: {
+    name: 'Ape',
+    ac: 12,
+    maxHp: 19,
+    attackBonus: 5,
+    damage: '1d6+4',
+    cr: 0.5,
+  },
 };
 
 export function getMonster(templateId: string): Monster {

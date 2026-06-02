@@ -1,5 +1,7 @@
 import { getBackground } from './backgrounds';
 import { buildCharacter } from './characters/templates';
+import { getSceneKind } from './adventures/helpers';
+import { initialMonstersForAdventure, resolveCombatMonsters } from './adventures/encounters';
 import { DEFAULT_ADVENTURE_ID, getAdventure, getFirstPlayableSceneId } from './adventures/registry.server';
 import type { CanonFact, GameState, NewGameOptions } from './types';
 
@@ -9,7 +11,15 @@ export function createInitialState(sessionId: string, options?: NewGameOptions):
   const adventureId = options?.adventureId ?? DEFAULT_ADVENTURE_ID;
   const characterTemplateId = options?.characterId ?? 'fighter';
   const adventure = getAdventure(adventureId);
-  const player = buildCharacter(characterTemplateId, { playerName: options?.playerName });
+  const level =
+    options?.playerLevel ??
+    adventure.playConfig?.defaultLevel ??
+    adventure.levelRange?.[0] ??
+    3;
+  const player = buildCharacter(characterTemplateId, {
+    playerName: options?.playerName,
+    level,
+  });
 
   const canonLog: CanonFact[] = [];
   const background = options?.backgroundId ? getBackground(options.backgroundId) : undefined;
@@ -33,7 +43,7 @@ export function createInitialState(sessionId: string, options?: NewGameOptions):
     log: [],
     canonLog,
     player,
-    monsters: adventure.monsters.map((m) => ({ ...m })),
+    monsters: initialMonstersForAdventure(adventure, player.level),
     npcs: structuredClone(adventure.npcs),
     combat: { active: false, initiative: [], turnIndex: 0 },
   };
@@ -58,7 +68,19 @@ export function advanceScene(state: GameState): GameState {
   const order = adventure.sceneOrder;
   const i = order.indexOf(state.sceneId);
   if (i < 0 || i >= order.length - 1) return state;
-  return { ...state, sceneId: order[i + 1] };
+  const nextSceneId = order[i + 1];
+  let next: GameState = {
+    ...state,
+    sceneId: nextSceneId,
+    combat: { active: false, initiative: [], turnIndex: 0 },
+  };
+  if (getSceneKind(adventure, nextSceneId) === 'combat') {
+    next = {
+      ...next,
+      monsters: resolveCombatMonsters(adventure, nextSceneId, state.player.level),
+    };
+  }
+  return next;
 }
 
 export function getOpeningNarration(state: GameState): string {

@@ -34,6 +34,21 @@ const chapterSchema = z.object({
   sceneIds: z.array(z.string().min(1)).min(1).max(50),
 });
 
+const sceneEncounterSchema = z.object({
+  difficulty: z.enum(['easy', 'medium', 'hard', 'deadly']).optional(),
+  templates: z.array(z.string()).max(12).optional(),
+  auto: z.boolean().optional(),
+  preferredTemplates: z.array(z.string()).max(8).optional(),
+});
+
+const playConfigSchema = z.object({
+  defaultLevel: z.number().int().min(1).max(20).default(3),
+  partySize: z.number().int().min(1).max(6).default(1),
+  defaultDifficulty: z.enum(['easy', 'medium', 'hard', 'deadly']).default('medium'),
+  spawnMonstersOnCombatOnly: z.boolean().default(true),
+  preferredMonsterTemplates: z.array(z.string()).default(['goblin', 'orc', 'hobgoblin']),
+});
+
 const mockSchema = z.object({
   socialNpcId: z.string(),
   socialNpcName: z.string(),
@@ -58,6 +73,9 @@ export const adventureModuleSchema = z
     recommendedCharacters: z.array(z.string()).min(1).max(8),
     levelRange: z.tuple([z.number().int().min(1).max(20), z.number().int().min(1).max(20)]).optional(),
     sourceNote: z.string().max(500).optional(),
+    campaignGuide: z.string().max(3000).optional(),
+    playConfig: playConfigSchema.optional(),
+    sceneEncounters: z.record(z.string(), sceneEncounterSchema).optional(),
     chapters: z.array(chapterSchema).max(20).optional(),
     sceneOrder: z.array(z.string().min(1)).min(2).max(50),
     scenes: z.record(z.string(), sceneSchema),

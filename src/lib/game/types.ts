@@ -83,6 +83,7 @@ export type NewGameOptions = {
   adventureId?: string;
   characterId?: string;
   playerName?: string;
+  playerLevel?: number;
   backgroundId?: string;
   personaId?: DMPersonaId;
 };

@@ -75,6 +75,8 @@ export default function PlayPage() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }, [state, adventureTitle, sessionId, history]);
+
+  useEffect(() => {
     const boot = readPlayBootstrap();
     setSessionId(boot.sessionId);
 

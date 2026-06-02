@@ -1,4 +1,5 @@
 import type { Character } from '../types';
+import { applyCharacterLevel } from './level';
 
 export type CharacterTemplate = {
   id: string;
@@ -137,12 +138,15 @@ export function getCharacterTemplate(id: string): CharacterTemplate | undefined 
 
 export function buildCharacter(
   characterId: string,
-  options?: { playerName?: string },
+  options?: { playerName?: string; level?: number },
 ): Character {
   const template = getCharacterTemplate(characterId) ?? getCharacterTemplate('fighter')!;
-  const character = template.create();
+  let character = template.create();
   if (options?.playerName?.trim()) {
     character.name = options.playerName.trim().slice(0, 40);
+  }
+  if (options?.level !== undefined) {
+    character = applyCharacterLevel(character, options.level);
   }
   character.id = `${character.id}-${Date.now().toString(36).slice(-4)}`;
   return character;

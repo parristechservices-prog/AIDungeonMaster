@@ -85,7 +85,7 @@ npm run module:scaffold -- skt-nightstone-starter skt-nightstone
 npm run module:validate -- content/private/skt-nightstone/module.json
 ```
 
-Edit the private `module.json` with **your** scene notes (do not commit PDFs or book text). See `docs/published-adventures-guide.md` and `docs/scenario-authoring.md`. Modules appear on `/start` when present locally.
+Edit the private `module.json` with **your** scene notes (do not commit PDFs or book text). See `docs/skt-playbook.md`, `docs/published-adventures-guide.md`, and `docs/scenario-authoring.md`. Modules appear on `/start` when present locally.
 
 ## Feature flags
 

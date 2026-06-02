@@ -2,12 +2,15 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from
 import path from 'path';
 import { adventureModuleSchema } from '../src/lib/game/adventures/module-schema';
 
-const templateId = process.argv[2];
-const privateId = process.argv[3] ?? templateId;
+const args = process.argv.slice(2);
+const force = args.includes('--force');
+const positional = args.filter((a) => a !== '--force');
+const templateId = positional[0];
+const privateId = positional[1] ?? templateId;
 
 if (!templateId) {
-  console.error('Usage: npm run module:scaffold -- <template-folder-name> [private-module-id]');
-  console.error('Example: npm run module:scaffold -- skt-nightstone-starter skt-nightstone');
+  console.error('Usage: npm run module:scaffold -- <template-folder-name> [private-module-id] [--force]');
+  console.error('Example: npm run module:scaffold -- skt-nightstone-starter skt-nightstone --force');
   process.exit(1);
 }
 
@@ -22,8 +25,9 @@ if (!existsSync(srcFile)) {
 const destDir = path.join(process.cwd(), 'content', 'private', privateId);
 const destFile = path.join(destDir, 'module.json');
 
-if (existsSync(destFile)) {
+if (existsSync(destFile) && !force) {
   console.error(`Already exists (refusing to overwrite): ${destFile}`);
+  console.error('Use --force to replace.');
   process.exit(1);
 }
 

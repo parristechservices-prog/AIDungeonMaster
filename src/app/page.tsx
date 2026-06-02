@@ -32,6 +32,12 @@ export default function Home() {
           Play tutorial
         </Link>
         <Link
+          className="rounded-lg border border-amber-600 px-5 py-3 text-sm text-amber-900 dark:border-amber-500 dark:text-amber-100"
+          href="/start?adventureId=skt-nightstone-starter"
+        >
+          SKT chapter scaffold
+        </Link>
+        <Link
           className="rounded-lg border border-zinc-300 px-5 py-3 text-sm dark:border-zinc-600"
           href="/play"
         >

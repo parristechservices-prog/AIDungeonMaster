@@ -9,10 +9,11 @@ const skillSchema = z.enum([
 ]);
 
 const engineRequestSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('skill_check'), skill: skillSchema, dc: z.number().int().min(1).max(30), reason: z.string() }),
+  z.object({ kind: z.literal('skill_check'), skill: skillSchema, dc: z.number().int().min(1).max(30), reason: z.string(), advantage: z.boolean().optional(), disadvantage: z.boolean().optional() }),
   z.object({ kind: z.literal('start_combat') }),
-  z.object({ kind: z.literal('player_attack'), targetId: z.string() }),
+  z.object({ kind: z.literal('player_attack'), targetId: z.string(), advantage: z.boolean().optional(), disadvantage: z.boolean().optional() }),
   z.object({ kind: z.literal('monster_turn') }),
+  z.object({ kind: z.literal('death_save') }),
   z.object({ kind: z.literal('use_feature'), featureId: z.string() }),
   z.object({ kind: z.literal('cast_spell'), spellName: z.string(), level: z.number().int().min(0).max(9), targetId: z.string().optional() }),
   z.object({ kind: z.literal('short_rest') }),
