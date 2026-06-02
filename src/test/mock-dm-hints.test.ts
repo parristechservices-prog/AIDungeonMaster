@@ -46,6 +46,38 @@ describe('mock DM hints', () => {
     expect(turn.narration.toLowerCase()).toContain('feet');
   });
 
+  it('treats sneaking left in combat as stealth, not an ft distance question', () => {
+    const atDrawbridge = advanceScene(createInitialState('hint-combat-stealth', {
+      adventureId: 'skt-nightstone-starter',
+      characterIds: ['fighter'],
+    }));
+    const inSquare = advanceScene(atDrawbridge);
+
+    const turn = deriveDmTurnFromInput(inSquare, 'i want to sneak to the left behind the bell tower room');
+
+    expect(turn.engineRequests).toEqual([
+      expect.objectContaining({ kind: 'skill_check', skill: 'stealth' }),
+    ]);
+    expect(turn.needsResultBeforeNarrating).toBe(true);
+    expect(turn.narration.toLowerCase()).toContain('cover');
+    expect(turn.narration.toLowerCase()).not.toContain('60 feet');
+  });
+
+  it('offers tactical movement options instead of a generic combat wall', () => {
+    const atDrawbridge = advanceScene(createInitialState('hint-combat-move', {
+      adventureId: 'skt-nightstone-starter',
+      characterIds: ['fighter'],
+    }));
+    const inSquare = advanceScene(atDrawbridge);
+
+    const turn = deriveDmTurnFromInput(inSquare, 'i walk towards the ringing bell');
+
+    expect(turn.engineRequests).toEqual([]);
+    expect(turn.narration.toLowerCase()).toContain('sneak');
+    expect(turn.narration.toLowerCase()).toContain('disengage');
+    expect(turn.narration.toLowerCase()).toContain('worg');
+  });
+
   it('appends retry guidance on social skill failure', () => {
     const state = createInitialState('hint-2');
     const line = mockNarrationAfterResult(state, 'skill_check', false);

@@ -44,6 +44,9 @@ const MOVEMENT_PHRASES = [
   'enter',
 ];
 const ACTIVE_SEARCH_PHRASES = ['inspect', 'track', 'search', 'scout', 'examine', 'investigate', 'trail'];
+const STEALTH_PHRASES = ['sneak', 'hide', 'stealth', 'quietly', 'silent', 'creep'];
+const RETREAT_PHRASES = ['retreat', 'withdraw', 'back away', 'fall back', 'disengage', 'flee', 'run away'];
+const COVER_PHRASES = ['cover', 'duck behind', 'take shelter', 'circle', 'flank', 'left', 'right'];
 
 const SOCIAL_RETRY_HINT =
   ' Try offering coin, using a different approach, or asking again with Insight or Persuasion.';
@@ -83,11 +86,26 @@ function isSelfDescriptionQuestion(input: string): boolean {
 }
 
 function isDistanceQuestion(input: string): boolean {
-  return includesAny(input, DISTANCE_PHRASES);
+  return (
+    includesAny(input, DISTANCE_PHRASES.filter((phrase) => phrase !== 'ft')) ||
+    /\bft\.?\b/.test(input)
+  );
 }
 
 function isMovementOnly(input: string): boolean {
   return includesAny(input, MOVEMENT_PHRASES) && !includesAny(input, ACTIVE_SEARCH_PHRASES);
+}
+
+function isStealthIntent(input: string): boolean {
+  return includesAny(input, STEALTH_PHRASES);
+}
+
+function isRetreatIntent(input: string): boolean {
+  return includesAny(input, RETREAT_PHRASES);
+}
+
+function isCoverIntent(input: string): boolean {
+  return includesAny(input, COVER_PHRASES);
 }
 
 type DistanceHint = {
@@ -482,8 +500,83 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
     };
   }
 
+  const living = state.monsters.filter((m) => m.hp > 0);
+  const livingNames = living.map((m) => m.name).join(' and ');
+
+  if (isStealthIntent(input)) {
+    return {
+      engineRequests:
+        living.length > 0
+          ? [
+              {
+                kind: 'skill_check',
+                characterId: activeChar.id,
+                skill: 'stealth',
+                dc: 13,
+                reason: `Slip toward cover or the bell without drawing the ${livingNames}'s full attention.`,
+              },
+            ]
+          : [{ kind: 'advance_scene' }],
+      narration:
+        living.length > 0
+          ? `You slow down, use the fallen stones and broken buildings as cover, and try to slip around the ${livingNames} rather than charge through the square.`
+          : 'With no active enemy blocking you, you move quietly toward the next landmark.',
+      needsResultBeforeNarrating: true,
+      ambient: 'combat',
+    };
+  }
+
+  if (isRetreatIntent(input)) {
+    return {
+      engineRequests: [],
+      narration:
+        living.length > 0
+          ? `You can fall back toward the gate or another piece of cover. If you fully retreat, use your action to Disengage; if you run, the ${livingNames} may be able to chase or snap at you.`
+          : 'With the immediate threat down, you can fall back safely or move to the next clue.',
+      needsResultBeforeNarrating: false,
+      ambient: 'combat',
+    };
+  }
+
+  if (isCoverIntent(input)) {
+    return {
+      engineRequests:
+        living.length > 0
+          ? [
+              {
+                kind: 'skill_check',
+                characterId: activeChar.id,
+                skill: 'stealth',
+                dc: 12,
+                reason: `Use rubble and damaged buildings to reposition away from the ${livingNames}.`,
+              },
+            ]
+          : [],
+      narration:
+        living.length > 0
+          ? `You angle for cover instead of standing in the open square, keeping the ${livingNames} in sight while you reposition.`
+          : 'You find cover among the broken stones and damaged buildings.',
+      needsResultBeforeNarrating: living.length > 0,
+      ambient: 'combat',
+    };
+  }
+
+  if (isMovementOnly(input)) {
+    const towardBell = input.includes('bell') || input.includes('chapel') || input.includes('temple');
+    return {
+      engineRequests: [],
+      narration:
+        living.length > 0 && towardBell
+          ? `${explorationPositionHint(state.sceneId, input, activeChar)} The ${livingNames} are still an active threat in the square, so walking openly toward the bell risks drawing them after you. You can sneak, Disengage toward cover, Dash, attack, or try a distraction.`
+          : living.length > 0
+            ? `You can move, but the ${livingNames} are close enough to matter. Name the route and pace: sneak, circle to cover, Disengage, Dash, or stand and fight.`
+            : 'You move through the square now that nothing is actively blocking you.',
+      needsResultBeforeNarrating: false,
+      ambient: 'combat',
+    };
+  }
+
   if (isPassiveObservation(input)) {
-    const living = state.monsters.filter((m) => m.hp > 0);
     const enemyText =
       living.length > 0
         ? `Visible enemies: ${living.map((m) => m.name).join(', ')}.`
@@ -507,7 +600,6 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
     };
   }
 
-  const living = state.monsters.filter((m) => m.hp > 0);
   return {
     engineRequests: [],
     narration:
@@ -529,6 +621,11 @@ export function mockNarrationAfterResult(state: GameState, kind: string, ok: boo
   }
   if (sceneKind === 'exploration' && kind === 'skill_check') {
     return ok ? mock.explorationSuccess : `${mock.explorationFailure}${EXPLORATION_RETRY_HINT}`;
+  }
+  if (sceneKind === 'combat' && kind === 'skill_check') {
+    return ok
+      ? 'You make the tactical move work, gaining a better position without giving the enemy a clean opening.'
+      : 'The attempt does not come off cleanly; the enemy keeps you pressured and you need to choose your next move fast.';
   }
   return null;
 }
