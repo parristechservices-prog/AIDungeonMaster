@@ -464,6 +464,24 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
     };
   }
 
+  if (isSelfDescriptionQuestion(input)) {
+    return {
+      engineRequests: [],
+      narration: describeActiveCharacter(activeChar),
+      needsResultBeforeNarrating: false,
+      ambient: 'combat',
+    };
+  }
+
+  if (isDistanceQuestion(input)) {
+    return {
+      engineRequests: [],
+      narration: explorationPositionHint(state.sceneId, input, activeChar),
+      needsResultBeforeNarrating: false,
+      ambient: 'combat',
+    };
+  }
+
   if (isPassiveObservation(input)) {
     const living = state.monsters.filter((m) => m.hp > 0);
     const enemyText =

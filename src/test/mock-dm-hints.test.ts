@@ -32,6 +32,20 @@ describe('mock DM hints', () => {
     expect(turn.narration.toLowerCase()).toContain('feet');
   });
 
+  it('answers tactical distance questions even during combat scenes', () => {
+    const atDrawbridge = advanceScene(createInitialState('hint-combat-distance', {
+      adventureId: 'skt-nightstone-starter',
+      characterIds: ['fighter'],
+    }));
+    const inSquare = advanceScene(atDrawbridge);
+
+    const turn = deriveDmTurnFromInput(inSquare, 'how many feet am i from the drawbridge?');
+
+    expect(turn.engineRequests).toEqual([]);
+    expect(turn.narration.toLowerCase()).toContain('drawbridge');
+    expect(turn.narration.toLowerCase()).toContain('feet');
+  });
+
   it('appends retry guidance on social skill failure', () => {
     const state = createInitialState('hint-2');
     const line = mockNarrationAfterResult(state, 'skill_check', false);
