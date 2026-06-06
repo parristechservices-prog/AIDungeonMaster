@@ -21,7 +21,26 @@ const normalPrompts = [
 
 const sillyPrompts = [
   'i stab the moon', 'i seduce the locked door', 'i pull out a machine gun',
-  'i skip to the treasure', 'i ask the goblin for the final boss password', 'i fly away',
+  'i skip to the treasure', 'i ask the goblin for the final boss password', 'i fly away', 'i become god',
+  'i ask the goblin for the password', 'i kill everyone instantly', 'i burn down the whole town',
+  'i loot the dragon hoard',
+];
+
+const curiousAndChaoticPrompts = [
+  'can i buy food', 'who owns this inn', 'are there any guards here', 'do i recognise anyone',
+  'is anyone suspicious', 'can i check the guestbook', 'can i rest here', 'i threaten mira',
+  'i apologise', 'i throw a mug', 'i hide under a table', 'i sneak out the back',
+  'i follow a suspicious patron', 'i shout for everyone to be quiet',
+  'i offer 5 gold for information', 'i accuse mira of lying',
+];
+
+const stateAndMetaPrompts = [
+  'what is this place?', 'what courier?', 'can i tell if she is hiding something?',
+  'what is my goal', 'how do i play', 'what are my options', 'what does table rules mean',
+  'are you using ai', 'why did that fail', 'appeal', 'that makes no sense', 'undo that',
+  'what features do i have', 'drink healing potion', 'what can i do in combat',
+  'what enemies are alive', 'who is hurt',
+  'try again', 'same again', 'again', 'do that', 'i do it', 'continue', 'go on', 'ok', 'yes', 'no',
 ];
 
 describe('basic first-minute player prompts', () => {
@@ -46,6 +65,24 @@ describe('basic first-minute player prompts', () => {
     expect(turn.engineRequests).toEqual([]);
     expect(turn.narration).toMatch(/not possible|grounded/i);
     expect(turn.narration).not.toMatch(/name who acts/i);
+  });
+
+  it.each(curiousAndChaoticPrompts)('handles curious or chaotic social prompt: %s', (input) => {
+    const turn = deriveDmTurnFromInput(state, input);
+    expect(turn.narration).toBeTruthy();
+    expect(turn.narration).not.toMatch(/i can work with that|not quite sure|name who acts/i);
+    for (const request of turn.engineRequests) {
+      if ('characterId' in request) expect(request.characterId).toBe(state.activeCharacterId);
+    }
+  });
+
+  it.each(stateAndMetaPrompts)('handles state or meta prompt: %s', (input) => {
+    const turn = deriveDmTurnFromInput(state, input);
+    expect(turn.narration).toBeTruthy();
+    expect(turn.narration).not.toMatch(/i can work with that|not quite sure|name who acts/i);
+    for (const request of turn.engineRequests) {
+      if ('characterId' in request) expect(request.characterId).toBe(state.activeCharacterId);
+    }
   });
 
   it('does not expose future enemies in the social scene response', () => {

@@ -1,5 +1,5 @@
 import type { DmTurn } from '@/lib/llm/contracts';
-import { getPlayableScene, getSceneKind } from '@/lib/game/adventures/helpers';
+import { getPlayableScene, getSceneGoal, getSceneKind } from '@/lib/game/adventures/helpers';
 import { getAdventure } from '@/lib/game/adventures/registry.server';
 import type { Adventure } from '@/lib/game/adventures/types';
 import type { Character, GameState } from '@/lib/game/types';
@@ -15,6 +15,7 @@ const OBSERVATION_PHRASES = [
   'check the room',
   'check the windows',
   'describe the room',
+  'describe the scene',
   'who is here',
   'what is happening',
   'notice anything',
@@ -342,7 +343,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
   const sceneKind = getSceneKind(adventure, state.sceneId);
   const ambient = mockAmbientForKind(sceneKind);
 
-  if (/\b(moon|machine gun|nuclear|infinite gold|gravity|final boss|every monster dead|skip (?:to|the)|invent the king|king'?s crown|final boss password|solve the puzzle|fly away|fireball|seduce the (?:locked )?door)\b/.test(input)) {
+  if (/\b(moon|machine gun|nuclear|infinite gold|gravity|final boss|every monster dead|kill everyone instantly|burn down the (?:whole )?town|skip (?:to|the)|teleport to the treasure|dragon hoard|loot the dragon hoard|become (?:a )?god|become king|invent the king|king'?s crown|goblin for the (?:final boss )?password|final boss password|solve the puzzle|fly away|fireball|seduce the (?:locked )?door)\b/.test(input)) {
     return {
       engineRequests: [],
       narration: 'That is not possible in the current scene. Choose an action grounded in the people, places, equipment, and exits already established.',
@@ -351,7 +352,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
     };
   }
 
-  if (input.startsWith('[appeal]') || input.includes('appeal the dm')) {
+  if (input === 'appeal' || input.startsWith('[appeal]') || input.includes('appeal the dm') || input.includes('that makes no sense')) {
     return {
       engineRequests: [],
       narration:
@@ -380,6 +381,80 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
   }
 
   const activeChar = state.party.find(p => p.id === state.activeCharacterId) || state.party[0];
+  if (/\b(what is my goal|what's my goal|current goal|objective)\b/.test(input)) {
+    return {
+      engineRequests: [],
+      narration: `Your current goal is: ${getSceneGoal(adventure, state.sceneId)} The suggested actions show a few grounded ways to pursue it.`,
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
+  if (/\b(what is this place|where are we|describe this place)\b/.test(input)) {
+    return {
+      engineRequests: [],
+      narration: getPlayableScene(adventure, state.sceneId)?.starter ?? 'You take in the current scene and its nearest landmarks.',
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
+  if (/\b(how do i play|what does table rules mean|are you using ai)\b/.test(input)) {
+    return {
+      engineRequests: [],
+      narration: 'In Table Rules mode, the rules engine resolves checks and combat while grounded scripted guidance narrates the result. Describe an action naturally, ask for help, or choose a suggested action.',
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
+  if (/\b(why did that fail|undo that)\b/.test(input)) {
+    return {
+      engineRequests: [],
+      narration: input.includes('undo')
+        ? 'Table Rules mode cannot silently undo established results. Use Appeal to explain what seems wrong, or try a different approach.'
+        : 'A failed action usually means the roll did not meet the difficulty. Try another approach, inspect for an advantage, ask a question, or use Appeal if the ruling seems wrong.',
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
+  if (/\b(what features do i have|my features|abilities do i have)\b/.test(input)) {
+    const features = activeChar.features.map((feature) => `${feature.name} (${feature.usesRemaining}/${feature.usesMax})`);
+    return {
+      engineRequests: [],
+      narration: `${activeChar.name}'s available features: ${features.join(', ') || 'none'}.`,
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
+  if (/\b(drink|use)\b.*\b(healing potion|potion)\b/.test(input)) {
+    const potion = activeChar.inventory.find((item) => /healing potion/i.test(item));
+    return {
+      engineRequests: [],
+      narration: potion
+        ? `${activeChar.name} has a ${potion}, but potion healing is not automated in Table Rules mode yet. Use a healing feature if available, or record the potion use with the table.`
+        : `${activeChar.name} does not have a healing potion.`,
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
+  if (/\b(what enemies are alive|who is still fighting|living enemies)\b/.test(input)) {
+    const living = state.combat.active ? state.monsters.filter((monster) => monster.hp > 0) : [];
+    return {
+      engineRequests: [],
+      narration: living.length > 0
+        ? `Active enemies: ${living.map((monster) => monster.name).join(', ')}.`
+        : 'There are no visible active enemies in the current scene.',
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
+  if (/^(try again|same again|again|do that|i do it|continue|go on|ok|yes|no)$/.test(input.trim())) {
+    const choices = getPlayableScene(adventure, state.sceneId)?.choices ?? [];
+    return {
+      engineRequests: [],
+      narration: `Tell me which approach you want to repeat or continue. Current options include: ${choices.join('; ')}.`,
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
   if (isInventoryQuestion(input)) {
     return {
       engineRequests: [],
@@ -451,6 +526,30 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
       };
     }
 
+    if (/\b(what courier|which courier)\b/.test(input)) {
+      return {
+        engineRequests: [],
+        narration: `A courier is missing, and ${mock.socialNpcName} may know where they went. Ask ${mock.socialNpcName} about the courier or study the room for another lead.`,
+        needsResultBeforeNarrating: false,
+        ambient,
+      };
+    }
+
+    if (/\b(tell|know|sense|insight|hiding|lying|liar)\b/.test(input) && /\b(she|he|mira|elara|holt|kaelen|npc)\b/.test(input)) {
+      return {
+        engineRequests: [{
+          kind: 'skill_check',
+          characterId: activeChar.id,
+          skill: 'insight',
+          dc: mock.socialDc,
+          reason: `Judge whether ${mock.socialNpcName} is hiding something.`,
+        }],
+        narration: `You watch ${mock.socialNpcName} closely for hesitation or guarded reactions.`,
+        needsResultBeforeNarrating: true,
+        ambient,
+      };
+    }
+
     const isAsking =
       input.includes('ask') ||
       input.includes('question') ||
@@ -460,6 +559,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
       input.includes('where') ||
       input.includes('bribe') ||
       input.includes('offer coin') ||
+      /\boffer \d+ gold\b/.test(input) ||
       input.includes('persuade') ||
       input.includes('learn') ||
       input.includes('examine') ||
@@ -514,6 +614,59 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
       return {
         engineRequests: [],
         narration: `${mock.socialNpcName} looks up. "Well? State your business."`,
+        needsResultBeforeNarrating: false,
+        ambient,
+      };
+    }
+
+    if (/\b(thank|thanks|apologise|apologize|sorry)\b/.test(input)) {
+      return {
+        engineRequests: [],
+        narration: `${mock.socialNpcName}'s expression softens slightly. "Fair enough. Now, what do you need?"`,
+        needsResultBeforeNarrating: false,
+        ambient,
+      };
+    }
+
+    if (/\b(threaten|intimidate|accuse|lying|liar)\b/.test(input)) {
+      return {
+        engineRequests: [{
+          kind: 'skill_check',
+          characterId: activeChar.id,
+          skill: input.includes('lying') || input.includes('liar') ? 'insight' : 'intimidation',
+          dc: mock.socialDc,
+          reason: input.includes('lying') || input.includes('liar')
+            ? `Judge whether ${mock.socialNpcName} is hiding something.`
+            : `Pressure ${mock.socialNpcName} without starting a fight.`,
+        }],
+        narration: `${mock.socialNpcName} meets your stare and waits to see how far you will push.`,
+        needsResultBeforeNarrating: true,
+        ambient,
+      };
+    }
+
+    if (/\b(buy food|buy a drink|food|meal|drink)\b/.test(input)) {
+      return {
+        engineRequests: [],
+        narration: `${mock.socialNpcName} can serve a simple hot meal and a drink. Buying something may make conversation easier, but it does not require a roll.`,
+        needsResultBeforeNarrating: false,
+        ambient,
+      };
+    }
+
+    if (/\b(who owns|guards?|recognise|recognize|suspicious|guestbook|fireplace|behind the bar|what does mira look like|rest here)\b/.test(input)) {
+      return {
+        engineRequests: [],
+        narration: `${mock.socialNpcName} appears to run the inn. No guards are posted in the common room; the patrons keep mostly to themselves, and nothing visible proves wrongdoing. You can ask ${mock.socialNpcName}, study a specific patron, or inspect a visible part of the room more closely.`,
+        needsResultBeforeNarrating: false,
+        ambient,
+      };
+    }
+
+    if (/\b(throw a mug|hide under|sneak out|follow a suspicious patron|shout|quiet|pretend to be drunk|help clean|knock over a chair|block the doorway)\b/.test(input)) {
+      return {
+        engineRequests: [],
+        narration: `${mock.socialNpcName} and the nearby patrons notice the commotion. It changes the mood, but it does not reveal the courier's trail by itself. You can explain your intent, ask a direct question, or quietly inspect the room.`,
         needsResultBeforeNarrating: false,
         ambient,
       };
