@@ -75,6 +75,7 @@ Open [http://localhost:3000](http://localhost:3000) → **Create adventure** to 
 | `PARTYQUEST_DEV_LOGS` | `true` writes turn logs under `.data/` |
 | `PARTYQUEST_FORCE_MOCK` | `true` skips LLM calls (table-rules only) |
 | `PARTYQUEST_MOCK_FLAVOR` | `true` adds the legacy fallback narration prefix |
+| `PARTYQUEST_MAX_TURNS_PER_SESSION` | Optional positive integer turn cap; unset or `0` is unlimited |
 
 Without API keys, the **table-rules mock DM** runs the full one-shot.
 
@@ -83,6 +84,7 @@ Without API keys, the **table-rules mock DM** runs the full one-shot.
 ```bash
 pnpm dev          # local server
 pnpm test         # Vitest (engine + regression + narration validator)
+pnpm eval:prompts # Offline grounded-prompt fixture eval
 pnpm lint
 pnpm build
 ```
@@ -94,6 +96,8 @@ pnpm build
 3. Deploy — `vercel.json` uses `pnpm build`.
 
 **Note:** Session files persist to `.data/` locally; on Vercel, state is in-memory per instance. Client-side snapshot (`localStorage`) helps resume UI state between visits.
+
+See `docs/deploy-checklist.md` before opening or promoting a deployment PR. `GET /api/health` reports secret-safe build, storage, LLM-configuration, and prompt-version status.
 
 ## Character & scenario options
 

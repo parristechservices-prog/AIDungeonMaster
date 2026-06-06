@@ -29,6 +29,15 @@ describe('skt-nightstone-starter template', () => {
     expect(parsed.data?.sceneOrder).toContain('tower-of-zephyros');
   });
 
+  it('rejects scene boundaries that reference unknown NPCs', () => {
+    const filePath = path.join(process.cwd(), 'content/templates/skt-nightstone-starter/module.json');
+    const raw = JSON.parse(readFileSync(filePath, 'utf8'));
+    const firstSceneId = raw.sceneOrder[0];
+    raw.scenes[firstSceneId].allowedNpcs = ['npc-does-not-exist'];
+    const parsed = adventureModuleSchema.safeParse(raw);
+    expect(parsed.success).toBe(false);
+  });
+
   it('loads from template registry', () => {
     const adventure = getAdventure('skt-nightstone-starter');
     expect(adventure.source).toBe('template');
