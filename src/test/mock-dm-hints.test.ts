@@ -21,10 +21,11 @@ describe('mock DM hints', () => {
     expect(turn.narration).not.toMatch(/not quite sure|name who acts/i);
   });
 
-  it('nudges exploration phrasing while still in social scene', () => {
+  it('grounds premature track inspection in the current social scene', () => {
     const state = createInitialState('hint-1');
     const turn = deriveDmTurnFromInput(state, 'I inspect the tracks');
-    expect(turn.narration.toLowerCase()).toMatch(/gathering leads|before moving on/);
+    expect(turn.narration.toLowerCase()).toMatch(/common room|mira|patrons/);
+    expect(turn.narration.toLowerCase()).toMatch(/ask|inspect/);
   });
 
   it('answers questions about the player appearance directly', () => {

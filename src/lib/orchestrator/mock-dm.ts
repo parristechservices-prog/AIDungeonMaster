@@ -13,6 +13,11 @@ const OBSERVATION_PHRASES = [
   'scan',
   'study',
   'check the room',
+  'check the windows',
+  'describe the room',
+  'who is here',
+  'what is happening',
+  'notice anything',
   'survey',
   'take in',
   'what do i see',
@@ -109,6 +114,30 @@ function isRetreatIntent(input: string): boolean {
 
 function isCoverIntent(input: string): boolean {
   return includesAny(input, COVER_PHRASES);
+}
+
+function isGreeting(input: string): boolean {
+  return /\b(hey|hello|hi|greet|greetings)\b/.test(input);
+}
+
+function isInventoryQuestion(input: string): boolean {
+  return /\b(inventory|carrying|carry|equipment|items?)\b/.test(input);
+}
+
+function isHealthQuestion(input: string): boolean {
+  return /\b(health|hp|hit points?|hurt|injured|wounded)\b/.test(input);
+}
+
+function isArmorClassQuestion(input: string): boolean {
+  return /\b(armor class|armour class|ac)\b/.test(input);
+}
+
+function isHelpQuestion(input: string): boolean {
+  return /\b(help|what can i do|options|suggestions?)\b/.test(input);
+}
+
+function isReadyWeaponIntent(input: string): boolean {
+  return /\b(draw|ready|unsheathe|prepare)\b.*\b(sword|weapon|blade|bow|axe|staff)\b/.test(input);
 }
 
 function sneakingRouteTarget(input: string): string {
@@ -351,6 +380,39 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
   }
 
   const activeChar = state.party.find(p => p.id === state.activeCharacterId) || state.party[0];
+  if (isInventoryQuestion(input)) {
+    return {
+      engineRequests: [],
+      narration: `${activeChar.name} is carrying ${activeChar.inventory.join(', ') || 'no notable items'} and ${activeChar.gold} gold.`,
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
+  if (isHealthQuestion(input)) {
+    return {
+      engineRequests: [],
+      narration: `${activeChar.name} has ${activeChar.hp} of ${activeChar.maxHp} hit points${activeChar.unconscious ? ' and is unconscious' : ''}.`,
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
+  if (isArmorClassQuestion(input)) {
+    return {
+      engineRequests: [],
+      narration: `${activeChar.name}'s Armor Class is ${activeChar.ac}.`,
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
+  if (isHelpQuestion(input)) {
+    const choices = getPlayableScene(adventure, state.sceneId)?.choices ?? [];
+    return {
+      engineRequests: [],
+      narration: `You can look around, talk to someone nearby, inspect something specific, move to a visible place, use an item or feature, or try one of these approaches: ${choices.join('; ')}.`,
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
   const feature = activeChar.features.find(
     (f) => input.includes(f.id.replace(/_/g, ' ')) || input.includes(f.name.toLowerCase()),
   );
@@ -383,7 +445,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
     if (EXPLORATION_PHRASES.some((p) => input.includes(p))) {
       return {
         engineRequests: [],
-        narration: `${mock.socialNpcName} is still here. Finish gathering leads in this scene before moving on.`,
+        narration: `You do not find tracks or hidden evidence from the common room at a glance. ${mock.socialNpcName} and the patrons are the clearest leads; ask a question or inspect something specific.`,
         needsResultBeforeNarrating: false,
         ambient,
       };
@@ -392,15 +454,40 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
     const isAsking =
       input.includes('ask') ||
       input.includes('question') ||
+      input.includes('talk') ||
+      input.includes('speak') ||
       input.includes('tell') ||
       input.includes('where') ||
       input.includes('bribe') ||
+      input.includes('offer coin') ||
+      input.includes('persuade') ||
       input.includes('learn') ||
       input.includes('examine') ||
       input.includes('bless') ||
       input.includes('watch');
 
     if (isAsking) {
+      const seeksCourierLead =
+        input.includes('courier') ||
+        input.includes('information') ||
+        input.includes('ask') ||
+        input.includes('question') ||
+        input.includes('where') ||
+        input.includes('learn') ||
+        input.includes('tell') ||
+        input.includes('know') ||
+        input.includes('help') ||
+        input.includes('persuade') ||
+        input.includes('bribe') ||
+        input.includes('offer coin');
+      if (!seeksCourierLead) {
+        return {
+          engineRequests: [],
+          narration: `${mock.socialNpcName} turns toward you. "What would you like to know?" You can ask about the missing courier, recent travelers, or anything unusual at the inn.`,
+          needsResultBeforeNarrating: false,
+          ambient,
+        };
+      }
       return {
         engineRequests: [
           {
@@ -423,7 +510,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
       };
     }
 
-    if (input.includes('hey') || input.includes('hello') || input.includes('hi') || input.includes('greet')) {
+    if (isGreeting(input)) {
       return {
         engineRequests: [],
         narration: `${mock.socialNpcName} looks up. "Well? State your business."`,
@@ -432,9 +519,39 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
       };
     }
 
+    if (isReadyWeaponIntent(input)) {
+      return {
+        engineRequests: [],
+        narration: `${activeChar.name} puts a hand on ${activeChar.weapon.name} and stays alert. The room notices the gesture, but no fight has begun.`,
+        needsResultBeforeNarrating: false,
+        ambient,
+      };
+    }
+
+    if (/\b(attack|hit|punch|stab|strike|kill)\b/.test(input)) {
+      return {
+        engineRequests: [],
+        narration: `Starting violence in the crowded inn would have serious consequences, and there is no active combat target. Name a specific grounded intent, or talk, investigate, or leave instead.`,
+        needsResultBeforeNarrating: false,
+        ambient,
+      };
+    }
+
+    if (isMovementOnly(input) || /\b(outside|leave|upstairs|bar|door|road|approach)\b/.test(input)) {
+      const approachesMira = input.includes('mira') || input.includes('bar');
+      return {
+        engineRequests: [],
+        narration: approachesMira
+          ? `You move closer to the bar. ${mock.socialNpcName} watches your approach and waits for your question.`
+          : `You can move around the inn, but leaving now would abandon the clearest lead about the missing courier. You can ask ${mock.socialNpcName} a question first, or clearly say you still want to leave.`,
+        needsResultBeforeNarrating: false,
+        ambient,
+      };
+    }
+
     return {
       engineRequests: [],
-      narration: `${mock.socialNpcName} waits for you to speak or act.`,
+      narration: `I can work with that, but I need a little more detail. Are you trying to look for clues, talk to someone, move somewhere, or use an item?`,
       needsResultBeforeNarrating: false,
       ambient,
     };
