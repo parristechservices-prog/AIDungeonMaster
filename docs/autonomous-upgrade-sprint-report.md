@@ -58,6 +58,7 @@ Base: `codex/grounded-dm-qa-hardening` at `a0d60c6`
 - `3430d42` - feat: improve failed-check and combat play UX
 - `1737d8d` - feat: add health guardrails and prompt evals
 - `dc27d1c` - test: validate scenario grounding and offline flows
+- `9ac4543` - docs: finalize sprint QA and deployment guidance
 
 ## Checkpoint 2: Tests And QA Depth
 
@@ -126,3 +127,5 @@ See `docs/current-risk-register.md`.
 - Check GitHub CI and the Vercel preview deployment.
 - Review `/api/health`, mobile `/play`, and failed-check recovery in the preview.
 - Do not promote to production until persistence limitations and environment variables are reviewed.
+
+CI now runs on pull requests targeting any branch and includes the offline prompt eval, so the stacked sprint PR will receive the same core gates as a PR targeting `main`.
