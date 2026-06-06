@@ -1,7 +1,7 @@
 import { resolveEngineRequest } from '@/lib/engine';
 import type { EngineRequest } from '@/lib/engine/types';
 import { dmTurnSchema, type DmTurn } from '@/lib/llm/contracts';
-import { getPlayableScene, getSceneChoices, getSceneGoal } from '@/lib/game/adventures/helpers';
+import { getPlayableScene, getSceneChoices, getSceneGoal, getSceneKind } from '@/lib/game/adventures/helpers';
 import { getAdventure } from '@/lib/game/adventures/registry.server';
 import { visibleNpcsForScene } from '@/lib/game/adventures/visibility';
 import { ENDING_SCENE_ID } from '@/lib/game/adventures/types';
@@ -89,6 +89,7 @@ export function runTurn(
   context: { mode: 'ai_director' | 'table_rules'; aiUsed: boolean; fallbackUsed: boolean; physicalDice?: boolean; manualRoll?: number },
 ): { state: GameState; response: TurnResult } {
   const prevScene = state.sceneId;
+  const narrationState = state;
   const parsed = dmTurnSchema.safeParse(rawTurn);
   const fallback: DmTurn = {
     engineRequests: [],
@@ -134,7 +135,7 @@ export function runTurn(
     const mainResult = engineResults[0];
     if (mainResult) {
       if (context.fallbackUsed) {
-        const scripted = mockNarrationAfterResult(state, mainResult.kind, mainResult.ok, mainResult.summary);
+        const scripted = mockNarrationAfterResult(narrationState, mainResult.kind, mainResult.ok, mainResult.summary);
         if (scripted) {
           finalNarration = scripted;
         } else if (mainResult.kind === 'player_attack') {
@@ -155,6 +156,10 @@ export function runTurn(
   const recentRolls = engineResults
     .map((r) => r.breakdown)
     .filter((b): b is import('@/lib/engine/types').RollBreakdown => !!b);
+  const visibleMonsters =
+    state.combat.active || getSceneKind(adventure, state.sceneId) === 'combat'
+      ? state.monsters
+      : [];
 
   return {
     state,
@@ -198,7 +203,7 @@ export function runTurn(
           conditions: p.conditions,
         })),
         activeCharacterId: state.activeCharacterId,
-        monsters: state.monsters.map((m) => ({ id: m.id, name: m.name, hp: m.hp, maxHp: m.maxHp, ac: m.ac, conditions: m.conditions })),
+        monsters: visibleMonsters.map((m) => ({ id: m.id, name: m.name, hp: m.hp, maxHp: m.maxHp, ac: m.ac, conditions: m.conditions })),
         npcs: visibleNpcsForScene(state.adventureId, state.sceneId, state.npcs),
         canonLog: state.canonLog,
         combat: state.combat,
