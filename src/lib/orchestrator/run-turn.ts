@@ -142,16 +142,6 @@ export function runTurn(
             ? `Your strike finds its mark! ${mainResult.summary}`
             : `Your blow is parried. ${mainResult.summary}`;
         }
-      } else {
-        // For AI, we can prepend the mechanical result if it's important and the AI didn't know it yet
-        // But usually, we want the AI to narrate it. 
-        // If needsResultBeforeNarrating is true, it means the AI wrote the lead-up, 
-        // and we might need to append the result summary if the AI narration is "cut off".
-        // However, the current architecture assumes AI narrates everything.
-        // Let's add a small bridge for AI when it needs result.
-        if (mainResult.summary && !finalNarration.includes(mainResult.summary)) {
-          finalNarration += ` (${mainResult.summary})`;
-        }
       }
     }
   }

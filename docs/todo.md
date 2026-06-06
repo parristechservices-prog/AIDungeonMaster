@@ -1,13 +1,24 @@
 # Current TODO
 
-Status source: source inspection on 2026-06-02. This file is the concise, current roadmap. Older design docs may describe earlier plans or target architecture; when they disagree with this file and the code, this file is newer.
+Status source: source inspection and QA hardening on 2026-06-06. This file is the concise, current roadmap. Older design docs may describe earlier plans or target architecture; when they disagree with this file and the code, this file is newer.
+
+## Completed In Grounded DM QA Hardening
+
+- Player-owned AI mechanical requests require explicit `characterId`; unknown JSON keys are rejected.
+- AI turns are checked by a state-aware legality validator before engine execution, with one repair attempt.
+- Malformed LLM JSON receives one strict JSON-only repair attempt before a safe clarification response.
+- Invalid character, monster, NPC, condition, inventory, gold, spell, spell-slot, feature, consciousness, death-save, and scene-advance requests are rejected.
+- AI turns requiring results use a second narrator call. Contradictory narration is regenerated once, then replaced with engine-safe summaries.
+- Core engine randomness is injectable for deterministic tests.
+- Adversarial/silly-input and grounded narration tests cover the highest-risk failure modes.
+- `.data/` is local-only and ignored; committed playtest/session files were removed from Git tracking.
 
 ## Highest Priority
 
 - **Durable server persistence:** sessions currently persist to `.data/` locally and to process memory on Vercel, with a client `localStorage` snapshot for UI resume. Add KV/Postgres/Supabase or another durable store for cross-device and post-deploy resume.
 - **Prompt versioning and evals:** the active DM prompt is inline in `src/lib/llm/system-prompt.ts`. Add versioned prompt files, an active prompt registry, prompt changelogs, and an eval script/CI job.
-- **Safety enforcement:** `validateNarrationAgainstState` logs numeric-state warnings, but narration is not blocked or regenerated. Add moderation/safety checks and one retry/regeneration path before display.
-- **Rules-engine determinism:** engine rolls still use `Math.random()`. Add a seedable PRNG and deterministic replay support for tests and bug reports.
+- **Safety enforcement:** grounded numeric/result contradictions are blocked or regenerated. Broader content moderation and policy classifiers remain future work.
+- **Rules-engine determinism:** tests can inject deterministic randomness. Add a serializable seeded PRNG and replay format for production bug reports.
 - **Turn legality and action economy:** combat works for the prototype, but movement, reactions, strict turn ownership, and action/bonus-action spending are not enforced end to end.
 
 ## Product Polish

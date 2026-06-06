@@ -1,14 +1,19 @@
 import { NextResponse } from 'next/server';
 import { shouldUseMockFlavorPrefix } from '@/lib/llm/credentials';
+import { hasLlmCredentials } from '@/lib/llm/credentials';
 import { generateDmTurn, generateNarration } from '@/lib/llm/provider';
 import { buildSystemPrompt } from '@/lib/llm/system-prompt';
-import { validateNarrationAgainstState } from '@/lib/llm/validate-narration';
+import {
+  buildEngineSafeNarration,
+  validateNarrationAgainstResults,
+  validateNarrationAgainstState,
+} from '@/lib/llm/validate-narration';
 import { summarizeCanonLog } from '@/lib/llm/summarizer';
 import { buildRecap } from '@/lib/game/recap';
 import { isValidAdventureId } from '@/lib/game/adventures/registry.server';
 import { deriveDmTurnFromInput } from '@/lib/orchestrator/mock-dm';
 import { runTurn } from '@/lib/orchestrator/run-turn';
-import { buildDmTurnRepairPrompt, validateDmTurn } from '@/lib/orchestrator/validate-dm-turn';
+import { buildDmTurnRepairPrompt, validateDmTurn, validateManualD20Roll } from '@/lib/orchestrator/validate-dm-turn';
 import { 
   getOrCreateSession, 
   nextTurnNumber, 
@@ -32,6 +37,12 @@ export async function POST(req: Request) {
   const playerInput = typeof body?.playerInput === 'string' ? body.playerInput.slice(0, 800) : '';
   const manualRoll = typeof body?.manualRoll === 'number' ? body.manualRoll : undefined;
   const physicalDice = Boolean(body?.physicalDice);
+  if (body?.manualRoll !== undefined) {
+    const manualRollError = validateManualD20Roll(body.manualRoll);
+    if (manualRollError) {
+      return NextResponse.json({ ok: false, error: manualRollError }, { status: 400 });
+    }
+  }
 
   try {
     let state = getOrCreateSession(sessionId);
@@ -81,14 +92,20 @@ export async function POST(req: Request) {
           writeDevLog({ type: 'dm_turn_validation', sessionId, issues: validation.issues });
           aiTurn = await generateDmTurn({
             systemPrompt,
-            playerInput: buildDmTurnRepairPrompt(playerInput, validation.issues),
+            playerInput: buildDmTurnRepairPrompt(playerInput, validation.issues, state),
           });
           if (aiTurn && !validateDmTurn(aiTurn, state).ok) aiTurn = null;
         }
       }
       aiUsed = Boolean(aiTurn);
       fallbackUsed = !aiTurn;
-      rawTurn = aiTurn ?? deriveDmTurnFromInput(state, playerInput);
+      rawTurn = aiTurn ?? (hasLlmCredentials()
+        ? {
+            engineRequests: [],
+            narration: 'I am not quite sure how to resolve that fairly. Try naming who acts and what they are doing.',
+            needsResultBeforeNarrating: false,
+          }
+        : deriveDmTurnFromInput(state, playerInput));
     }
 
     const turn = runTurn(state, rawTurn, {
@@ -120,6 +137,34 @@ export async function POST(req: Request) {
       }
     }
 
+    let narrationWarnings = [
+      ...validateNarrationAgainstState(narration, state),
+      ...validateNarrationAgainstResults(narration, turn.response.engineResults),
+    ];
+    if (narrationWarnings.length > 0 && aiUsed && systemPrompt) {
+      const narrationRewrite = await generateNarration({
+        systemPrompt,
+        sceneDescription: state.sceneId,
+        playerInput,
+        originalNarration: narration,
+        engineResults: turn.response.engineResults.map((result) => ({
+          kind: result.kind,
+          summary: result.summary,
+          ok: result.ok,
+        })),
+        visibleState: `Party: ${state.party.map((member) => `${member.name} (${member.hp}/${member.maxHp})`).join('; ')}.`,
+        validationIssues: narrationWarnings,
+      });
+      if (narrationRewrite) narration = narrationRewrite;
+      narrationWarnings = [
+        ...validateNarrationAgainstState(narration, state),
+        ...validateNarrationAgainstResults(narration, turn.response.engineResults),
+      ];
+    }
+    if (narrationWarnings.length > 0) {
+      narration = buildEngineSafeNarration(turn.response.engineResults);
+    }
+
     // Periodic Canon Log Summarization.
     if (state.canonLog.length >= 20) {
       const summarized = await summarizeCanonLog(state.canonLog);
@@ -133,7 +178,6 @@ export async function POST(req: Request) {
       ? `The wind shifts and the tale steadies itself. ${narration}`
       : narration;
 
-    const narrationWarnings = validateNarrationAgainstState(narration, state);
     if (narrationWarnings.length > 0) {
       writeDevLog({ type: 'narration_validation', sessionId, warnings: narrationWarnings });
     }

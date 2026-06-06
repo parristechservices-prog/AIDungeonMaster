@@ -59,7 +59,7 @@ export function buildBalancedEncounter(
     if (candidates.length === 0) {
         // If no preferred monsters fit, try any monster
         const anyCandidates = Object.entries(MONSTER_LIBRARY)
-            .filter(([id, m]) => CR_TO_XP[m.cr] <= remainingXP * 2);
+            .filter(([, m]) => CR_TO_XP[m.cr] <= remainingXP * 2);
         if (anyCandidates.length === 0) break;
         
         const [id] = anyCandidates[Math.floor(Math.random() * anyCandidates.length)];

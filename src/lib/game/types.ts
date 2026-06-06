@@ -21,6 +21,7 @@ export type Character = {
   skills: Partial<Record<string, number>>;
   features: { id: string; name: string; usesMax: number; usesRemaining: number; rechargeOn: 'short_rest' | 'long_rest' }[];
   spellSlots: Record<number, { max: number; remaining: number }>;
+  knownSpells?: string[];
   weapon: { name: string; attackBonus: number; damage: string };
   gold: number;
   inventory: string[];

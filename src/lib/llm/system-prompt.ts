@@ -33,6 +33,7 @@ export function buildSystemPrompt(state: GameState): string {
       `- Inventory: ${p.inventory.join(', ') || 'Empty'}`,
       `- Features: ${featuresList || 'None'}`,
       `- Spell Slots: ${slotsList || 'None'}`,
+      `- Known Spells: ${p.knownSpells?.join(', ') || 'None'}`,
     ].join('\n');
   }).join('\n\n');
 

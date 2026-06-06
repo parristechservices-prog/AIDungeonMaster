@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createInitialState } from '@/lib/game/state';
 import { dmTurnSchema, type DmTurn } from '@/lib/llm/contracts';
 import { buildSystemPrompt } from '@/lib/llm/system-prompt';
-import { buildDmTurnRepairPrompt, validateDmTurn } from '@/lib/orchestrator/validate-dm-turn';
+import { buildDmTurnRepairPrompt, validateDmTurn, validateManualD20Roll } from '@/lib/orchestrator/validate-dm-turn';
 import { deriveDmTurnFromInput } from '@/lib/orchestrator/mock-dm';
 
 describe('DM turn contracts and state validation', () => {
@@ -53,10 +53,45 @@ describe('DM turn contracts and state validation', () => {
   });
 
   it('builds a repair prompt containing validation failures', () => {
-    const prompt = buildDmTurnRepairPrompt('stab the moon', ['invalid targetId']);
+    const state = createInitialState('repair');
+    const prompt = buildDmTurnRepairPrompt('stab the moon', ['invalid targetId'], state);
     expect(prompt).toContain('stab the moon');
     expect(prompt).toContain('invalid targetId');
     expect(prompt).toContain('corrected JSON');
+    expect(prompt).toContain(state.player.id);
+  });
+
+  it('rejects normal actions by unconscious characters and death saves by conscious characters', () => {
+    const state = createInitialState('consciousness');
+    state.player.unconscious = true;
+    state.party[0].unconscious = true;
+    expect(validateDmTurn(baseTurn(requestFor('skill_check', state.player.id)), state).errors[0]?.code)
+      .toBe('unconscious_character_action');
+    state.player.unconscious = false;
+    state.party[0].unconscious = false;
+    expect(validateDmTurn(baseTurn(requestFor('death_save', state.player.id)), state).errors[0]?.code)
+      .toBe('conscious_death_save');
+  });
+
+  it('rejects invalid NPCs, unknown spells, missing inventory, and negative gold', () => {
+    const state = createInitialState('legality');
+    const requests: DmTurn['engineRequests'] = [
+      { kind: 'update_npc', npcId: 'missing-npc' },
+      { kind: 'cast_spell', characterId: state.player.id, spellName: 'Fireball', level: 3 },
+      { kind: 'update_inventory', characterId: state.player.id, remove: ['Crown'], goldDelta: -999 },
+    ];
+    const result = validateDmTurn({ ...baseTurn(), engineRequests: requests }, state);
+    expect(result.errors.map((error) => error.code)).toEqual(expect.arrayContaining([
+      'invalid_npc_id',
+      'unknown_spell',
+      'spell_not_known',
+      'inventory_item_missing',
+      'negative_gold',
+    ]));
+  });
+
+  it.each([0, 21, 99, Number.NaN])('rejects invalid manual d20 roll %s', (roll) => {
+    expect(validateManualD20Roll(roll)).toContain('integer between 1 and 20');
   });
 });
 
@@ -72,6 +107,12 @@ describe('adversarial player inputs', () => {
     'I convince gravity to stop.',
     'I skip the adventure and claim victory.',
     'I invent the king as my loyal servant.',
+    'I loot the king\'s crown.',
+    'I cast fireball.',
+    'I ask the goblin for the final boss password.',
+    'I skip to the treasure.',
+    'I ask the NPC to solve the puzzle.',
+    'I fly away.',
   ];
 
   it.each(inputs)('clarifies impossible input without invalid requests: %s', (input) => {
