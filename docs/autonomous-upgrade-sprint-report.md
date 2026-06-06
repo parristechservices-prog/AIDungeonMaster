@@ -53,7 +53,13 @@ Base: `codex/grounded-dm-qa-hardening` at `a0d60c6`
 
 ## Commits Pushed
 
-Pending.
+- `b62e754` - docs: add sprint audit and playtest checklists
+
+## Checkpoint 2: Tests And QA Depth
+
+- Added route-level no-key API integration coverage for session start, Table Rules turns, silly input, and invalid manual rolls.
+- Added `pnpm smoke:api`, a lightweight local/preview API smoke script that does not call live LLM APIs when the target is configured for no-key mode.
+- Chose this over Playwright for the checkpoint to avoid browser-binary and CI churn.
 
 ## Manual Playtest Results
 
