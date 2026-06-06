@@ -61,6 +61,15 @@ Base: `codex/grounded-dm-qa-hardening` at `a0d60c6`
 - Added `pnpm smoke:api`, a lightweight local/preview API smoke script that does not call live LLM APIs when the target is configured for no-key mode.
 - Chose this over Playwright for the checkpoint to avoid browser-binary and CI churn.
 
+## Checkpoint 3: Player Experience And Accessibility
+
+- Added calm failed-check recovery guidance with a suggested next action.
+- Made the Table Rules / AI Director indicator and active character clearer.
+- Improved combat participant labeling for multi-character parties and marked defeated monsters distinctly.
+- Made narration a labelled live log and added a labelled, keyboard-focused, mobile-sticky action input.
+- Limited internal narration warning cues to development builds.
+- Added reduced-motion-safe global behavior.
+
 ## Manual Playtest Results
 
 Pending.
