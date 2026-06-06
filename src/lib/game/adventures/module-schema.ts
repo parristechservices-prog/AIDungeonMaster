@@ -8,6 +8,11 @@ const sceneSchema = z.object({
   starter: z.string().min(1).max(2000),
   choices: z.array(z.string()).max(20),
   guidance: z.string().max(3000),
+  allowedNpcs: z.array(z.string().max(80)).max(30).default([]),
+  allowedMonsters: z.array(z.string().max(80)).max(30).default([]),
+  allowedExits: z.array(z.string().max(120)).max(30).default([]),
+  forbidden: z.array(z.string().max(300)).max(30).default([]),
+  successConditions: z.array(z.string().max(300)).max(30).default([]),
 });
 
 const npcSchema = z.object({

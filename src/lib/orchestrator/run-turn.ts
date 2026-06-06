@@ -45,6 +45,7 @@ export type TurnResult = {
   narration: string;
   ambient?: 'none' | 'tavern' | 'dungeon' | 'combat' | 'exploration' | 'boss_fight';
   needsManualRoll?: boolean;
+  needsResultBeforeNarrating?: boolean;
   manualRollContext?: {
     kind: 'skill_check' | 'player_attack';
     formula: string;
@@ -182,6 +183,7 @@ export function runTurn(
       narration: finalNarration,
       ambient: turn.ambient,
       needsManualRoll,
+      needsResultBeforeNarrating: turn.needsResultBeforeNarrating,
       manualRollContext,
       engineResults,
       recentRolls,

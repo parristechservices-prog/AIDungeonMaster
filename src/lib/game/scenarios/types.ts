@@ -8,6 +8,11 @@ export type ScenarioScene = {
   choices: string[];
   /** Hint for LLM / mock DM */
   guidance: string;
+  allowedNpcs: string[];
+  allowedMonsters: string[];
+  allowedExits: string[];
+  forbidden: string[];
+  successConditions: string[];
 };
 
 export type ScenarioMock = {

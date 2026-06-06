@@ -55,6 +55,11 @@ export function endingSceneStub(): AdventureScene {
     starter: '',
     choices: ['Start a new adventure'],
     guidance: 'Epilogue only.',
+    allowedNpcs: [],
+    allowedMonsters: [],
+    allowedExits: [],
+    forbidden: [],
+    successConditions: [],
   };
 }
 

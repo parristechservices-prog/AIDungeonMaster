@@ -119,6 +119,38 @@ export async function generateDmTurn(input: Input): Promise<DmTurn | null> {
   return null;
 }
 
+export async function generateNarration(input: {
+  systemPrompt: string;
+  sceneDescription: string;
+  playerInput: string;
+  originalNarration: string;
+  engineResults: Array<{ kind: string; summary: string; ok: boolean }>;
+  visibleState: string;
+}): Promise<string | null> {
+  const resultSummary = input.engineResults
+    .map((result, index) => `${index + 1}. ${result.kind}: ${result.summary}`)
+    .join('\n');
+
+  const narrationPrompt = [
+    'You are the Dungeon Master narrator. Produce a final, faithful narration after the engine has resolved the mechanical actions.',
+    'Do not invent new facts or contradict the engine results. Use the current scene, the player intent, and the engine summaries to write a single concise prose paragraph.',
+    '',
+    `Scene: ${input.sceneDescription}`,
+    `Player input: ${input.playerInput}`,
+    `Initial narration: ${input.originalNarration}`,
+    '',
+    'Engine results:',
+    resultSummary || 'None',
+    '',
+    'Visible state summary:',
+    input.visibleState || 'No additional state summary.',
+    '',
+    'Return only the narration text. No markdown fences, no JSON, no extra commentary.',
+  ].join('\n');
+
+  return callLlm({ systemPrompt: input.systemPrompt, playerInput: narrationPrompt });
+}
+
 function parseDmTurn(raw: string): DmTurn | null {
   try {
     const parsedJson = JSON.parse(raw);

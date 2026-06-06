@@ -4,6 +4,20 @@ import type { GameState, Character } from '@/lib/game/types';
 import { advanceScene } from '@/lib/game/state';
 import type { EngineRequest, EngineResult, RollBreakdown } from './types';
 
+let randomProvider = Math.random;
+
+export function setRandomProvider(provider: () => number) {
+  randomProvider = provider;
+}
+
+export function resetRandomProvider() {
+  randomProvider = Math.random;
+}
+
+function isValidD20Roll(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 20;
+}
+
 function hasCondition(creature: { conditions: import('@/lib/game/types').Condition[] }, condition: import('@/lib/game/types').Condition): boolean {
   return creature.conditions.includes(condition);
 }
@@ -17,8 +31,8 @@ function updateCharacterInParty(state: GameState, id: string, updater: (c: Chara
   };
 }
 
-function requestedCharacterId(state: GameState, characterId?: string): string {
-  return characterId ?? state.activeCharacterId ?? state.party[0]?.id;
+function requestedCharacterId(characterId?: string): string | undefined {
+  return characterId;
 }
 
 export function resolveEngineRequest(
@@ -28,8 +42,14 @@ export function resolveEngineRequest(
 ): { state: GameState; result: EngineResult } {
   switch (request.kind) {
     case 'skill_check': {
-      const char = state.party.find(p => p.id === requestedCharacterId(state, request.characterId));
+      const char = state.party.find((p) => p.id === requestedCharacterId(request.characterId));
       if (!char) return { state, result: { ok: false, summary: 'Character not found.' } };
+      if (!isValidD20Roll(request.manualRoll) && request.manualRoll !== undefined) {
+        return { state, result: { ok: false, summary: 'Manual roll must be an integer between 1 and 20.' } };
+      }
+      if (char.unconscious) {
+        return { state, result: { ok: false, summary: `${char.name} is unconscious and cannot take that action.` } };
+      }
 
       const mod = char.skills[request.skill] ?? 0;
       
@@ -94,8 +114,14 @@ export function resolveEngineRequest(
       return { state: appendLog(next, 'Combat started. Roll for initiative!'), result: { ok: true, summary: 'Initiative rolled.' } };
     }
     case 'player_attack': {
-      const char = state.party.find(p => p.id === requestedCharacterId(state, request.characterId));
+      const char = state.party.find((p) => p.id === requestedCharacterId(request.characterId));
       if (!char) return { state, result: { ok: false, summary: 'Character not found.' } };
+      if (!isValidD20Roll(request.manualRoll) && request.manualRoll !== undefined) {
+        return { state, result: { ok: false, summary: 'Manual roll must be an integer between 1 and 20.' } };
+      }
+      if (char.unconscious) {
+        return { state, result: { ok: false, summary: `${char.name} is unconscious and cannot attack.` } };
+      }
 
       const target = state.monsters.find((m) => m.id === request.targetId && m.hp > 0);
       if (!target) return { state, result: { ok: false, summary: 'No valid target.' } };
@@ -201,9 +227,12 @@ export function resolveEngineRequest(
       };
     }
     case 'death_save': {
-      const char = state.party.find(p => p.id === requestedCharacterId(state, request.characterId));
+      const char = state.party.find((p) => p.id === requestedCharacterId(request.characterId));
       if (!char) return { state, result: { ok: false, summary: 'Character not found.' } };
       if (!char.unconscious) return { state, result: { ok: false, summary: `${char.name} is not unconscious.` } };
+      if (!isValidD20Roll(request.manualRoll) && request.manualRoll !== undefined) {
+        return { state, result: { ok: false, summary: 'Manual roll must be an integer between 1 and 20.' } };
+      }
 
       if (options?.physicalDice && request.manualRoll === undefined) {
         return {
@@ -266,8 +295,11 @@ export function resolveEngineRequest(
       };
     }
     case 'use_feature': {
-      const char = state.party.find(p => p.id === requestedCharacterId(state, request.characterId));
+      const char = state.party.find((p) => p.id === requestedCharacterId(request.characterId));
       if (!char) return { state, result: { ok: false, summary: 'Character not found.' } };
+      if (char.unconscious) {
+        return { state, result: { ok: false, summary: `${char.name} is unconscious and cannot use a feature.` } };
+      }
 
       const idx = char.features.findIndex((f) => f.id === request.featureId);
       if (idx < 0) return { state, result: { ok: false, summary: `Feature ${request.featureId} not found.` } };
@@ -299,8 +331,11 @@ export function resolveEngineRequest(
       return { state: appendLog(next, summary), result: { ok: true, summary, breakdown } };
     }
     case 'cast_spell': {
-      const char = state.party.find(p => p.id === requestedCharacterId(state, request.characterId));
+      const char = state.party.find((p) => p.id === requestedCharacterId(request.characterId));
       if (!char) return { state, result: { ok: false, summary: 'Character not found.' } };
+      if (char.unconscious) {
+        return { state, result: { ok: false, summary: `${char.name} is unconscious and cannot cast a spell.` } };
+      }
 
       const level = request.level;
       const slot = char.spellSlots[level];
@@ -308,6 +343,12 @@ export function resolveEngineRequest(
         if (!slot || slot.remaining <= 0) {
           return { state, result: { ok: false, summary: `No level ${level} spell slots remaining.` } };
         }
+      }
+
+      const spellName = request.spellName.toLowerCase();
+      const knownSpells = ['cure wounds', 'healing word', 'magic missile', 'shield', 'bless'];
+      if (!knownSpells.some((known) => spellName.includes(known))) {
+        return { state, result: { ok: false, summary: `${request.spellName} is not a recognized spell.` } };
       }
 
       let next = state;
@@ -320,8 +361,7 @@ export function resolveEngineRequest(
 
       let summary = `${char.name} cast ${request.spellName} (Level ${level})`;
       let breakdown: RollBreakdown | undefined;
-      const spellName = request.spellName.toLowerCase();
-      
+
       // Basic Spell Logic
       if (spellName.includes('cure wounds') || spellName.includes('healing word')) {
         const dice = spellName.includes('cure wounds') ? 'd8' : 'd4';
@@ -424,14 +464,39 @@ export function resolveEngineRequest(
       return { state: { ...state, canonLog: [...state.canonLog, fact] }, result: { ok: true, summary: 'Added canon fact.' } };
     }
     case 'update_inventory': {
-      const char = state.party.find(p => p.id === requestedCharacterId(state, request.characterId));
+      const char = state.party.find((p) => p.id === requestedCharacterId(request.characterId));
       if (!char) return { state, result: { ok: false, summary: 'Character not found.' } };
+      if (char.unconscious) {
+        return { state, result: { ok: false, summary: `${char.name} is unconscious and cannot change inventory.` } };
+      }
+
+      const goldDelta = request.goldDelta ?? 0;
+      if (char.gold + goldDelta < 0) {
+        return { state, result: { ok: false, summary: 'Cannot spend more gold than available.' } };
+      }
+
+      if (request.remove) {
+        const missing = request.remove.filter((item) => !char.inventory.includes(item));
+        if (missing.length > 0) {
+          return { state, result: { ok: false, summary: `Cannot remove missing item(s): ${missing.join(', ')}.` } };
+        }
+      }
 
       const next = updateCharacterInParty(state, char.id, (c) => {
-        const gold = c.gold + (request.goldDelta ?? 0);
+        const gold = c.gold + goldDelta;
         let inventory = [...c.inventory];
         if (request.add) inventory = [...inventory, ...request.add];
-        if (request.remove) inventory = inventory.filter(item => !request.remove?.includes(item));
+        if (request.remove) {
+          const removed = [...request.remove];
+          inventory = inventory.filter((item) => {
+            const index = removed.indexOf(item);
+            if (index >= 0) {
+              removed.splice(index, 1);
+              return false;
+            }
+            return true;
+          });
+        }
         return { ...c, gold, inventory };
       });
       
@@ -440,48 +505,64 @@ export function resolveEngineRequest(
     case 'apply_condition': {
       let next = state;
       let targetName = '';
+      let targetFound = false;
       
-      const char = state.party.find(p => p.id === request.targetId);
+      const char = state.party.find((p) => p.id === request.targetId);
       if (char) {
+        targetFound = true;
         next = updateCharacterInParty(state, char.id, (c) => ({
           ...c, conditions: c.conditions.includes(request.condition) ? c.conditions : [...c.conditions, request.condition]
         }));
         targetName = char.name;
       } else {
-        const monsters = state.monsters.map(m => {
-          if (m.id === request.targetId && !m.conditions.includes(request.condition)) {
-            targetName = m.name;
-            return { ...m, conditions: [...m.conditions, request.condition] };
+        const monsters = state.monsters.map((m) => {
+          if (m.id === request.targetId) {
+            targetFound = true;
+            if (!m.conditions.includes(request.condition)) {
+              targetName = m.name;
+              return { ...m, conditions: [...m.conditions, request.condition] };
+            }
           }
           return m;
         });
         next = { ...state, monsters };
       }
       
+      if (!targetFound) {
+        return { state, result: { ok: false, summary: 'No valid target for applying condition.' } };
+      }
+
       const summary = `${targetName} is now ${request.condition}.`;
       return { state: appendLog(next, summary), result: { ok: true, summary } };
     }
     case 'remove_condition': {
       let next = state;
       let targetName = '';
+      let targetFound = false;
       
-      const char = state.party.find(p => p.id === request.targetId);
+      const char = state.party.find((p) => p.id === request.targetId);
       if (char) {
+        targetFound = true;
         next = updateCharacterInParty(state, char.id, (c) => ({
-          ...c, conditions: c.conditions.filter(con => con !== request.condition)
+          ...c, conditions: c.conditions.filter((con) => con !== request.condition)
         }));
         targetName = char.name;
       } else {
-        const monsters = state.monsters.map(m => {
+        const monsters = state.monsters.map((m) => {
           if (m.id === request.targetId) {
+            targetFound = true;
             targetName = m.name;
-            return { ...m, conditions: m.conditions.filter(con => con !== request.condition) };
+            return { ...m, conditions: m.conditions.filter((con) => con !== request.condition) };
           }
           return m;
         });
         next = { ...state, monsters };
       }
       
+      if (!targetFound) {
+        return { state, result: { ok: false, summary: 'No valid target for removing condition.' } };
+      }
+
       const summary = `${targetName} is no longer ${request.condition}.`;
       return { state: appendLog(next, summary), result: { ok: true, summary } };
     }
@@ -493,7 +574,7 @@ function appendLog(state: GameState, line: string): GameState {
 }
 
 function d20() {
-  return Math.floor(Math.random() * 20) + 1;
+  return Math.floor(randomProvider() * 20) + 1;
 }
 
 function rollFormula(
@@ -507,16 +588,16 @@ function rollFormula(
   const sides = Number(match[2]);
   const inlineMod = match[3] ? Number(match[3]) : fallbackMod;
 
-  let rolls = Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1);
+  let rolls = Array.from({ length: count }, () => Math.floor(randomProvider() * sides) + 1);
   let keptRoll = rolls[0];
 
   if (count === 1 && sides === 20) {
     if (options?.advantage) {
-      const secondRoll = Math.floor(Math.random() * sides) + 1;
+      const secondRoll = Math.floor(randomProvider() * sides) + 1;
       rolls = [rolls[0], secondRoll];
       keptRoll = Math.max(...rolls);
     } else if (options?.disadvantage) {
-      const secondRoll = Math.floor(Math.random() * sides) + 1;
+      const secondRoll = Math.floor(randomProvider() * sides) + 1;
       rolls = [rolls[0], secondRoll];
       keptRoll = Math.min(...rolls);
     }

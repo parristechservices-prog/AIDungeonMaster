@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { shouldUseMockFlavorPrefix } from '@/lib/llm/credentials';
-import { generateDmTurn } from '@/lib/llm/provider';
+import { generateDmTurn, generateNarration } from '@/lib/llm/provider';
 import { buildSystemPrompt } from '@/lib/llm/system-prompt';
 import { validateNarrationAgainstState } from '@/lib/llm/validate-narration';
 import { summarizeCanonLog } from '@/lib/llm/summarizer';
@@ -8,6 +8,7 @@ import { buildRecap } from '@/lib/game/recap';
 import { isValidAdventureId } from '@/lib/game/adventures/registry.server';
 import { deriveDmTurnFromInput } from '@/lib/orchestrator/mock-dm';
 import { runTurn } from '@/lib/orchestrator/run-turn';
+import { buildDmTurnRepairPrompt, validateDmTurn } from '@/lib/orchestrator/validate-dm-turn';
 import { 
   getOrCreateSession, 
   nextTurnNumber, 
@@ -55,6 +56,7 @@ export async function POST(req: Request) {
     let rawTurn: unknown;
     let aiUsed = false;
     let fallbackUsed = false;
+    let systemPrompt = '';
 
     // Check if we are resolving a pending turn with a manual roll.
     const pending = getPendingTurn(sessionId);
@@ -63,16 +65,27 @@ export async function POST(req: Request) {
       clearPendingTurn(sessionId);
     } else {
       const recentRecaps = getRecaps(sessionId).slice(-5);
-      const systemPrompt =
+      systemPrompt =
         buildSystemPrompt(state) +
         (recentRecaps.length > 0
           ? `\n\n## RECENT CONVERSATION HISTORY\n${recentRecaps.map((r) => `Turn ${r.turnNumber} Narration: ${r.narration}`).join('\n')}`
           : '');
 
-      const aiTurn = await generateDmTurn({
+      let aiTurn = await generateDmTurn({
         systemPrompt,
         playerInput,
       });
+      if (aiTurn) {
+        const validation = validateDmTurn(aiTurn, state);
+        if (!validation.ok) {
+          writeDevLog({ type: 'dm_turn_validation', sessionId, issues: validation.issues });
+          aiTurn = await generateDmTurn({
+            systemPrompt,
+            playerInput: buildDmTurnRepairPrompt(playerInput, validation.issues),
+          });
+          if (aiTurn && !validateDmTurn(aiTurn, state).ok) aiTurn = null;
+        }
+      }
       aiUsed = Boolean(aiTurn);
       fallbackUsed = !aiTurn;
       rawTurn = aiTurn ?? deriveDmTurnFromInput(state, playerInput);
@@ -91,6 +104,21 @@ export async function POST(req: Request) {
     }
 
     state = turn.state;
+    let narration = turn.response.narration;
+    if (!fallbackUsed && aiUsed && turn.response.needsResultBeforeNarrating && systemPrompt) {
+      const visibleState = `Party: ${state.party.map((p) => `${p.name} (${p.hp}/${p.maxHp})`).join('; ')}.`;
+      const narrationRewrite = await generateNarration({
+        systemPrompt,
+        sceneDescription: state.sceneId,
+        playerInput,
+        originalNarration: narration,
+        engineResults: turn.response.engineResults.map((r) => ({ kind: r.kind, summary: r.summary, ok: r.ok })),
+        visibleState,
+      });
+      if (narrationRewrite) {
+        narration = narrationRewrite;
+      }
+    }
 
     // Periodic Canon Log Summarization.
     if (state.canonLog.length >= 20) {
@@ -101,10 +129,9 @@ export async function POST(req: Request) {
     saveSession(state);
     const turnNumber = nextTurnNumber(sessionId);
 
-    const narration =
-      fallbackUsed && shouldUseMockFlavorPrefix()
-        ? `The wind shifts and the tale steadies itself. ${turn.response.narration}`
-        : turn.response.narration;
+    narration = fallbackUsed && shouldUseMockFlavorPrefix()
+      ? `The wind shifts and the tale steadies itself. ${narration}`
+      : narration;
 
     const narrationWarnings = validateNarrationAgainstState(narration, state);
     if (narrationWarnings.length > 0) {
