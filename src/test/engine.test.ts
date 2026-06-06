@@ -18,7 +18,7 @@ describe('engine', () => {
   });
 
   it('handles spell slots correctly', () => {
-    const state = createInitialState('t3');
+    const state = createInitialState('t3', { characterId: 'wizard' });
     state.player.spellSlots = { 1: { max: 2, remaining: 1 } };
     
     // Cast spell level 1
@@ -30,6 +30,56 @@ describe('engine', () => {
     const out2 = resolveEngineRequest(out1.state, { kind: 'cast_spell', characterId: state.player.id, spellName: 'Magic Missile', level: 1 });
     expect(out2.result.ok).toBe(false);
     expect(out2.result.summary).toContain('No level 1 spell slots remaining');
+  });
+
+  it('rejects unknown or unlearned spells without consuming a slot', () => {
+    const state = createInitialState('spell-reject', { characterId: 'wizard' });
+    const before = state.player.spellSlots[1].remaining;
+    const unknown = resolveEngineRequest(state, {
+      kind: 'cast_spell',
+      characterId: state.player.id,
+      spellName: 'Fireball',
+      level: 1,
+    });
+    expect(unknown.result.ok).toBe(false);
+    expect(unknown.state.player.spellSlots[1].remaining).toBe(before);
+
+    const unlearned = resolveEngineRequest(state, {
+      kind: 'cast_spell',
+      characterId: state.player.id,
+      spellName: 'Cure Wounds',
+      level: 1,
+    });
+    expect(unlearned.result.ok).toBe(false);
+    expect(unlearned.result.summary).toContain('does not know');
+  });
+
+  it('rejects invalid manual rolls, inventory changes, NPCs, and condition targets', () => {
+    const state = createInitialState('invalid-engine-actions');
+    expect(resolveEngineRequest(state, {
+      kind: 'skill_check',
+      characterId: state.player.id,
+      skill: 'history',
+      dc: 10,
+      reason: 'Recall lore',
+      manualRoll: 21,
+    }).result.ok).toBe(false);
+    expect(resolveEngineRequest(state, {
+      kind: 'update_inventory',
+      characterId: state.player.id,
+      remove: ['Royal Crown'],
+    }).result.ok).toBe(false);
+    expect(resolveEngineRequest(state, {
+      kind: 'update_inventory',
+      characterId: state.player.id,
+      goldDelta: -(state.player.gold + 1),
+    }).result.ok).toBe(false);
+    expect(resolveEngineRequest(state, { kind: 'update_npc', npcId: 'missing' }).result.ok).toBe(false);
+    expect(resolveEngineRequest(state, {
+      kind: 'apply_condition',
+      targetId: 'missing',
+      condition: 'prone',
+    }).result.ok).toBe(false);
   });
 
   it('restores resources on long rest', () => {

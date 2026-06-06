@@ -14,6 +14,7 @@ import { OnboardingBanner } from '@/components/play/OnboardingBanner';
 import { AppealButton } from '@/components/play/AppealButton';
 import { AmbientAudio } from '@/components/play/AmbientAudio';
 import { ManualRollModal } from '@/components/play/ManualRollModal';
+import { FailedCheckRecovery } from '@/components/play/FailedCheckRecovery';
 import { isFeatureEnabled } from '@/lib/config/features';
 import { DEFAULT_ADVENTURE_ID, getAdventure, getFirstPlayableSceneId, getSceneGoal } from '@/lib/game/adventures';
 import type { TurnResponse } from '@/lib/play/types';
@@ -40,6 +41,7 @@ export default function PlayPage() {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [turnCount, setTurnCount] = useState(0);
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [lastEngineResults, setLastEngineResults] = useState<TurnResponse['engineResults']>([]);
   const [ambient, setAmbient] = useState<TurnResponse['ambient']>('none');
   const [physicalDice, setPhysicalDice] = useState(false);
   const [manualRollContext, setManualRollContext] = useState<TurnResponse['manualRollContext'] | null>(null);
@@ -194,6 +196,7 @@ export default function PlayPage() {
         setChoices(data.nextChoices ?? []);
         setRecentRolls(data.recentRolls ?? []);
         setWarnings(data.narrationWarnings ?? []);
+        setLastEngineResults(data.engineResults ?? []);
         setAmbient(data.ambient ?? 'none');
         setTurnCount((n) => n + 1);
         if (data.state) setState(data.state);
@@ -212,7 +215,6 @@ export default function PlayPage() {
           ...(data.sceneStarter ? [`— ${data.sceneStarter}`] : []),
           data.narration,
           ...(data.engineResults?.map((r) => `• ${r.summary}`) ?? []),
-          ...(data.narrationWarnings?.length ? [`(DM note: ${data.narrationWarnings[0]})`] : []),
           `Turn ${data.recap.turnNumber} saved.`,
           data.nextHook,
         ];
@@ -253,9 +255,14 @@ export default function PlayPage() {
               <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
                 Scene: <b>{sceneId}</b> · {sceneGoal}
               </p>
-              <p className="mt-1 text-xs text-zinc-500">
-                Mode: {mode === 'ai_director' ? 'AI Director' : 'Table rules'}
-                {turnCount > 0 ? ` · Turn ${turnCount}` : ''}
+              <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+                <span className="rounded-full border border-zinc-300 px-2 py-1 font-semibold dark:border-zinc-700">
+                  {mode === 'ai_director' ? 'AI Director' : 'Table Rules'}
+                </span>
+                <span>
+                  Active: {state?.party?.find((member) => member.id === state.activeCharacterId)?.name ?? 'Not set'}
+                </span>
+                {turnCount > 0 ? <span>Turn {turnCount}</span> : null}
               </p>
             </div>
             <button
@@ -280,9 +287,13 @@ export default function PlayPage() {
 
           <NarrationPanel lines={history} busy={busy} />
           <DiceResults rolls={recentRolls} />
+          <FailedCheckRecovery
+            failedResult={lastEngineResults.find((result) => result.kind === 'skill_check' && !result.ok)}
+            choices={choices}
+          />
           <CombatHUD
             combat={state?.combat ?? { active: false, initiative: [], turnIndex: 0 }}
-            playerName={state?.party?.find(p => p.id === state.activeCharacterId)?.name ?? state?.party?.[0]?.name ?? 'Hero'}
+            party={state?.party ?? []}
             monsters={state?.monsters ?? []}
           />
           <InputBox
@@ -329,7 +340,7 @@ export default function PlayPage() {
         <aside className="rounded-lg border border-zinc-300 bg-white p-4 text-sm shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
           <h2 className="font-semibold">Character</h2>
           <CharacterSheet state={state} />
-          {warnings.length > 0 && (
+          {process.env.NODE_ENV !== 'production' && warnings.length > 0 && (
             <p className="mt-3 text-xs text-amber-700 dark:text-amber-300" title={warnings.join(' ')}>
               Narration checked against engine state.
             </p>

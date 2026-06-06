@@ -1,5 +1,12 @@
 import type { GameState } from '@/lib/game/types';
 
+export type NarrationEngineResult = {
+  kind: string;
+  summary: string;
+  ok: boolean;
+  breakdown?: { rolls: number[]; total: number };
+};
+
 /**
  * Scans DM narration for numeric claims that contradict engine state.
  * Does not block turns — returns warnings for logging and optional UI display.
@@ -48,6 +55,14 @@ export function validateNarrationAgainstState(
     if (acMatch && Number(acMatch[1]) !== player.ac) {
       warnings.push(`${player.name}: Narration claims AC ${acMatch[1]}; engine has ${player.ac}.`);
     }
+
+    for (const match of narration.matchAll(/level\s+(\d+)\s+spell slots?\s+(?:remaining|left)[:\s]+(\d+)/gi)) {
+      const level = Number(match[1]);
+      const remaining = Number(match[2]);
+      if ((player.spellSlots[level]?.remaining ?? 0) !== remaining) {
+        warnings.push(`${player.name}: Narration claims ${remaining} level ${level} spell slots; engine has ${player.spellSlots[level]?.remaining ?? 0}.`);
+      }
+    }
   }
 
   for (const monster of state.monsters) {
@@ -61,6 +76,44 @@ export function validateNarrationAgainstState(
   }
 
   return [...new Set(warnings)];
+}
+
+export function validateNarrationAgainstResults(
+  narration: string,
+  results: NarrationEngineResult[],
+): string[] {
+  const warnings: string[] = [];
+  const text = narration.toLowerCase();
+  const claimsSuccess = /\b(succeeds?|successful|hits?|lands?|finds?|discovers?|unlocks?|defeats?|kills?)\b/i.test(narration);
+  const claimsFailure = /\b(fails?|failure|miss(?:es|ed)?|cannot|does not|unsuccessful)\b/i.test(narration);
+
+  for (const result of results) {
+    if (!result.ok && claimsSuccess) {
+      warnings.push(`${result.kind}: Narration claims success but the engine result failed.`);
+    }
+    if (result.ok && claimsFailure) {
+      warnings.push(`${result.kind}: Narration claims failure but the engine result succeeded.`);
+    }
+  }
+
+  const allowedNumbers = new Set(
+    results.flatMap((result) => result.breakdown ? [...result.breakdown.rolls, result.breakdown.total] : []),
+  );
+  for (const match of text.matchAll(/\b(?:rolled?|roll of|dealt?|takes?|for)\s+(\d+)\s*(?:damage)?\b/gi)) {
+    const claimed = Number(match[1]);
+    if (allowedNumbers.size > 0 && !allowedNumbers.has(claimed)) {
+      warnings.push(`Narration claims unsupported roll or damage value ${claimed}.`);
+    }
+  }
+
+  return [...new Set(warnings)];
+}
+
+export function buildEngineSafeNarration(results: NarrationEngineResult[]): string {
+  if (results.length === 0) {
+    return 'I am not quite sure how to resolve that fairly. Try naming who acts and what they are doing.';
+  }
+  return results.map((result) => result.summary).join(' ');
 }
 
 function extractSentenceAround(text: string, needle: string): string {

@@ -9,6 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "smoke:api": "tsx scripts/smoke-api.ts",
+    "eval:prompts": "tsx scripts/eval-prompts.ts",
     "module:validate": "tsx scripts/validate-module.ts",
     "module:scaffold": "tsx scripts/scaffold-private-module.ts",
     "module:skt": "python scripts/build-skt-private-module.py"

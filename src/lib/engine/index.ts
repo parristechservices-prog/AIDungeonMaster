@@ -350,6 +350,9 @@ export function resolveEngineRequest(
       if (!knownSpells.some((known) => spellName.includes(known))) {
         return { state, result: { ok: false, summary: `${request.spellName} is not a recognized spell.` } };
       }
+      if (char.knownSpells && !char.knownSpells.some((known) => known.toLowerCase() === spellName)) {
+        return { state, result: { ok: false, summary: `${char.name} does not know ${request.spellName}.` } };
+      }
 
       let next = state;
       if (level > 0) {
@@ -444,6 +447,9 @@ export function resolveEngineRequest(
       };
     }
     case 'update_npc': {
+      if (!state.npcs.some((npc) => npc.id === request.npcId)) {
+        return { state, result: { ok: false, summary: `NPC ${request.npcId} not found.` } };
+      }
       const npcs = state.npcs.map((n) => {
         if (n.id === request.npcId) {
           return {

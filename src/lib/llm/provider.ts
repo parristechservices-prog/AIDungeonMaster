@@ -112,9 +112,27 @@ export async function callLlm(input: Input, options?: { json?: boolean }): Promi
 }
 
 export async function generateDmTurn(input: Input): Promise<DmTurn | null> {
+  let malformedOutput: string | null = null;
   for await (const text of callLlmCandidates(input, { json: true })) {
     const parsed = parseDmTurn(text);
     if (parsed) return parsed;
+    malformedOutput = text;
+  }
+
+  if (malformedOutput) {
+    const repairInput = {
+      systemPrompt: input.systemPrompt,
+      playerInput: [
+        'Fix the malformed DM turn below. Return JSON only, matching the required schema exactly.',
+        'Do not add markdown or commentary.',
+        '',
+        malformedOutput,
+      ].join('\n'),
+    };
+    for await (const text of callLlmCandidates(repairInput, { json: true })) {
+      const parsed = parseDmTurn(text);
+      if (parsed) return parsed;
+    }
   }
   return null;
 }
@@ -126,6 +144,7 @@ export async function generateNarration(input: {
   originalNarration: string;
   engineResults: Array<{ kind: string; summary: string; ok: boolean }>;
   visibleState: string;
+  validationIssues?: string[];
 }): Promise<string | null> {
   const resultSummary = input.engineResults
     .map((result, index) => `${index + 1}. ${result.kind}: ${result.summary}`)
@@ -144,6 +163,9 @@ export async function generateNarration(input: {
     '',
     'Visible state summary:',
     input.visibleState || 'No additional state summary.',
+    ...(input.validationIssues?.length
+      ? ['', 'Previous narration validation failures:', ...input.validationIssues.map((issue) => `- ${issue}`)]
+      : []),
     '',
     'Return only the narration text. No markdown fences, no JSON, no extra commentary.',
   ].join('\n');

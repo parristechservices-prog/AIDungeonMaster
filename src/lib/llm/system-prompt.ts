@@ -3,6 +3,7 @@ import { getPlayableScene } from '@/lib/game/adventures/helpers';
 import { getAdventure } from '@/lib/game/adventures/registry.server';
 import { ENDING_SCENE_ID } from '@/lib/game/adventures/types';
 import { DM_PERSONAS } from '@/lib/game/personas';
+import { GROUNDED_DM_RULES_V0_4 } from '@/lib/llm/prompts/active';
 
 export function buildSystemPrompt(state: GameState): string {
   const adventure = getAdventure(state.adventureId);
@@ -33,6 +34,7 @@ export function buildSystemPrompt(state: GameState): string {
       `- Inventory: ${p.inventory.join(', ') || 'Empty'}`,
       `- Features: ${featuresList || 'None'}`,
       `- Spell Slots: ${slotsList || 'None'}`,
+      `- Known Spells: ${p.knownSpells?.join(', ') || 'None'}`,
     ].join('\n');
   }).join('\n\n');
 
@@ -71,16 +73,7 @@ export function buildSystemPrompt(state: GameState): string {
     '- If the party rests, use "short_rest" or "long_rest".',
     '- When the current scene objective is complete and no roll or combat is pending, use "advance_scene".',
     '',
-    '## QUALITY CONTROL & GROUNDED BEHAVIOUR',
-    '- Treat CURRENT STATE, SCENE BOUNDARIES, CAMPAIGN GUIDE, and Canon Log as the only grounded truth.',
-    '- Clarify impossible or incoherent actions instead of making them work. No meme logic, instant treasure, impossible technology, or bypassing the adventure.',
-    '- Never narrate a mechanical outcome before the engine resolves it. Narrate only intent or setup, and set "needsResultBeforeNarrating" to true.',
-    '- NPCs must act from a concrete goal and fear, and may reveal only knowledge listed for them or established in canon.',
-    '',
-    '## CANON / LOCAL COLOUR / INVENTION',
-    '- CANON is CURRENT STATE, CAMPAIGN GUIDE, and Canon Log. Never contradict it.',
-    '- LOCAL COLOUR is sensory detail that changes no facts, rewards, routes, NPC knowledge, or outcomes.',
-    '- INVENTION creates a persistent fact. Do not invent lore outside canon unless the same turn includes "add_canon_fact".',
+    ...GROUNDED_DM_RULES_V0_4,
     '',
     '## APPEALS',
     '- If the player input starts with "[APPEAL]", they are questioning a previous ruling or fact.',

@@ -8,13 +8,15 @@ type Props = {
 
 export function InputBox({ value, busy, placeholder, onChange, onSubmit }: Props) {
   return (
-    <div className="mt-3 flex gap-2">
+    <div className="sticky bottom-0 z-10 mt-3 flex gap-2 border-t border-zinc-200 bg-white/95 py-3 backdrop-blur dark:border-zinc-700 dark:bg-zinc-900/95">
+      <label htmlFor="player-action" className="sr-only">Describe your action</label>
       <input
+        id="player-action"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
         disabled={busy}
-        className="flex-1 rounded border border-zinc-300 bg-white px-3 py-2 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900"
+        className="min-h-11 flex-1 rounded border border-zinc-300 bg-white px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900"
         placeholder={placeholder}
         aria-label="Player action"
       />
@@ -22,7 +24,7 @@ export function InputBox({ value, busy, placeholder, onChange, onSubmit }: Props
         type="button"
         onClick={onSubmit}
         disabled={busy || !value.trim()}
-        className="rounded bg-black px-4 py-2 text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-black"
+        className="min-h-11 rounded bg-black px-4 py-2 text-white outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50 dark:bg-zinc-100 dark:text-black"
       >
         {busy ? '…' : 'Send'}
       </button>

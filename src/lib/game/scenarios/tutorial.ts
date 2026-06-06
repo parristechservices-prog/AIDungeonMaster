@@ -1,4 +1,3 @@
-import { buildBalancedEncounter } from '@/lib/engine/balancer';
 import type { Scenario } from './types';
 
 export const tutorial: Scenario = {
