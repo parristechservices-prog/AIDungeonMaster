@@ -10,6 +10,9 @@ const OBSERVATION_PHRASES = [
   'look around',
   'listen',
   'observe',
+  'scan',
+  'study',
+  'check the room',
   'survey',
   'take in',
   'what do i see',
@@ -277,6 +280,10 @@ function explorationLookDescription(sceneId: string, sceneStarter?: string): str
   }
 }
 
+function socialLookDescription(sceneStarter: string | undefined, npcName: string): string {
+  return `${sceneStarter ?? `You take in the room while ${npcName} watches from nearby.`} The common room is warm with lantern light while rain traces the windows. ${npcName} keeps one eye on the patrons, and a few damp cloaks and guarded glances suggest someone here may know more about recent travelers. You can speak with ${npcName}, study a patron more closely, or ask about the missing courier.`;
+}
+
 function shouldAdvanceByMovement(sceneId: string, input: string): boolean {
   if (!isMovementOnly(input) || isDistanceQuestion(input)) return false;
   if (sceneId === 'settlement-arrival') {
@@ -357,6 +364,22 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
   }
 
   if (sceneKind === 'social') {
+    if (
+      isPassiveObservation(input) ||
+      input.includes('inspect the room') ||
+      input.includes('inspect the inn') ||
+      input.includes('inspect the patrons') ||
+      input.includes('look for clues')
+    ) {
+      const scene = getPlayableScene(adventure, state.sceneId);
+      return {
+        engineRequests: [],
+        narration: socialLookDescription(scene?.starter, mock.socialNpcName),
+        needsResultBeforeNarrating: false,
+        ambient,
+      };
+    }
+
     if (EXPLORATION_PHRASES.some((p) => input.includes(p))) {
       return {
         engineRequests: [],

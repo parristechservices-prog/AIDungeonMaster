@@ -3,6 +3,24 @@ import { createInitialState, advanceScene } from '@/lib/game/state';
 import { deriveDmTurnFromInput, mockNarrationAfterResult } from '@/lib/orchestrator/mock-dm';
 
 describe('mock DM hints', () => {
+  it.each([
+    'i look around',
+    'what do i see',
+    'i check the room',
+    'i scan the room',
+    'i observe the inn',
+    'i inspect the room',
+    'i study the inn patrons',
+    'i look for clues',
+  ])('handles social observation without asking who acts: %s', (input) => {
+    const state = createInitialState(`social-observe-${input}`);
+    const turn = deriveDmTurnFromInput(state, input);
+
+    expect(turn.engineRequests).toEqual([]);
+    expect(turn.narration).toMatch(/rain|lantern|patrons|mira/i);
+    expect(turn.narration).not.toMatch(/not quite sure|name who acts/i);
+  });
+
   it('nudges exploration phrasing while still in social scene', () => {
     const state = createInitialState('hint-1');
     const turn = deriveDmTurnFromInput(state, 'I inspect the tracks');

@@ -38,6 +38,16 @@ describe('no-key API smoke flow', () => {
     expect(greeting.mode).toBe('table_rules');
     expect(greeting.narration).toBeTruthy();
 
+    const lookResponse = await runApiTurn(jsonRequest('http://localhost/api/turn', {
+      sessionId,
+      playerInput: 'i look around',
+    }));
+    const look = await lookResponse.json();
+    expect(look.ok).toBe(true);
+    expect(look.narration).toMatch(/rain|lantern|patrons|mira/i);
+    expect(look.narration).not.toMatch(/not quite sure|name who acts/i);
+    expect(look.state.monsters).toEqual([]);
+
     const sillyResponse = await runApiTurn(jsonRequest('http://localhost/api/turn', {
       sessionId,
       playerInput: 'I stab the moon.',

@@ -148,9 +148,11 @@ export function CharacterSheet({ state }: Props) {
           ))}
         </div>
 
-        <p className="mt-6 font-bold text-xs uppercase text-zinc-400 tracking-widest">Enemies</p>
-        <div className="mt-1 space-y-2">
-          {state.monsters?.length > 0 ? (
+        {state.combat.active && (
+          <>
+            <p className="mt-6 font-bold text-xs uppercase text-zinc-400 tracking-widest">Enemies</p>
+            <div className="mt-1 space-y-2">
+              {state.monsters?.length > 0 ? (
             state.monsters.map((m) => (
               <div key={m.id} className="text-xs bg-zinc-50 dark:bg-zinc-900/50 p-2 rounded border border-zinc-100 dark:border-zinc-800">
                 <div className="flex justify-between items-center">
@@ -168,10 +170,12 @@ export function CharacterSheet({ state }: Props) {
                 )}
               </div>
             ))
-          ) : (
-            <p className="italic text-zinc-500 text-xs">None visible.</p>
-          )}
-        </div>
+              ) : (
+                <p className="italic text-zinc-500 text-xs">None visible.</p>
+              )}
+            </div>
+          </>
+        )}
 
         <p className="mt-6 font-bold text-xs uppercase text-zinc-400 tracking-widest">Nearby NPCs</p>
         <div className="mt-1 space-y-1">

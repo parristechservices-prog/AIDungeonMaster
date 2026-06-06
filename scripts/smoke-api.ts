@@ -21,9 +21,15 @@ async function main() {
     characterId: 'fighter',
   });
   const greeting = await post('/api/turn', { sessionId, playerInput: 'Hello, Mira.' });
+  const observation = await post('/api/turn', { sessionId, playerInput: 'i look around' });
   const impossible = await post('/api/turn', { sessionId, playerInput: 'I stab the moon.' });
 
-  if (greeting.mode !== 'table_rules' || impossible.engineResults.length !== 0) {
+  if (
+    greeting.mode !== 'table_rules' ||
+    /not quite sure|name who acts/i.test(observation.narration) ||
+    observation.state.monsters.length !== 0 ||
+    impossible.engineResults.length !== 0
+  ) {
     throw new Error('Smoke test expected no-key Table Rules mode with no impossible-action engine requests.');
   }
 
@@ -34,6 +40,8 @@ async function main() {
     adventure: started.title,
     scene: impossible.sceneId,
     mode: greeting.mode,
+    observationNarration: observation.narration,
+    visibleSocialEnemies: observation.state.monsters.length,
     impossibleActionNarration: impossible.narration,
   }, null, 2));
 }
