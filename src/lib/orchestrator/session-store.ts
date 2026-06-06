@@ -107,6 +107,14 @@ export function nextTurnNumber(sessionId: string): number {
   return next;
 }
 
+export function getTurnCount(sessionId: string): number {
+  return turnCounters.get(sessionId) ?? 0;
+}
+
+export function getSessionStorageMode(): 'memory' | 'local_files' {
+  return IS_VERCEL ? 'memory' : 'local_files';
+}
+
 export function saveRecap(sessionId: string, recap: PartyQuestRecap): void {
   const recaps = getRecaps(sessionId);
   recaps.push(recap);

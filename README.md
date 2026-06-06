@@ -75,6 +75,7 @@ Open [http://localhost:3000](http://localhost:3000) → **Create adventure** to 
 | `PARTYQUEST_DEV_LOGS` | `true` writes turn logs under `.data/` |
 | `PARTYQUEST_FORCE_MOCK` | `true` skips LLM calls (table-rules only) |
 | `PARTYQUEST_MOCK_FLAVOR` | `true` adds the legacy fallback narration prefix |
+| `PARTYQUEST_MAX_TURNS_PER_SESSION` | Optional positive integer turn cap; unset or `0` is unlimited |
 
 Without API keys, the **table-rules mock DM** runs the full one-shot.
 
@@ -83,6 +84,7 @@ Without API keys, the **table-rules mock DM** runs the full one-shot.
 ```bash
 pnpm dev          # local server
 pnpm test         # Vitest (engine + regression + narration validator)
+pnpm eval:prompts # Offline grounded-prompt fixture eval
 pnpm lint
 pnpm build
 ```

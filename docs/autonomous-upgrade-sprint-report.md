@@ -70,6 +70,13 @@ Base: `codex/grounded-dm-qa-hardening` at `a0d60c6`
 - Limited internal narration warning cues to development builds.
 - Added reduced-motion-safe global behavior.
 
+## Checkpoint 4: Operational Readiness And Prompt Evals
+
+- Added a secret-safe `/api/health` endpoint reporting build, LLM configured state, storage mode, and active prompt version.
+- Added optional `PARTYQUEST_MAX_TURNS_PER_SESSION` cost-control scaffolding; defaults remain unlimited.
+- Extracted grounded behavior rules into a versioned active prompt module.
+- Added offline `pnpm eval:prompts` coverage that requires no live provider keys.
+
 ## Manual Playtest Results
 
 Pending.

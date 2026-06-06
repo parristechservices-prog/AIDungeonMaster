@@ -23,7 +23,8 @@ import {
   getPendingTurn,
   savePendingTurn,
   clearPendingTurn,
-  startNewGame
+  startNewGame,
+  getTurnCount,
 } from '@/lib/orchestrator/session-store';
 import { writeDevLog } from '@/lib/logging/dev-log';
 
@@ -46,6 +47,17 @@ export async function POST(req: Request) {
 
   try {
     let state = getOrCreateSession(sessionId);
+    const configuredMaxTurns = Number(process.env.PARTYQUEST_MAX_TURNS_PER_SESSION ?? 0);
+    const maxTurns = Number.isFinite(configuredMaxTurns) && configuredMaxTurns > 0
+      ? Math.floor(configuredMaxTurns)
+      : 0;
+    if (maxTurns > 0 && getTurnCount(sessionId) >= maxTurns) {
+      return NextResponse.json({
+        ok: false,
+        sessionId,
+        error: `This session has reached its ${maxTurns}-turn limit.`,
+      }, { status: 429 });
+    }
     if (requestedAdventureId && state.adventureId !== requestedAdventureId) {
       writeDevLog({
         type: 'turn_session_adventure_mismatch',

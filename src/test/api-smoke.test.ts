@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { POST as startSession } from '@/app/api/session/start/route';
 import { POST as runApiTurn } from '@/app/api/turn/route';
+import { GET as getHealth } from '@/app/api/health/route';
 import { resetRandomProvider, setRandomProvider } from '@/lib/engine';
 
 describe('no-key API smoke flow', () => {
@@ -58,6 +59,31 @@ describe('no-key API smoke flow', () => {
       ok: false,
       error: expect.stringContaining('integer between 1 and 20'),
     });
+  });
+
+  it('reports secret-safe health information', async () => {
+    const response = await getHealth();
+    expect(await response.json()).toMatchObject({
+      ok: true,
+      service: 'partyquest',
+      llmConfigured: false,
+      storageMode: expect.stringMatching(/memory|local_files/),
+      promptVersion: expect.stringContaining('grounded-dm'),
+    });
+  });
+
+  it('enforces an optional per-session turn cap', async () => {
+    process.env.PARTYQUEST_MAX_TURNS_PER_SESSION = '1';
+    const sessionId = `api-limit-${Date.now()}`;
+    await startSession(jsonRequest('http://localhost/api/session/start', { sessionId }));
+    expect((await runApiTurn(jsonRequest('http://localhost/api/turn', {
+      sessionId,
+      playerInput: 'Hello.',
+    }))).status).toBe(200);
+    expect((await runApiTurn(jsonRequest('http://localhost/api/turn', {
+      sessionId,
+      playerInput: 'Hello again.',
+    }))).status).toBe(429);
   });
 });
 
