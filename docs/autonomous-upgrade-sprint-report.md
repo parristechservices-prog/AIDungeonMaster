@@ -77,6 +77,12 @@ Base: `codex/grounded-dm-qa-hardening` at `a0d60c6`
 - Extracted grounded behavior rules into a versioned active prompt module.
 - Added offline `pnpm eval:prompts` coverage that requires no live provider keys.
 
+## Checkpoint 5: Scenario Tooling And Offline Completion
+
+- Added module validation for scene boundary references to unknown NPCs and monsters.
+- Added deterministic offline completion tests for every built-in scenario.
+- Added a scenario authoring checklist focused on grounding, recoverability, and content safety.
+
 ## Manual Playtest Results
 
 Pending.

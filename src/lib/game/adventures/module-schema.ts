@@ -124,6 +124,28 @@ export const adventureModuleSchema = z
         });
       }
     }
+    const npcIds = new Set(data.npcs.map((npc) => npc.id));
+    const monsterRefs = new Set(data.monsters.flatMap((monster) => [monster.id, monster.name.toLowerCase()]));
+    for (const [sceneId, scene] of Object.entries(data.scenes)) {
+      for (const npcId of scene.allowedNpcs) {
+        if (!npcIds.has(npcId)) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `Scene "${sceneId}" allows unknown NPC "${npcId}"`,
+            path: ['scenes', sceneId, 'allowedNpcs'],
+          });
+        }
+      }
+      for (const monsterRef of scene.allowedMonsters) {
+        if (!monsterRefs.has(monsterRef) && !monsterRefs.has(monsterRef.toLowerCase())) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `Scene "${sceneId}" allows unknown monster "${monsterRef}"`,
+            path: ['scenes', sceneId, 'allowedMonsters'],
+          });
+        }
+      }
+    }
     if (data.chapters) {
       for (const ch of data.chapters) {
         for (const sceneId of ch.sceneIds) {
