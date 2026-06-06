@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { POST as startSession } from '@/app/api/session/start/route';
 
 const providerMock = {
-  generateDmTurn: vi.fn<[], Promise<null>>().mockResolvedValue(null),
-  generateNarration: vi.fn<[], Promise<null>>().mockResolvedValue(null),
+  generateDmTurn: vi.fn().mockResolvedValue(null),
+  generateNarration: vi.fn().mockResolvedValue(null),
 };
 
 vi.mock('@/lib/llm/provider', () => providerMock);
@@ -32,11 +32,14 @@ describe('AI failure fallback to table rules', () => {
   });
 
   it.each([
-    ['Hello', /Mira|State your business/i],
+    ['Hello', /Mira|State your business|What would you like to know/i],
     ['I look around', /patrons|inn|common room|lantern/i],
     ['Describe the scene', /common room|inn|scene|room/i],
+    ['What do I see\?', /patrons|inn|common room|lantern|room/i],
+    ['Study the inn patrons', /patrons|room|inn|Mira/i],
+    ['I stab the moon', /not possible|choose an action/i],
   ])('falls back to table rules when AI fails for %s', async (playerInput, expectedNarration) => {
-    const sessionId = `turn-fallback-${Date.now()}-${playerInput.replace(/\s+/g, '-')}`;
+    const sessionId = `turn-fallback-${Date.now()}-${playerInput.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
     const startResponse = await startSession(jsonRequest('http://localhost/api/session/start', {
       sessionId,
       adventureId: 'brindlehook-inn',
