@@ -89,6 +89,7 @@ export function runTurn(
   context: { mode: 'ai_director' | 'table_rules'; aiUsed: boolean; fallbackUsed: boolean; physicalDice?: boolean; manualRoll?: number },
 ): { state: GameState; response: TurnResult } {
   const prevScene = state.sceneId;
+  const narrationState = state;
   const parsed = dmTurnSchema.safeParse(rawTurn);
   const fallback: DmTurn = {
     engineRequests: [],
@@ -134,7 +135,7 @@ export function runTurn(
     const mainResult = engineResults[0];
     if (mainResult) {
       if (context.fallbackUsed) {
-        const scripted = mockNarrationAfterResult(state, mainResult.kind, mainResult.ok, mainResult.summary);
+        const scripted = mockNarrationAfterResult(narrationState, mainResult.kind, mainResult.ok, mainResult.summary);
         if (scripted) {
           finalNarration = scripted;
         } else if (mainResult.kind === 'player_attack') {
