@@ -97,6 +97,8 @@ pnpm build
 
 **Note:** Session files persist to `.data/` locally; on Vercel, state is in-memory per instance. Client-side snapshot (`localStorage`) helps resume UI state between visits.
 
+See `docs/deploy-checklist.md` before opening or promoting a deployment PR. `GET /api/health` reports secret-safe build, storage, LLM-configuration, and prompt-version status.
+
 ## Character & scenario options
 
 | Characters | Scenarios | Backgrounds | DM personas |

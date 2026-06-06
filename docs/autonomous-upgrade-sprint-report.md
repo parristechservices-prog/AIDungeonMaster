@@ -54,6 +54,10 @@ Base: `codex/grounded-dm-qa-hardening` at `a0d60c6`
 ## Commits Pushed
 
 - `b62e754` - docs: add sprint audit and playtest checklists
+- `3b2cfec` - test: add no-key API smoke coverage
+- `3430d42` - feat: improve failed-check and combat play UX
+- `1737d8d` - feat: add health guardrails and prompt evals
+- `dc27d1c` - test: validate scenario grounding and offline flows
 
 ## Checkpoint 2: Tests And QA Depth
 
@@ -85,8 +89,40 @@ Base: `codex/grounded-dm-qa-hardening` at `a0d60c6`
 
 ## Manual Playtest Results
 
-Pending.
+- Started the built production server locally on port 3100 with `PARTYQUEST_FORCE_MOCK=true`.
+- `/api/health` passed and exposed no secrets:
+  - `llmConfigured: false`
+  - `storageMode: local_files`
+  - `promptVersion: grounded-dm-v0.4`
+- `pnpm smoke:api` passed:
+  - session start succeeded
+  - normal turn returned `table_rules`
+  - `I stab the moon` emitted no engine requests and returned grounded clarification
+- Deterministic automated flows complete all four built-in scenarios offline.
+- Live AI-provider testing was not performed because no provider credentials were used.
 
 ## Known Remaining Risks
 
 See `docs/current-risk-register.md`.
+
+## Build Status
+
+- `pnpm lint`: passed
+- `pnpm test`: passed, 87 tests at the final feature checkpoint
+- `pnpm eval:prompts`: passed, 7/7 offline prompt fixtures
+- `pnpm build`: passed
+
+## Recommended Next PRs
+
+1. Durable session-storage adapter and provider selection.
+2. Structured scene-success flags to replace log keyword heuristics.
+3. Turn ownership/action-economy enforcement.
+4. Browser E2E and automated accessibility checks.
+5. Broader SRD-safe spell and condition coverage.
+
+## Manual Actions For Josh
+
+- Open the sprint PR against `codex/grounded-dm-qa-hardening` while that hardening branch remains unmerged.
+- Check GitHub CI and the Vercel preview deployment.
+- Review `/api/health`, mobile `/play`, and failed-check recovery in the preview.
+- Do not promote to production until persistence limitations and environment variables are reviewed.
