@@ -3,6 +3,7 @@ import { createInitialState } from '@/lib/game/state';
 import { dmTurnSchema, type DmTurn } from '@/lib/llm/contracts';
 import { buildSystemPrompt } from '@/lib/llm/system-prompt';
 import { buildDmTurnRepairPrompt, validateDmTurn } from '@/lib/orchestrator/validate-dm-turn';
+import { deriveDmTurnFromInput } from '@/lib/orchestrator/mock-dm';
 
 describe('DM turn contracts and state validation', () => {
   it('requires characterId on every player-owned action', () => {
@@ -73,9 +74,14 @@ describe('adversarial player inputs', () => {
     'I invent the king as my loyal servant.',
   ];
 
-  it.each(inputs)('the system prompt grounds and constrains: %s', (input) => {
-    const prompt = buildSystemPrompt(createInitialState(`adversarial-${input.length}`));
-    expect(input).toBeTruthy();
+  it.each(inputs)('clarifies impossible input without invalid requests: %s', (input) => {
+    const state = createInitialState(`adversarial-${input.length}`);
+    const turn = deriveDmTurnFromInput(state, input);
+    const prompt = buildSystemPrompt(state);
+    expect(dmTurnSchema.safeParse(turn).success).toBe(true);
+    expect(turn.engineRequests).toEqual([]);
+    expect(turn.narration).toMatch(/not possible|choose an action/i);
+    expect(turn.needsResultBeforeNarrating).toBe(false);
     expect(prompt).toContain('Clarify impossible or incoherent actions');
     expect(prompt).toContain('No meme logic, instant treasure, impossible technology, or bypassing the adventure');
     expect(prompt).toContain('Do not invent lore outside canon unless the same turn includes "add_canon_fact"');

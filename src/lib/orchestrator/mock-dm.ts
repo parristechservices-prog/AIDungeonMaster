@@ -306,6 +306,15 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
   const sceneKind = getSceneKind(adventure, state.sceneId);
   const ambient = mockAmbientForKind(sceneKind);
 
+  if (/\b(moon|machine gun|nuclear|infinite gold|gravity|final boss|every monster dead|skip the adventure|invent the king|seduce the (?:locked )?door)\b/.test(input)) {
+    return {
+      engineRequests: [],
+      narration: 'That is not possible in the current scene. Choose an action grounded in the people, places, equipment, and exits already established.',
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
+
   if (input.startsWith('[appeal]') || input.includes('appeal the dm')) {
     return {
       engineRequests: [],
