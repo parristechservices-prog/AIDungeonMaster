@@ -45,6 +45,7 @@ export default function PlayPage() {
   const [ambient, setAmbient] = useState<TurnResponse['ambient']>('none');
   const [physicalDice, setPhysicalDice] = useState(false);
   const [manualRollContext, setManualRollContext] = useState<TurnResponse['manualRollContext'] | null>(null);
+  const [showMobileCharacterSheet, setShowMobileCharacterSheet] = useState(false);
 
   async function hydrateSession(nextSessionId: string) {
     const res = await fetch(`/api/session?sessionId=${encodeURIComponent(nextSessionId)}`);
@@ -248,7 +249,7 @@ export default function PlayPage() {
   return (
     <>
       <main className="mx-auto grid max-w-6xl grid-cols-1 gap-6 p-6 md:grid-cols-[2fr_1fr]">
-        <section className="rounded-lg border border-zinc-300 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+        <section className="rounded-lg border border-zinc-300 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 flex flex-col h-[calc(100vh-48px)]">
           <header className="flex justify-between items-start">
             <div>
               <h1 className="text-2xl font-bold">{adventureTitle}</h1>
@@ -265,79 +266,92 @@ export default function PlayPage() {
                 {turnCount > 0 ? <span>Turn {turnCount}</span> : null}
               </p>
             </div>
-            <button
-              onClick={handleExportRecap}
-              className="rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-            >
-              Export Recap
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowMobileCharacterSheet(true)}
+                className="md:hidden rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+              >
+                Character
+              </button>
+              <button
+                onClick={handleExportRecap}
+                className="rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+              >
+                Export Recap
+              </button>
+            </div>
           </header>
 
-          {showOnboarding && turnCount === 0 && (
-            <div className="mt-4">
-              <OnboardingBanner
-                sceneId={sceneId}
-                adventureId={adventureId}
-                sceneGoal={sceneGoal}
-                choices={choices}
-                onDismiss={() => setShowOnboarding(false)}
-              />
-            </div>
-          )}
+          <div className="flex-1 overflow-y-auto">
+            {showOnboarding && turnCount === 0 && (
+              <div className="mt-4">
+                <OnboardingBanner
+                  sceneId={sceneId}
+                  adventureId={adventureId}
+                  sceneGoal={sceneGoal}
+                  choices={choices}
+                  onDismiss={() => setShowOnboarding(false)}
+                />
+              </div>
+            )}
 
-          <NarrationPanel lines={history} busy={busy} />
-          <DiceResults rolls={recentRolls} />
-          <FailedCheckRecovery
-            failedResult={lastEngineResults.find((result) => result.kind === 'skill_check' && !result.ok)}
-            choices={choices}
-          />
-          <CombatHUD
-            combat={state?.combat ?? { active: false, initiative: [], turnIndex: 0 }}
-            party={state?.party ?? []}
-            monsters={state?.monsters ?? []}
-          />
-          <InputBox
-            value={input}
-            busy={busy}
-            onChange={setInput}
-            onSubmit={() => sendTurn(input)}
-            placeholder="Describe what you do…"
-          />
-          {isFeatureEnabled('appealTheDm') && (
-            <AppealButton
-              busy={busy}
-              onAppeal={() => {
-                const detail = input.trim();
-                sendTurn(
-                  detail
-                    ? `[APPEAL] ${detail}`
-                    : '[APPEAL] I want to question the last ruling — please explain or reconsider.',
-                );
-              }}
+            <NarrationPanel lines={history} busy={busy} />
+            <DiceResults rolls={recentRolls} />
+            <FailedCheckRecovery
+              failedResult={lastEngineResults.find((result) => result.kind === 'skill_check' && !result.ok)}
+              choices={choices}
             />
-          )}
+            <CombatHUD
+              combat={state?.combat ?? { active: false, initiative: [], turnIndex: 0 }}
+              party={state?.party ?? []}
+              monsters={state?.monsters ?? []}
+            />
+          </div>
 
-          {isFeatureEnabled('physicalDice') && (
-            <div className="mt-4 flex items-center gap-2 text-xs">
-              <input
-                type="checkbox"
-                id="physical-dice"
-                checked={physicalDice}
-                onChange={(e) => setPhysicalDice(e.target.checked)}
-                className="rounded border-zinc-300 dark:border-zinc-700"
+          <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700">
+            <InputBox
+              value={input}
+              busy={busy}
+              onChange={setInput}
+              onSubmit={() => sendTurn(input)}
+              placeholder="Describe what you do…"
+            />
+            {isFeatureEnabled('appealTheDm') && (
+              <AppealButton
+                busy={busy}
+                onAppeal={() => {
+                  const detail = input.trim();
+                  sendTurn(
+                    detail
+                      ? `[APPEAL] ${detail}`
+                      : '[APPEAL] I want to question the last ruling — please explain or reconsider.',
+                  );
+                }}
               />
-              <label
-                htmlFor="physical-dice"
-                className="cursor-pointer text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
-              >
-                Use physical dice for rolls
-              </label>
-            </div>
-          )}
-          <ChoiceButtons choices={choices} busy={busy} onPick={(c) => sendTurn(c)} />
+            )}
+
+            {isFeatureEnabled('physicalDice') && (
+              <div className="mt-4 flex items-center gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  id="physical-dice"
+                  checked={physicalDice}
+                  onChange={(e) => setPhysicalDice(e.target.checked)}
+                  className="rounded border-zinc-300 dark:border-zinc-700"
+                />
+                <label
+                  htmlFor="physical-dice"
+                  className="cursor-pointer text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                >
+                  Use physical dice for rolls
+                </label>
+              </div>
+            )}
+            <ChoiceButtons choices={choices} busy={busy} onPick={(c) => sendTurn(c)} />
+          </div>
         </section>
 
-        <aside className="rounded-lg border border-zinc-300 bg-white p-4 text-sm shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+        <aside className="rounded-lg border border-zinc-300 bg-white p-4 text-sm shadow-sm dark:border-zinc-700 dark:bg-zinc-900 hidden md:block">
           <h2 className="font-semibold">Character</h2>
           <CharacterSheet state={state} />
           {process.env.NODE_ENV !== 'production' && warnings.length > 0 && (
@@ -356,6 +370,29 @@ export default function PlayPage() {
         />
       )}
     </main>
+
+    {/* Mobile character sheet drawer */}
+    {showMobileCharacterSheet && (
+      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 md:hidden">
+        <div className="w-full max-w-lg rounded-t-3xl bg-white p-6 dark:bg-zinc-900">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Character</h2>
+            <button
+              onClick={() => setShowMobileCharacterSheet(false)}
+              className="rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+            >
+              Close
+            </button>
+          </div>
+          <CharacterSheet state={state} />
+          {process.env.NODE_ENV !== 'production' && warnings.length > 0 && (
+            <p className="mt-3 text-xs text-amber-700 dark:text-amber-300" title={warnings.join(' ')}>
+              Narration checked against engine state.
+            </p>
+          )}
+        </div>
+      </div>
+    )}
 
       {sceneId === 'ending' && (
         <EndingScreen
