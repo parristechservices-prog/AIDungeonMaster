@@ -51,3 +51,6 @@ src.zip
 /content/private/
 docs/**/*.pdf
 docs/**/__*.pdf
+
+# VS Code workspace files
+*.code-workspace
