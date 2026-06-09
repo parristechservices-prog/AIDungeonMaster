@@ -442,6 +442,16 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
       };
     }
 
+    if (/\bdescribe (the )?(scene|room|inn)\b/.test(input)) {
+      const scene = getPlayableScene(adventure, state.sceneId);
+      return {
+        engineRequests: [],
+        narration: socialLookDescription(scene?.starter, mock.socialNpcName),
+        needsResultBeforeNarrating: false,
+        ambient,
+      };
+    }
+
     if (EXPLORATION_PHRASES.some((p) => input.includes(p))) {
       return {
         engineRequests: [],

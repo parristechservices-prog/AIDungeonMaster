@@ -14,6 +14,25 @@ export function hasLlmCredentials(): boolean {
   return providerList.some((provider) => getProviderApiKeys(provider).length > 0);
 }
 
+export function getConfiguredProviders(): string[] {
+  return Array.from(
+    new Set(
+      (process.env.PARTYQUEST_LLM_PROVIDER ?? 'groq')
+        .split(',')
+        .map((provider) => provider.trim().toLowerCase())
+        .filter(Boolean),
+    ),
+  );
+}
+
+export function getProviderKeyCounts(): Record<string, number> {
+  const providers = getConfiguredProviders();
+  return providers.reduce((counts, provider) => {
+    counts[provider] = getProviderApiKeys(provider).length;
+    return counts;
+  }, {} as Record<string, number>);
+}
+
 function getProviderApiKeys(provider: string): string[] {
   const keys: string[] = [];
 
@@ -32,7 +51,7 @@ function getProviderApiKeys(provider: string): string[] {
     if (process.env.OPENROUTER_API_KEY?.trim()) keys.unshift(process.env.OPENROUTER_API_KEY.trim());
   }
 
-  return keys.filter(Boolean);
+  return [...new Set(keys.filter(Boolean))];
 }
 
 export function shouldUseMockFlavorPrefix(): boolean {

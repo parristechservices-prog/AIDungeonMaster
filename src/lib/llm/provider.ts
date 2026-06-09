@@ -1,5 +1,6 @@
 import { dmTurnSchema, type DmTurn } from './contracts';
 import { hasLlmCredentials } from './credentials';
+import { writeDevLog } from '@/lib/logging/dev-log';
 
 type Input = { systemPrompt: string; playerInput: string };
 
@@ -78,6 +79,7 @@ async function* callLlmCandidates(input: Input, options?: { json?: boolean }): A
     if (apiKeys.length === 0) continue;
 
     for (const apiKey of apiKeys) {
+      const keyIndex = apiKeys.indexOf(apiKey);
       try {
         const r = await fetch(getProviderBaseUrl(provider), {
           method: 'POST',
@@ -93,11 +95,37 @@ async function* callLlmCandidates(input: Input, options?: { json?: boolean }): A
           }),
         });
 
-        if (!r.ok) continue;
+        if (!r.ok) {
+          writeDevLog({
+            type: 'llm_provider_attempt',
+            provider,
+            keyIndex,
+            status: r.status,
+            statusText: r.statusText,
+            error: 'provider_response_not_ok',
+          });
+          continue;
+        }
         const data = await r.json();
         const text = data.choices?.[0]?.message?.content ?? null;
+        writeDevLog({
+          type: 'llm_provider_attempt',
+          provider,
+          keyIndex,
+          status: r.status,
+          success: Boolean(text),
+          fallbackToNextKey: !Boolean(text),
+        });
         if (text) yield text;
-      } catch {
+      } catch (error) {
+        writeDevLog({
+          type: 'llm_provider_attempt',
+          provider,
+          keyIndex,
+          error: error instanceof Error ? error.message : 'unknown_error',
+          errorClass: error instanceof Error ? error.name : 'UnknownError',
+          fallbackToNextKey: true,
+        });
         continue;
       }
     }

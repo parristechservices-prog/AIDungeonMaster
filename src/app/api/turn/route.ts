@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { shouldUseMockFlavorPrefix } from '@/lib/llm/credentials';
-import { hasLlmCredentials } from '@/lib/llm/credentials';
 import { generateDmTurn, generateNarration } from '@/lib/llm/provider';
 import { buildSystemPrompt } from '@/lib/llm/system-prompt';
 import {
@@ -109,15 +108,29 @@ export async function POST(req: Request) {
           if (aiTurn && !validateDmTurn(aiTurn, state).ok) aiTurn = null;
         }
       }
-      aiUsed = Boolean(aiTurn);
-      fallbackUsed = !aiTurn;
-      rawTurn = aiTurn ?? (hasLlmCredentials()
-        ? {
+      const tableRulesTurn = deriveDmTurnFromInput(state, playerInput);
+      if (aiTurn) {
+        aiUsed = true;
+        fallbackUsed = false;
+        rawTurn = aiTurn;
+      } else {
+        aiUsed = false;
+        fallbackUsed = true;
+        rawTurn = tableRulesTurn;
+        if (
+          !rawTurn ||
+          typeof rawTurn !== 'object' ||
+          rawTurn === null ||
+          typeof (rawTurn as { narration?: unknown }).narration !== 'string'
+        ) {
+          rawTurn = {
             engineRequests: [],
-            narration: 'I am not quite sure how to resolve that fairly. Try naming who acts and what they are doing.',
+            narration:
+              'I can work with that, but I need a little more detail. Are you trying to look around, talk to someone, move somewhere, use an item, or inspect a clue?',
             needsResultBeforeNarrating: false,
-          }
-        : deriveDmTurnFromInput(state, playerInput));
+          };
+        }
+      }
     }
 
     const turn = runTurn(state, rawTurn, {

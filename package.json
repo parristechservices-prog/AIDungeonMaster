@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "smoke:api": "tsx scripts/smoke-api.ts",
+    "smoke:groq:live": "tsx scripts/live-groq-smoke.ts",
     "eval:prompts": "tsx scripts/eval-prompts.ts",
     "module:validate": "tsx scripts/validate-module.ts",
     "module:scaffold": "tsx scripts/scaffold-private-module.ts",

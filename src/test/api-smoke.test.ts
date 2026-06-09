@@ -76,6 +76,7 @@ describe('no-key API smoke flow', () => {
     expect(await response.json()).toMatchObject({
       ok: true,
       service: 'partyquest',
+      forcedMock: true,
       llmConfigured: false,
       storageMode: expect.stringMatching(/memory|local_files/),
       promptVersion: expect.stringContaining('grounded-dm'),
