@@ -23,6 +23,7 @@ const emptyCharacter: Character = {
   abilities: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
   skills: {},
   features: [],
+  spells: [],
   spellSlots: {},
   weapon: { name: 'Fists', attackBonus: 0, damage: '1d1' },
   gold: 0,
@@ -138,6 +139,12 @@ export function CharacterSheet({ state }: Props) {
             <div key={f.id} className="flex justify-between items-center text-xs">
               <span>{f.name}</span>
               <span className="font-mono text-zinc-500">{f.usesRemaining}/{f.usesMax}</span>
+            </div>
+          ))}
+          {char.spells?.map((s) => (
+            <div key={s.id} className="flex justify-between items-center text-xs" title={s.description}>
+              <span>{s.name} <span className="text-[10px] text-zinc-500 uppercase">({s.school || 'Spell'})</span></span>
+              <span className="font-mono text-zinc-500">Lvl {s.level}</span>
             </div>
           ))}
           {Object.entries(char.spellSlots).map(([lvl, s]) => (

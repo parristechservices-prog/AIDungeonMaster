@@ -46,6 +46,7 @@ export type TurnResponse = {
       unconscious: boolean;
       deathSaves: { success: number; failure: number };
       features: import('@/lib/game/types').Character['features'];
+      spells?: import('@/lib/game/types').Character['spells'];
       spellSlots: import('@/lib/game/types').Character['spellSlots'];
       gold: number;
       inventory: string[];
