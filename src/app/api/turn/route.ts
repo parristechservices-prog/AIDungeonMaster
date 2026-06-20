@@ -90,9 +90,11 @@ export async function POST(req: Request) {
       // retrieve the most relevant official passages and tell the DM to defer to
       // them when in doubt. No-op for adventures without an owned source index.
       const sceneGoalForQuery = getPlayableScene(getAdventure(state.adventureId), state.sceneId)?.goal ?? '';
+      // Player intent leads the retrieval query; the scene goal is lighter context.
+      // (The adventureId is intentionally omitted — it only biased every search.)
       const sourceLore = await buildSourceLoreSection(
         state.adventureId,
-        `${state.adventureId} ${sceneGoalForQuery} ${playerInput}`,
+        `${playerInput} ${sceneGoalForQuery}`,
       );
       if (sourceLore.headings.length > 0) {
         writeDevLog({ type: 'source_lore_injected', sessionId, adventureId: state.adventureId, headings: sourceLore.headings });
