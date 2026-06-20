@@ -22,7 +22,7 @@ Legend — Impact: 🔴 high · 🟠 medium · ⚪ low. Effort: 🏔️ large ·
 |---|------|--------|--------|--------|
 | 1 | Hard spatial-area gating + first-class scenes/NPCs | 3 | 🔴 | 🏔️ |
 | 2 | Persistent + semantic memory layer (durable state + lore recall) | 2 | 🔴 | 🏔️ |
-| 3 | Claude as primary core brain (native Anthropic provider) | — | 🔴 | ⛰️ |
+| ~~3~~ | ~~Claude as primary core brain~~ — **decided against; Groq is the core brain** | — | — | — |
 | 4 | Real party play (AI companion turns) | 1 | 🔴 | 🏔️ |
 | 5 | Voice mode (narration TTS + speech-to-action) | — | 🟠 | 🏔️ |
 | 6 | Procedural quest/encounter director | 1 | 🟠 | 🏔️ |
@@ -61,12 +61,10 @@ Optionally add vector embeddings for semantic lore recall (the keyword TF-IDF +
 gazetteer we have already covers ~90% of the need cheaply; embeddings are the
 "nice to have" upgrade, not a hard requirement).
 
-### 3. Claude as primary core brain ⛰️
-Add a native Anthropic provider to the failover list and make a current Claude model
-the primary, with Groq Llama as fallback. Benchmarks and our own play favor Claude
-for in-character planning and rule-firmness over Llama 70B. The provider abstraction
-already supports multiple backends; this adds the Anthropic request shape + key
-handling. Needs an `ANTHROPIC_API_KEY`.
+### 3. ~~Claude as primary core brain~~ — DECIDED AGAINST
+Groq (Llama) is the chosen core brain. We're staying Groq-only; not adding an
+Anthropic provider. (The existing OpenAI/OpenRouter failover hooks remain for
+emergencies, but Groq is primary by design.)
 
 ### 4. Real party play (AI companion turns) 🔴🏔️ (pillar 1)
 `GameState.party[]` and `activeCharacterId` exist but play is solo. Drive companions
