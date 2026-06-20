@@ -75,6 +75,13 @@ export const dmTurnSchema = z.object({
     (v) => (typeof v === 'string' && (AMBIENT_VALUES as readonly string[]).includes(v) ? v : undefined),
     z.enum(AMBIENT_VALUES).optional(),
   ),
-}).strip();
+}).strip().transform((turn) => ({
+  // There is nothing to wait for if no engine request was issued. Models often
+  // set this flag while refusing an impossible action and providing no request;
+  // coercing it to false here keeps that valid refusal instead of having the
+  // downstream validator discard the whole turn and fall back to table rules.
+  ...turn,
+  needsResultBeforeNarrating: turn.engineRequests.length > 0 ? turn.needsResultBeforeNarrating : false,
+}));
 
 export type DmTurn = z.infer<typeof dmTurnSchema>;

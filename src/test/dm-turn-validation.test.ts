@@ -26,6 +26,22 @@ describe('DM turn contracts and state validation', () => {
     expect(dmTurnSchema.safeParse({ ...baseTurn(), narration: 'x'.repeat(2001) }).success).toBe(false);
   });
 
+  it('coerces needsResultBeforeNarrating to false when there are no engine requests', () => {
+    // A valid refusal ("you can't stab the moon") with no request must survive,
+    // not be discarded for claiming it needs a result that will never come.
+    const parsed = dmTurnSchema.safeParse({
+      engineRequests: [],
+      narration: 'You cannot stab the moon. What do you do instead?',
+      needsResultBeforeNarrating: true,
+    });
+    expect(parsed.success).toBe(true);
+    expect(parsed.success && parsed.data.needsResultBeforeNarrating).toBe(false);
+    if (parsed.success) {
+      const state = createInitialState('refusal');
+      expect(validateDmTurn(parsed.data, state).ok).toBe(true);
+    }
+  });
+
   it('normalizes an LLM request that uses "type" instead of "kind"', () => {
     const parsed = dmTurnSchema.safeParse({
       engineRequests: [{ type: 'skill_check', characterId: 'fighter', skill: 'insight', dc: 12 }],
