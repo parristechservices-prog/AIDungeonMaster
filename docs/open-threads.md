@@ -1,132 +1,143 @@
 # Open Threads & Roadmap
 
-Every suggestion, offer, and known gap raised during development that is **not yet
-done**, ranked from **highest impact / biggest change** (top) to **lowest impact /
-smallest change** (bottom). Completed work is omitted (see git history).
+Goal: **a production-scale AI Dungeon Master** (many users/campaigns), built on the
+three-pillar architecture that serious AI-DM tools use:
+
+1. **Rules engine** — code owns dice/HP/AC/combat; the LLM only narrates. ✅ This is
+   AIDM's foundation (`src/lib/engine`, `heal-narration.ts`). Strongest pillar.
+2. **State tracker** — structured, *persistent* world state (NPC status, faction,
+   location, flags) injected each turn instead of trusting context memory. ◐ We
+   have structured in-session `GameState` + canon log + gazetteer; missing durable
+   cross-session persistence and semantic recall.
+3. **Spatial model** — a hard "current area" gate so descriptions/NPCs come only
+   from the active location. ◐ Weakest pillar; root cause of the keep/inn/bell
+   drift we keep patching.
+
+Items below are **not yet done**, ranked **highest impact / biggest change** (top)
+to **lowest impact / smallest change** (bottom). Completed work is listed at the end.
 
 Legend — Impact: 🔴 high · 🟠 medium · ⚪ low. Effort: 🏔️ large · ⛰️ medium · 🪨 small.
 
-| # | Item | Impact | Effort |
-|---|------|--------|--------|
-| 1 | First-class keep / inn / special-event scenes | 🔴 | 🏔️ |
-| 2 | Real party play (AI companion turns) | 🔴 | 🏔️ |
-| 3 | Persistent multi-session campaign memory (RAG over canon) | 🔴 | 🏔️ |
-| 4 | Voice mode (narration TTS + speech-to-action) | 🟠 | 🏔️ |
-| 5 | Procedural quest/encounter director | 🟠 | 🏔️ |
-| 6 | Spell/condition duration system (shield, bless, etc.) | 🟠 | ⛰️ |
-| 7 | Death saves on damage to unconscious characters | 🔴 | ⛰️ |
-| 8 | 429 resilience + "DM is busy" state | 🟠 | ⛰️ |
-| 9 | Slim back per-area campaignGuide patches | 🟠 | ⛰️ |
-| 10 | Enforce narrated-but-unapplied features (e.g. Second Wind) | 🟠 | ⛰️ |
-| 11 | One-command index + gazetteer regeneration | 🟠 | 🪨 |
-| 12 | Sub-area retrieval precision (e.g. exact watchtower room) | ⚪ | ⛰️ |
-| 13 | Gazetteer extraction polish (paired names, OCR variants) | ⚪ | 🪨 |
-| 14 | `monster_turn` target uses `Math.random` not seeded provider | ⚪ | 🪨 |
-| 15 | Mock-DM keyword fallback misfires | ⚪ | 🪨 |
-| 16 | Preview-environment Vercel vars | ⚪ | 🪨 |
-| 17 | Merge the 4 original prod backup keys | ⚪ | 🪨 |
-| 18 | Rotate Groq keys shared in chat | ⚪ | 🪨 |
-| 19 | Coordinate concurrent agents on `main` | ⚪ | 🪨 |
-| 20 | Audit / run the other `C:\dev` apps | ⚪ | — |
+| # | Item | Pillar | Impact | Effort |
+|---|------|--------|--------|--------|
+| 1 | Hard spatial-area gating + first-class scenes/NPCs | 3 | 🔴 | 🏔️ |
+| 2 | Persistent + semantic memory layer (durable state + lore recall) | 2 | 🔴 | 🏔️ |
+| 3 | Claude as primary core brain (native Anthropic provider) | — | 🔴 | ⛰️ |
+| 4 | Real party play (AI companion turns) | 1 | 🔴 | 🏔️ |
+| 5 | Voice mode (narration TTS + speech-to-action) | — | 🟠 | 🏔️ |
+| 6 | Procedural quest/encounter director | 1 | 🟠 | 🏔️ |
+| 7 | Spell/condition duration system (shield, bless, etc.) | 1 | 🟠 | ⛰️ |
+| 8 | 429 resilience + "DM is busy" state | — | 🟠 | ⛰️ |
+| 9 | Slim back per-area campaignGuide patches (after #1) | 2 | 🟠 | ⛰️ |
+| 10 | Enforce narrated-but-unapplied features (e.g. Second Wind) | 1 | 🟠 | ⛰️ |
+| 11 | One-command index + gazetteer regeneration | 2 | 🟠 | 🪨 |
+| 12 | Gazetteer extraction polish (paired names, OCR variants) | 2 | ⚪ | 🪨 |
+| 13 | Mock-DM keyword fallback misfires | 1 | ⚪ | 🪨 |
+| 14 | Preview-environment Vercel vars | — | ⚪ | 🪨 |
+| 15 | Merge the 4 original prod backup keys | — | ⚪ | 🪨 |
+| 16 | Rotate Groq keys shared in chat | — | ⚪ | 🪨 |
+| 17 | Coordinate concurrent agents on `main` | — | ⚪ | 🪨 |
+| 18 | Audit / run the other `C:\dev` apps | — | ⚪ | — |
 
 ---
 
 ## Details
 
-### 1. First-class keep / inn / special-event scenes 🔴🏔️
-Promote Nightstone's key content to modeled scenes with real NPC entries (Kella
-Darkhope, Gum-Gum, the four keep guards, Xolkin Alassandar, Gurrash, Norgra
-One-Eye, Rond Arrowhome) and engine objects (the 750gp ring, the bridge jump as a
-real check with fall damage, the dead-goblin clue). This makes fidelity survive
-even a rate-limit fallback to the mock DM, instead of relying on prompt grounding.
-The durable version of the "100% source-correct" goal.
+### 1. Hard spatial-area gating + first-class scenes/NPCs 🔴🏔️ (pillar 3)
+Track the party's `currentArea` as real state and gate descriptions, allowed NPCs,
+monsters, exits, and source-lore retrieval to it — so the DM pulls only the active
+location's content. Promote Nightstone's key content to modeled scenes with real
+NPC entries (Kella, Gum-Gum, keep guards, Xolkin, Gurrash, Norgra, Rond) and engine
+objects (the 750gp ring, the bridge jump check, the dead-goblin clue). Absorbs the
+old "first-class scenes" and "sub-area precision" items. The durable cure for the
+fidelity drift we've patched area-by-area; the starter module is already partly
+scene-modeled and is the reference.
 
-### 2. Real party play (AI companion turns) 🔴🏔️
-`GameState.party[]` and `activeCharacterId` already exist, but play is solo. Drive
-companion characters as AI actors in initiative, each with their own sheet, spell
-slots, and conditions. The mock DM still works because companions resolve through
-the deterministic engine.
+### 2. Persistent + semantic memory layer 🔴🏔️ (pillar 2)
+Today state is in-memory per Vercel instance and resets. Add durable storage
+(Vercel KV / Postgres) for `GameState` + canon log so campaigns survive restarts and
+scale across users, and inject a compact, accurate "World State" dict each turn.
+Optionally add vector embeddings for semantic lore recall (the keyword TF-IDF +
+gazetteer we have already covers ~90% of the need cheaply; embeddings are the
+"nice to have" upgrade, not a hard requirement).
 
-### 3. Persistent multi-session campaign memory 🔴🏔️
-Embed `canonLog` facts and NPC interactions and inject the most relevant into the
-prompt per turn (rather than a flat recap), with storage that survives restarts
-(Vercel is in-memory per instance today). Distinct from the source-lore RAG, which
-grounds the *book*; this grounds the *playthrough*.
+### 3. Claude as primary core brain ⛰️
+Add a native Anthropic provider to the failover list and make a current Claude model
+the primary, with Groq Llama as fallback. Benchmarks and our own play favor Claude
+for in-character planning and rule-firmness over Llama 70B. The provider abstraction
+already supports multiple backends; this adds the Anthropic request shape + key
+handling. Needs an `ANTHROPIC_API_KEY`.
 
-### 4. Voice mode 🟠🏔️
-Behind the existing `voice` feature flag: narration via TTS and player intents via
-STT (Web Speech API or Groq Whisper). Safe because spoken intents still become
-structured `engineRequests` validated by the engine.
+### 4. Real party play (AI companion turns) 🔴🏔️ (pillar 1)
+`GameState.party[]` and `activeCharacterId` exist but play is solo. Drive companions
+as AI actors in initiative, each resolving through the deterministic engine.
 
-### 5. Procedural quest/encounter director 🟠🏔️
-Use `engine/balancer.ts` to assemble the next encounter/branch scaled to party
-HP/resources/level — LLM proposes flavor, engine picks stats/DCs. Makes runs
-replayable beyond the hand-authored scenes.
+### 5. Voice mode 🟠🏔️
+Behind the existing `voice` feature flag: narration via TTS, player intents via STT;
+spoken intents still become engine-validated `engineRequests`.
 
-### 6. Spell/condition duration system 🟠⛰️
-`shield` and `bless` currently apply permanent conditions (AC+5 / +1d4 forever)
-because there's no round/turn duration tracking. Add a duration model so buffs
-expire correctly.
+### 6. Procedural quest/encounter director 🟠🏔️ (pillar 1)
+Use `engine/balancer.ts` to assemble encounters scaled to party state — LLM proposes
+flavor, engine picks stats/DCs. Replayability beyond hand-authored scenes.
 
-### 7. Death saves on damage to unconscious characters 🔴⛰️
-In 5e, a hit on a creature at 0 HP causes an auto death-save failure (two on a
-crit). The engine doesn't model this. Highest-value pure rule-correctness fix.
+### 7. Spell/condition duration system 🟠⛰️ (pillar 1)
+`shield`/`bless` apply permanent conditions because there's no round/turn duration
+tracking. Add a duration model so buffs expire.
 
 ### 8. 429 resilience + "DM is busy" state 🟠⛰️
-Multi-key failover exists, but when all keys are rate-limited the app silently
-drops to the weaker mock DM. Add a short backoff after all keys are exhausted and
-surface a "DM is thinking / rate-limited" state instead of confusing fallback text.
+When all keys are rate-limited the app silently drops to the weaker mock DM. Add a
+short backoff after all keys are exhausted and surface a "rate-limited" state.
 
-### 9. Slim back per-area campaignGuide patches 🟠⛰️
-The keep / inn / special-event canon was added to the always-in-prompt
-`campaignGuide` as reactive patches. Now that the gazetteer + conversation-aware
-retrieval backbone exists, these are belt-and-suspenders. Return the guide to
-tone/flow guidance and let the backbone carry facts (do after #1).
+### 9. Slim back per-area campaignGuide patches 🟠⛰️ (pillar 2)
+The keep/inn/event canon was added to the always-in-prompt `campaignGuide` as
+reactive patches. Once #1 lands, return the guide to tone/flow and let the
+state/retrieval backbone carry facts.
 
-### 10. Enforce narrated-but-unapplied features 🟠⛰️
-The LLM sometimes narrates using a feature (e.g. Second Wind) without emitting the
-`use_feature` engine request, so no mechanical effect occurs. Strengthen the prompt
-or add a post-turn reconciliation check.
+### 10. Enforce narrated-but-unapplied features 🟠⛰️ (pillar 1)
+The LLM sometimes narrates a feature (e.g. Second Wind) without emitting
+`use_feature`. Add a post-turn reconciliation or stronger prompt nudge.
 
-### 11. One-command index + gazetteer regeneration 🟠🪨
-Wrap `scripts/build-source-index.ts` + the Vercel Blob upload (and env URL update)
-into a single command so the index and gazetteer regenerate cleanly whenever the
-source book changes.
+### 11. One-command index + gazetteer regeneration 🟠🪨 (pillar 2)
+Wrap `scripts/build-source-index.ts` + the Blob upload + env URL update into one
+command for clean regeneration when the source book changes.
 
-### 12. Sub-area retrieval precision ⚪⛰️
-"East watchtower" resolves to the watchtowers section generally, not the exact `2D`
-sub-room. Good enough for grounding; tightening would need per-room modeling.
+### 12. Gazetteer extraction polish ⚪🪨 (pillar 2)
+Paired names (Vark, Yek) and OCR variants (Kella ↔ "Keila") aren't perfectly
+captured; some notes are weak. Improve the extraction patterns.
 
-### 13. Gazetteer extraction polish ⚪🪨
-A few paired names (Vark, Yek) and OCR variants (Kella ↔ "Keila") aren't perfectly
-captured, and some entity notes are weak. Improve the extraction patterns.
-
-### 14. `monster_turn` seeded randomness ⚪🪨
-Monster target selection uses `Math.random` instead of the injectable
-`randomProvider`, so it isn't deterministic in tests. Small consistency fix.
-
-### 15. Mock-DM keyword fallback misfires ⚪🪨
+### 13. Mock-DM keyword fallback misfires ⚪🪨 (pillar 1)
 The table-rules mock occasionally returns a generic "I need more detail" for clear
-inputs. Only seen during fallbacks; tune the keyword matching.
+inputs. Tune the keyword matching.
 
-### 16. Preview-environment Vercel vars ⚪🪨
-`GROQ_API_KEYS` and `SKT_SOURCE_BLOB_URL` are set on Production only — the CLI
-loops on a git-branch prompt for Preview. Add them via the Vercel dashboard so
-preview deploys have full keys and source lore.
+### 14. Preview-environment Vercel vars ⚪🪨
+`GROQ_API_KEYS` and `SKT_SOURCE_BLOB_URL` are set on Production only (CLI looped on a
+git-branch prompt). Add them via the dashboard for preview deploys.
 
-### 17. Merge the 4 original prod backup keys ⚪🪨
-The pre-existing production `GROQ_API_KEYS` backups are "Sensitive" and unreadable
-via CLI, so they were replaced rather than merged. Re-add them to the pool if their
-values are available.
+### 15. Merge the 4 original prod backup keys ⚪🪨
+The pre-existing production `GROQ_API_KEYS` backups are "Sensitive" and unreadable via
+CLI, so they were replaced. Re-add them if their values are available.
 
-### 18. Rotate Groq keys shared in chat ⚪🪨
-Many keys were pasted into chat history; rotate them in the Groq console when
-convenient. User action.
+### 16. Rotate Groq keys shared in chat ⚪🪨
+Many keys were pasted into chat; rotate them in the Groq console. User action.
 
-### 19. Coordinate concurrent agents on `main` ⚪🪨
-A GitHub Copilot agent pushed commits concurrently with this work. Avoid two agents
-writing to `main` at once to prevent conflicts. Process note.
+### 17. Coordinate concurrent agents on `main` ⚪🪨
+A GitHub Copilot agent pushed commits concurrently. Avoid two agents writing to
+`main` at once. Process note.
 
-### 20. Audit / run the other `C:\dev` apps ⚪
-Standing offer from the initial app ranking to dig into, run, or audit the other
-projects (Chess trainer, JoshOS, etc.). Out of scope for AIDM.
+### 18. Audit / run the other `C:\dev` apps ⚪
+Standing offer to dig into the other projects (Chess trainer, JoshOS, etc.).
+
+---
+
+## Recently completed
+- Engine/narrator split + multi-attempt self-healing narration validator.
+- Fixed: LLM never used (schema/prompt contract); AI refusals discarded; weapon &
+  monster damage dice; crit on disadvantage-discarded die; combat auto-start.
+- Source-lore RAG: chunked index, hierarchical headings, heading-aware retrieval,
+  conversation-aware query, anti-invention guardrail, ~390-entry canonical gazetteer
+  (Vercel Blob; book text out of git).
+- SKT fidelity fixes: broken keep bridge, keep survivors, inn/Kella, special-event
+  NPCs (Xolkin/Gurrash/Norgra/Rond), bell-ringers in the steeple.
+- **#7 death saves on damage to downed characters** (`ecf0327`).
+- **#14 seeded RNG for monster_turn target selection** (`492bd85`).
+- 15 Groq keys for rate-limit headroom; source-fidelity roadmap.
