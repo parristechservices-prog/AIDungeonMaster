@@ -177,7 +177,8 @@ export function resolveEngineRequest(
       if (!toHit.ok) {
         return { state: appendLog(state, `${char.name} missed ${target.name}.`), result: { ok: false, summary: 'Attack missed.', breakdown: toHit } };
       }
-      const damage = rollFormula(critical ? '2d8' : '1d8', 3);
+      // Use the attacker's actual weapon damage; a crit doubles the dice (5e).
+      const damage = rollFormula(critical ? critFormula(char.weapon.damage) : char.weapon.damage);
       const monsters = state.monsters.map((m) => m.id === target.id ? { ...m, hp: Math.max(0, m.hp - damage.total) } : m);
       let next = { ...state, monsters };
       const allDown = monsters.every((m) => m.hp <= 0);
@@ -219,7 +220,8 @@ export function resolveEngineRequest(
       if (toHit.total < targetAc) {
         return { state: appendLog(state, `${attacker.name} missed ${target.name}.`), result: { ok: false, summary: `${attacker.name} missed.`, breakdown: toHit } };
       }
-      const dmg = rollFormula('1d6', 1);
+      // Use the monster's own damage dice rather than a flat 1d6+1.
+      const dmg = rollFormula(attacker.damage);
       const hp = Math.max(0, target.hp - dmg.total);
       const unconscious = hp === 0;
       
@@ -585,6 +587,13 @@ function appendLog(state: GameState, line: string): GameState {
 
 function d20() {
   return Math.floor(randomProvider() * 20) + 1;
+}
+
+/** Doubles the dice count for a critical hit (5e: double the dice, keep the flat modifier). */
+function critFormula(formula: string): string {
+  const m = formula.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
+  if (!m) return formula;
+  return `${Number(m[1]) * 2}d${m[2]}${m[3] ?? ''}`;
 }
 
 function rollFormula(

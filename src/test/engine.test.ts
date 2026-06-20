@@ -1,8 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { createInitialState } from '@/lib/game/state';
-import { resolveEngineRequest } from '@/lib/engine';
+import { resolveEngineRequest, setRandomProvider, resetRandomProvider } from '@/lib/engine';
+
+/** Scripted random provider: each call returns the next value (then repeats). */
+function seq(values: number[]) {
+  let i = 0;
+  return () => values[i++ % values.length];
+}
 
 describe('engine', () => {
+  afterEach(() => resetRandomProvider());
+
   it('resolves skill checks with valid shape', () => {
     const state = createInitialState('t1');
     const out = resolveEngineRequest(state, { kind: 'skill_check', characterId: state.player.id, skill: 'history', dc: 10, reason: 'Recall lore' });
@@ -80,6 +88,38 @@ describe('engine', () => {
       targetId: 'missing',
       condition: 'prone',
     }).result.ok).toBe(false);
+  });
+
+  it('uses the character weapon damage on a normal hit, not a flat 1d8', () => {
+    const state = createInitialState('atk-weapon');
+    state.monsters = [{ id: 'goblin-1', name: 'Goblin', ac: 13, maxHp: 7, hp: 7, attackBonus: 4, damage: '1d6+2', conditions: [] }];
+    // d20=15 (hit, not crit), then max d8.
+    setRandomProvider(seq([0.7, 0.99]));
+    const out = resolveEngineRequest(state, { kind: 'player_attack', characterId: state.player.id, targetId: 'goblin-1' });
+    expect(out.result.ok).toBe(true);
+    // Fighter wields a Longsword (1d8+3): the breakdown formula proves weapon damage is used.
+    expect(out.result.breakdown?.formula).toBe('1d8+3');
+  });
+
+  it('doubles the weapon dice on a critical hit', () => {
+    const state = createInitialState('atk-crit');
+    state.monsters = [{ id: 'goblin-1', name: 'Goblin', ac: 13, maxHp: 7, hp: 7, attackBonus: 4, damage: '1d6+2', conditions: [] }];
+    // d20=20 (crit), then dice rolls for damage.
+    setRandomProvider(seq([0.99, 0.99, 0.99]));
+    const out = resolveEngineRequest(state, { kind: 'player_attack', characterId: state.player.id, targetId: 'goblin-1' });
+    expect(out.result.critical).toBe(true);
+    expect(out.result.breakdown?.formula).toBe('2d8+3');
+  });
+
+  it('uses the monster damage dice on its turn, not a flat 1d6', () => {
+    const state = createInitialState('mon-dmg');
+    state.combat = { active: true, initiative: [], turnIndex: 0 };
+    state.monsters = [{ id: 'wolf-1', name: 'Wolf', ac: 13, maxHp: 11, hp: 11, attackBonus: 4, damage: '2d4+2', conditions: [] }];
+    // d20=20 (hit), then two d4 rolls.
+    setRandomProvider(seq([0.99, 0.5, 0.5]));
+    const out = resolveEngineRequest(state, { kind: 'monster_turn' });
+    expect(out.result.ok).toBe(true);
+    expect(out.result.breakdown?.formula).toBe('2d4+2');
   });
 
   it('restores resources on long rest', () => {
