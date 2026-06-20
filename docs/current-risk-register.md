@@ -1,6 +1,23 @@
 # Current Risk Register
 
-Updated: 2026-06-06
+Updated: 2026-06-06 · annotated 2026-06-20.
+
+> **⚠️ Single source of truth is now [`open-threads.md`](open-threads.md).** This
+> register is preserved for history. The **2026-06-20 updates** below record what
+> changed this session; the original 2026-06-06 table is left intact.
+
+## 2026-06-20 updates
+- **LLM drift:** added a ~390-entry canonical gazetteer + conversation-aware,
+  heading-aware source-lore retrieval with an anti-invention guardrail — materially
+  reduces NPC/lore drift over long play. Provider standardized on Groq (Anthropic
+  provider decided against).
+- **Combat:** weapon/monster damage dice, crit-on-kept-die, combat auto-start, and
+  death saves on downed characters now correct; `monster_turn` targeting uses the
+  seeded provider. Turn ownership / action economy still loose.
+- **Persistence:** still High — file-scoped Postgres plan written
+  ([persistence-and-spatial-plan.md](persistence-and-spatial-plan.md)); implementation
+  in progress.
+- **Scene completion:** still uses log-keyword heuristics — unchanged, still High.
 
 | Area | Risk | Severity | Current Mitigation | Next Safe Step |
 |---|---|---:|---|---|
