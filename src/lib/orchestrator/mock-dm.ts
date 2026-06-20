@@ -549,11 +549,12 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
 
     if (isMovementOnly(input) || /\b(outside|leave|upstairs|bar|door|road|approach)\b/.test(input)) {
       const approachesMira = input.includes('mira') || input.includes('bar');
+      const leavesCurrentSocialScene = /\b(outside|leave|door|road|exit|walk out|go out|head out)\b/.test(input) && !approachesMira;
       return {
-        engineRequests: [],
+        engineRequests: leavesCurrentSocialScene ? [{ kind: 'advance_scene' }] : [],
         narration: approachesMira
           ? `You move closer to the bar. ${mock.socialNpcName} watches your approach and waits for your question.`
-          : `You can move around the inn, but leaving now would abandon the clearest lead about the missing courier. You can ask ${mock.socialNpcName} a question first, or clearly say you still want to leave.`,
+          : `You leave the inn and step into the weather outside. The lead with ${mock.socialNpcName} remains available if you come back, but the road and nearby places are yours to explore.`,
         needsResultBeforeNarrating: false,
         ambient,
       };

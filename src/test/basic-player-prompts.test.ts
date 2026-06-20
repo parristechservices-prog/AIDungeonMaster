@@ -38,8 +38,20 @@ describe('basic first-minute player prompts', () => {
     for (const request of turn.engineRequests) {
       if ('characterId' in request) expect(request.characterId).toBe(state.activeCharacterId);
     }
-    expect(turn.engineRequests).not.toContainEqual({ kind: 'advance_scene' });
+    if (!/\b(outside|leave|door|road)\b/.test(input)) {
+      expect(turn.engineRequests).not.toContainEqual({ kind: 'advance_scene' });
+    }
   });
+
+  it.each(['go outside', 'leave the inn', 'walk to the door', 'head toward the road'])(
+    'lets players commit to leaving the social scene: %s',
+    (input) => {
+      const turn = deriveDmTurnFromInput(state, input);
+      expect(turn.engineRequests).toContainEqual({ kind: 'advance_scene' });
+      expect(turn.narration).toMatch(/leave|outside|road|explore/i);
+      expect(turn.narration).not.toMatch(/abandon the clearest lead|ask Mira.*first/i);
+    },
+  );
 
   it.each(sillyPrompts)('safely grounds impossible prompt: %s', (input) => {
     const turn = deriveDmTurnFromInput(state, input);
