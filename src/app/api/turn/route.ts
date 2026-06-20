@@ -4,9 +4,11 @@ import { generateDmTurn, generateNarration } from '@/lib/llm/provider';
 import { buildSystemPrompt } from '@/lib/llm/system-prompt';
 import { buildEngineSafeNarration } from '@/lib/llm/validate-narration';
 import { detectNarrationWarnings, healNarration } from '@/lib/orchestrator/heal-narration';
+import { buildSourceLoreSection } from '@/lib/llm/source-lore/prompt.server';
 import { summarizeCanonLog } from '@/lib/llm/summarizer';
 import { buildRecap } from '@/lib/game/recap';
-import { isValidAdventureId } from '@/lib/game/adventures/registry.server';
+import { getPlayableScene } from '@/lib/game/adventures/helpers';
+import { getAdventure, isValidAdventureId } from '@/lib/game/adventures/registry.server';
 import { deriveDmTurnFromInput } from '@/lib/orchestrator/mock-dm';
 import { runTurn } from '@/lib/orchestrator/run-turn';
 import { buildDmTurnRepairPrompt, validateDmTurn, validateManualD20Roll } from '@/lib/orchestrator/validate-dm-turn';
@@ -84,8 +86,20 @@ export async function POST(req: Request) {
       clearPendingTurn(sessionId);
     } else {
       const recentRecaps = getRecaps(sessionId).slice(-5);
+      // Ground the DM in the table's owned sourcebook (e.g. Storm King's Thunder):
+      // retrieve the most relevant official passages and tell the DM to defer to
+      // them when in doubt. No-op for adventures without an owned source index.
+      const sceneGoalForQuery = getPlayableScene(getAdventure(state.adventureId), state.sceneId)?.goal ?? '';
+      const sourceLore = await buildSourceLoreSection(
+        state.adventureId,
+        `${state.adventureId} ${sceneGoalForQuery} ${playerInput}`,
+      );
+      if (sourceLore.headings.length > 0) {
+        writeDevLog({ type: 'source_lore_injected', sessionId, adventureId: state.adventureId, headings: sourceLore.headings });
+      }
       systemPrompt =
         buildSystemPrompt(state) +
+        sourceLore.section +
         (recentRecaps.length > 0
           ? `\n\n## RECENT CONVERSATION HISTORY\n${recentRecaps.map((r) => `Turn ${r.turnNumber} Narration: ${r.narration}`).join('\n')}`
           : '');

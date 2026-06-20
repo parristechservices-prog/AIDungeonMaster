@@ -1,0 +1,61 @@
+import { describe, expect, it } from 'vitest';
+import { buildIdf, retrieveRelevant, tokenize } from '@/lib/llm/source-lore/retrieve';
+import { sourceKeyForAdventure } from '@/lib/llm/source-lore/store.server';
+import { SOURCE_INDEX_FORMAT, type SourceIndex } from '@/lib/llm/source-lore/types';
+
+const index: SourceIndex = {
+  key: 'test',
+  title: 'Test Book',
+  builtFormat: SOURCE_INDEX_FORMAT,
+  chunks: [
+    { id: 't-1', heading: '11. BRIDGE', text: 'A sloped bridge connects the village bailey to the motte. A falling rock destroyed a fifteen foot section of it, cutting off the keep. A strong creature can leap across the broken gap with a Strength check.' },
+    { id: 't-2', heading: '14. NANDAR KEEP', text: 'Nandar Keep was left in a sorry state. Lady Velrosa Nandar, the High Steward, was buried under rubble and died of her wounds before the guards could reach her.' },
+    { id: 't-3', heading: 'TOWER OF ZEPHYROS', text: 'A massive tower glides over the hills like a slow storm cloud, home to the eccentric cloud giant wizard Zephyros.' },
+    { id: 't-4', heading: 'CREDITS', text: 'Lead designer and editors and illustrators and cartographers worked on this book together.' },
+  ],
+};
+
+describe('source-lore tokenize', () => {
+  it('drops stopwords, short tokens, and punctuation', () => {
+    expect(tokenize('The keep is on the motte!')).toEqual(['keep', 'motte']);
+  });
+});
+
+describe('source-lore retrieval', () => {
+  const idf = buildIdf(index);
+
+  it('returns the bridge passage for a broken-bridge query', () => {
+    const hits = retrieveRelevant(index, 'is the keep bridge broken can I cross the gap', idf, { topK: 2 });
+    expect(hits[0].heading).toBe('11. BRIDGE');
+  });
+
+  it('returns the keep passage for a Lady Nandar query', () => {
+    const hits = retrieveRelevant(index, 'who is Lady Velrosa Nandar', idf, { topK: 2 });
+    expect(hits[0].heading).toBe('14. NANDAR KEEP');
+  });
+
+  it('returns the Zephyros passage for a tower query', () => {
+    const hits = retrieveRelevant(index, 'tell me about the floating tower and its giant wizard', idf, { topK: 2 });
+    expect(hits[0].heading).toBe('TOWER OF ZEPHYROS');
+  });
+
+  it('returns nothing for a query with no overlapping content terms', () => {
+    expect(retrieveRelevant(index, 'spaceship laser dinosaur', idf, { topK: 3 })).toEqual([]);
+  });
+
+  it('respects topK and the character budget', () => {
+    const hits = retrieveRelevant(index, 'bridge keep tower Nandar Zephyros', idf, { topK: 2, charBudget: 10_000 });
+    expect(hits.length).toBeLessThanOrEqual(2);
+  });
+});
+
+describe('sourceKeyForAdventure', () => {
+  it('maps skt-* adventures to the skt source', () => {
+    expect(sourceKeyForAdventure('skt-nightstone-chapter1')).toBe('skt');
+    expect(sourceKeyForAdventure('skt-nightstone-starter')).toBe('skt');
+  });
+
+  it('returns null for non-SKT adventures', () => {
+    expect(sourceKeyForAdventure('brindlehook-inn')).toBeNull();
+  });
+});

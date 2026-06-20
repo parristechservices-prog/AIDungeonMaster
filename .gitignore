@@ -54,3 +54,6 @@ docs/**/__*.pdf
 
 # VS Code workspace files
 *.code-workspace
+
+# Local dev turn logs
+/.logs/
