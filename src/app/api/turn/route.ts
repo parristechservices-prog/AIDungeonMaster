@@ -2,11 +2,8 @@ import { NextResponse } from 'next/server';
 import { shouldUseMockFlavorPrefix } from '@/lib/llm/credentials';
 import { generateDmTurn, generateNarration } from '@/lib/llm/provider';
 import { buildSystemPrompt } from '@/lib/llm/system-prompt';
-import {
-  buildEngineSafeNarration,
-  validateNarrationAgainstResults,
-  validateNarrationAgainstState,
-} from '@/lib/llm/validate-narration';
+import { buildEngineSafeNarration } from '@/lib/llm/validate-narration';
+import { detectNarrationWarnings, healNarration } from '@/lib/orchestrator/heal-narration';
 import { summarizeCanonLog } from '@/lib/llm/summarizer';
 import { buildRecap } from '@/lib/game/recap';
 import { isValidAdventureId } from '@/lib/game/adventures/registry.server';
@@ -162,32 +159,46 @@ export async function POST(req: Request) {
       }
     }
 
-    let narrationWarnings = [
-      ...validateNarrationAgainstState(narration, state),
-      ...validateNarrationAgainstResults(narration, turn.response.engineResults),
-    ];
-    if (narrationWarnings.length > 0 && aiUsed && systemPrompt) {
-      const narrationRewrite = await generateNarration({
-        systemPrompt,
-        sceneDescription: state.sceneId,
-        playerInput,
-        originalNarration: narration,
-        engineResults: turn.response.engineResults.map((result) => ({
-          kind: result.kind,
-          summary: result.summary,
-          ok: result.ok,
-        })),
-        visibleState: `Party: ${state.party.map((member) => `${member.name} (${member.hp}/${member.maxHp})`).join('; ')}.`,
-        validationIssues: narrationWarnings,
+    // Self-healing narration: validate against engine truth and re-prompt with the
+    // specific contradictions, up to a configurable number of attempts. If the
+    // narrator cannot be corrected, fall back to deterministic engine-safe prose so
+    // the player never sees a hallucinated outcome.
+    let narrationWarnings: string[];
+    if (aiUsed && systemPrompt) {
+      const healed = await healNarration({
+        narration,
+        state,
+        engineResults: turn.response.engineResults,
+        reprompt: (issues) =>
+          generateNarration({
+            systemPrompt,
+            sceneDescription: state.sceneId,
+            playerInput,
+            originalNarration: narration,
+            engineResults: turn.response.engineResults.map((result) => ({
+              kind: result.kind,
+              summary: result.summary,
+              ok: result.ok,
+            })),
+            visibleState: `Party: ${state.party.map((member) => `${member.name} (${member.hp}/${member.maxHp})`).join('; ')}.`,
+            validationIssues: issues,
+          }),
       });
-      if (narrationRewrite) narration = narrationRewrite;
-      narrationWarnings = [
-        ...validateNarrationAgainstState(narration, state),
-        ...validateNarrationAgainstResults(narration, turn.response.engineResults),
-      ];
-    }
-    if (narrationWarnings.length > 0) {
-      narration = buildEngineSafeNarration(turn.response.engineResults);
+      narration = healed.narration;
+      narrationWarnings = healed.warnings;
+      if (healed.attempts > 0) {
+        writeDevLog({
+          type: 'narration_self_heal',
+          sessionId,
+          attempts: healed.attempts,
+          usedEngineSafeFallback: healed.usedEngineSafeFallback,
+        });
+      }
+    } else {
+      narrationWarnings = detectNarrationWarnings(narration, state, turn.response.engineResults);
+      if (narrationWarnings.length > 0) {
+        narration = buildEngineSafeNarration(turn.response.engineResults);
+      }
     }
 
     // Periodic Canon Log Summarization.

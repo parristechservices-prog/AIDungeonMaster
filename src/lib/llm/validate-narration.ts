@@ -68,9 +68,15 @@ export function validateNarrationAgainstState(
   for (const monster of state.monsters) {
     const name = monster.name.toLowerCase();
     if (!text.includes(name)) continue;
+    if (monster.hp > 0) continue;
     const segment = extractSentenceAround(text, name);
     const dmg = segment.match(/(\d+)\s+damage/);
-    if (dmg && monster.hp <= 0) {
+    // A downed monster taking an active, offensive action contradicts engine state.
+    const actsWhileDown =
+      /\b(attacks?|strikes?|lunges?|swings?|charges?|hits?|slashes?|bites?|claws?|casts?|advances?|rushes?|leaps?|snarls?|growls?|rises?|stands?\s+up|gets?\s+up|retaliates?|counterattacks?)\b/.test(
+        segment,
+      );
+    if (dmg || actsWhileDown) {
       warnings.push(`Narration may imply ${monster.name} is still active; engine has 0 HP.`);
     }
   }

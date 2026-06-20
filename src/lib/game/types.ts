@@ -61,6 +61,11 @@ export type CombatState = {
   active: boolean;
   initiative: { actorId: string; roll: number }[];
   turnIndex: number;
+  grid?: {
+    width: number;
+    height: number;
+    positions: Record<string, { x: number; y: number }>;
+  };
 };
 
 export type DMPersonaId = 'balanced' | 'gritty' | 'epic' | 'whimsical';

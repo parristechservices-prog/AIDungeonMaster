@@ -1,7 +1,7 @@
 import { getSceneKind } from '@/lib/game/adventures/helpers';
 import { getAdventure } from '@/lib/game/adventures/registry.server';
 import type { GameState, Character } from '@/lib/game/types';
-import { advanceScene } from '@/lib/game/state';
+import { advanceScene, buildTacticalGrid } from '@/lib/game/state';
 import type { EngineRequest, EngineResult, RollBreakdown } from './types';
 
 let randomProvider = Math.random;
@@ -105,11 +105,15 @@ export function resolveEngineRequest(
       const combatSceneId =
         adventure.sceneOrder.find((id) => adventure.scenes[id]?.kind === 'combat') ?? 'combat';
       
-      const next = {
+      const draft = {
         ...state,
         combat: { active: true, initiative: init, turnIndex: 0 },
         sceneId: combatSceneId,
         activeCharacterId: init[0].actorId,
+      };
+      const next = {
+        ...draft,
+        combat: { ...draft.combat, grid: buildTacticalGrid(draft) },
       };
       return { state: appendLog(next, 'Combat started. Roll for initiative!'), result: { ok: true, summary: 'Initiative rolled.' } };
     }

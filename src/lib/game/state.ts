@@ -54,6 +54,21 @@ export function createInitialState(sessionId: string, options?: NewGameOptions):
   };
 }
 
+export function buildTacticalGrid(state: GameState): NonNullable<GameState['combat']['grid']> {
+  const width = 8;
+  const height = 6;
+  const positions: Record<string, { x: number; y: number }> = {};
+
+  state.party.forEach((member, index) => {
+    positions[member.id] = { x: 1, y: Math.min(height - 1, 1 + index) };
+  });
+  state.monsters.forEach((monster, index) => {
+    positions[monster.id] = { x: width - 2, y: Math.min(height - 1, 1 + index) };
+  });
+
+  return { width, height, positions };
+}
+
 export function migrateGameState(state: GameState): GameState {
   const adventureId = state.adventureId ?? DEFAULT_ADVENTURE_ID;
   const characterTemplateIds = state.characterTemplateIds ?? ['fighter'];
@@ -70,10 +85,14 @@ export function migrateGameState(state: GameState): GameState {
     state.personaId === personaId &&
     state.party === party &&
     state.player === player &&
-    state.activeCharacterId === activeCharacterId
+    state.activeCharacterId === activeCharacterId &&
+    (!state.combat?.active || state.combat.grid)
   ) {
     return state;
   }
+  const combat = state.combat?.active && !state.combat.grid
+    ? { ...state.combat, grid: buildTacticalGrid({ ...state, party, player, activeCharacterId }) }
+    : state.combat;
   return {
     ...state,
     adventureId,
@@ -83,6 +102,7 @@ export function migrateGameState(state: GameState): GameState {
     party,
     player,
     activeCharacterId,
+    combat,
   };
 }
 
