@@ -115,8 +115,8 @@ describe('engine', () => {
     const state = createInitialState('mon-dmg');
     state.combat = { active: true, initiative: [], turnIndex: 0 };
     state.monsters = [{ id: 'wolf-1', name: 'Wolf', ac: 13, maxHp: 11, hp: 11, attackBonus: 4, damage: '2d4+2', conditions: [] }];
-    // d20=20 (hit), then two d4 rolls.
-    setRandomProvider(seq([0.99, 0.5, 0.5]));
+    // First value picks the (only) conscious target, then d20=20 (hit), then two d4 rolls.
+    setRandomProvider(seq([0, 0.99, 0.5, 0.5]));
     const out = resolveEngineRequest(state, { kind: 'monster_turn' });
     expect(out.result.ok).toBe(true);
     expect(out.result.breakdown?.formula).toBe('2d4+2');

@@ -198,10 +198,11 @@ export function resolveEngineRequest(
       const attacker = state.monsters.find((m) => m.hp > 0);
       if (!attacker) return { state, result: { ok: true, summary: 'No monsters remain.' } };
       
-      // Target a random conscious player
+      // Target a random conscious player (uses the injectable provider so the
+      // choice is deterministic under tests, matching the rest of the engine).
       const consciousPlayers = state.party.filter(p => !p.unconscious);
-      const target = consciousPlayers.length > 0 
-        ? consciousPlayers[Math.floor(Math.random() * consciousPlayers.length)]
+      const target = consciousPlayers.length > 0
+        ? consciousPlayers[Math.floor(randomProvider() * consciousPlayers.length)]
         : state.party[0];
 
       let advantage = false;
