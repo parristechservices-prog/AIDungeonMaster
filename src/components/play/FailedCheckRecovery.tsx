@@ -15,7 +15,7 @@ export function FailedCheckRecovery({ failedResult, choices }: Props) {
       <div className="flex items-start gap-3">
         <div className="text-3xl" aria-hidden="true">💡</div>
         <div className="flex-1">
-          <p className="font-bold text-lg">That approach didn't work this time.</p>
+          <p className="font-bold text-lg">That approach didn&apos;t work this time.</p>
           <p className="mt-1 opacity-90">
             Try another angle: ask a question, examine something closely, or pick a suggested action.
           </p>
