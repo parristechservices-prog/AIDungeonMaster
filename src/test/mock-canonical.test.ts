@@ -1,13 +1,14 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { createInitialState } from '@/lib/game/state';
 import { deriveDmTurnFromInput } from '@/lib/orchestrator/mock-dm';
 import { runTurn } from '@/lib/orchestrator/run-turn';
+import { resetRandomProvider, setRandomProvider } from '@/lib/engine';
 
 describe('mock multi-request turns', () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => resetRandomProvider());
 
   it('applies canon fact on successful social ask (3 engine requests)', () => {
-    vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    setRandomProvider(() => 0.99);
 
     let state = createInitialState('canon-1');
     const turn = deriveDmTurnFromInput(state, 'I ask Mira about the courier');
