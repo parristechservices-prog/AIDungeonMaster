@@ -49,6 +49,12 @@ export default function Home() {
         >
           Continue last session
         </Link>
+        <Link
+          className="rounded-lg border border-zinc-300 px-5 py-3 text-sm dark:border-zinc-600"
+          href="/builder"
+        >
+          Build adventure
+        </Link>
         <a
           className="rounded-lg border border-zinc-300 px-5 py-3 text-sm dark:border-zinc-600"
           href="https://github.com/parristechservices-prog/AIDungeonMaster"

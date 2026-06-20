@@ -341,7 +341,12 @@ function StartContent() {
         </div>
 
         <div className="mt-4 rounded-lg border border-dashed border-zinc-300 p-4 dark:border-zinc-700">
-          <p className="text-xs font-semibold uppercase tracking-widest text-zinc-400">Import Custom Module</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-zinc-400">Import Custom Module</p>
+            <Link href="/builder" className="text-xs font-semibold text-zinc-600 underline dark:text-zinc-300">
+              Build one
+            </Link>
+          </div>
           <form onSubmit={handleImportSubmit} className="mt-2 flex flex-col gap-2">
             <input
               type="file"
