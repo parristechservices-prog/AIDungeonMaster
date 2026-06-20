@@ -1,4 +1,4 @@
-import type { SourceChunk, SourceIndex } from './types';
+import type { GazetteerEntry, SourceChunk, SourceIndex } from './types';
 
 /** Common words ignored when scoring relevance. */
 const STOPWORDS = new Set([
@@ -111,4 +111,48 @@ export function retrieveRelevant(
     used += chunk.text.length;
   }
   return selected;
+}
+
+/**
+ * Selects canonical named entities relevant to the current turn, so the DM is
+ * given exact names and never has to invent them. Prioritises entities actually
+ * named in the retrieved passages, then entities whose name/note overlaps the
+ * query or recent conversation.
+ */
+export function selectGazetteer(
+  index: SourceIndex,
+  queryText: string,
+  retrievedChunks: SourceChunk[],
+  options: { max?: number } = {},
+): GazetteerEntry[] {
+  const gaz = index.gazetteer ?? [];
+  if (gaz.length === 0) return [];
+  const max = options.max ?? 24;
+  const selected = new Map<string, GazetteerEntry>();
+
+  // 1. Entities named in the retrieved passages — definitely in play this turn.
+  const passageBlob = retrievedChunks.map((c) => c.text).join(' \n ');
+  for (const e of gaz) {
+    if (passageBlob.includes(e.name)) selected.set(e.name, e);
+  }
+
+  // 2. Entities whose name/note overlaps the query + recent conversation.
+  const queryTerms = new Set(tokenize(queryText));
+  if (queryTerms.size > 0) {
+    const scored = gaz
+      .filter((e) => !selected.has(e.name))
+      .map((e) => {
+        let s = 0;
+        for (const t of tokenize(`${e.name} ${e.note}`)) if (queryTerms.has(t)) s += 1;
+        return { e, s };
+      })
+      .filter((x) => x.s > 0)
+      .sort((a, b) => b.s - a.s);
+    for (const { e } of scored) {
+      if (selected.size >= max) break;
+      selected.set(e.name, e);
+    }
+  }
+
+  return [...selected.values()].slice(0, max);
 }

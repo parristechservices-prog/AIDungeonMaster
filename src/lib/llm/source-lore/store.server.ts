@@ -38,7 +38,13 @@ function validate(raw: unknown, key: string): SourceIndex | null {
   if (idx.builtFormat !== SOURCE_INDEX_FORMAT) {
     writeDevLog({ type: 'source_index_stale', key, gotFormat: idx.builtFormat, want: SOURCE_INDEX_FORMAT });
   }
-  return { key, title: idx.title ?? key, builtFormat: idx.builtFormat ?? 0, chunks: idx.chunks };
+  return {
+    key,
+    title: idx.title ?? key,
+    builtFormat: idx.builtFormat ?? 0,
+    chunks: idx.chunks,
+    gazetteer: Array.isArray(idx.gazetteer) ? idx.gazetteer : [],
+  };
 }
 
 async function loadIndexRaw(key: string): Promise<SourceIndex | null> {

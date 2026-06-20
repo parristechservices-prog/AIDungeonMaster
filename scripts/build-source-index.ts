@@ -12,7 +12,7 @@
  */
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import path from 'path';
-import { SOURCE_INDEX_FORMAT, type SourceChunk, type SourceIndex } from '../src/lib/llm/source-lore/types';
+import { SOURCE_INDEX_FORMAT, type GazetteerEntry, type SourceChunk, type SourceIndex } from '../src/lib/llm/source-lore/types';
 
 const TITLES: Record<string, string> = { skt: "Storm King's Thunder" };
 
@@ -119,6 +119,66 @@ function build(key: string, inputPath: string): SourceIndex {
   return { key, title: TITLES[key] ?? key, builtFormat: SOURCE_INDEX_FORMAT, chunks };
 }
 
+/** Words that look capitalized but aren't proper names (sentence-starters, etc.). */
+const NAME_STOP = new Set([
+  'The', 'This', 'That', 'These', 'Those', 'There', 'Their', 'They', 'When', 'While', 'With',
+  'If', 'In', 'On', 'At', 'As', 'A', 'An', 'Each', 'Any', 'All', 'Some', 'One', 'Two', 'Both',
+  'He', 'She', 'It', 'You', 'We', 'Characters', 'Character', 'Treasure', 'Development', 'Chapter', 'DC',
+  'Ideally', 'Once', 'After', 'Before', 'Suddenly', 'Meanwhile', 'Unless', 'Because', 'However',
+  'Although', 'Finally', 'Instead', 'Otherwise', 'Similarly', 'Additionally', 'Nevertheless',
+  'Together', 'Inside', 'Outside', 'Above', 'Below', 'North', 'South', 'East', 'West', 'Town',
+  'Flames', 'Highsun', 'Here', 'Such', 'Most', 'Many', 'Several', 'Other', 'Another', 'During',
+  'Roleplaying', 'Roll', 'Read', 'Use', 'Set', 'Lying', 'Standing', 'Hanging', 'Mounted', 'Known',
+]);
+
+function looksLikeName(name: string): boolean {
+  const words = name.split(/\s+/);
+  if (words.length === 0 || words.length > 4) return false;
+  if (words.some((w) => NAME_STOP.has(w))) return false;
+  // A single-word name must be at least 4 letters to avoid stray caps.
+  if (words.length === 1 && words[0].length < 4) return false;
+  // Each word starts uppercase; allow internal apostrophes/hyphens.
+  return words.every((w) => /^[A-Z][A-Za-z'’-]+$/.test(w));
+}
+
+function cleanNote(s: string): string {
+  return s.replace(/\s+/g, ' ').replace(/[.,;:]+$/, '').trim().slice(0, 120);
+}
+
+/**
+ * Extracts canonical named entities from chunks using the stat-block prose
+ * patterns the book uses ("a goblin named X", "X, a Zhentarim spy",
+ * "X (LE male half-elf ...)"). Heuristic but high-precision; deduped by name,
+ * keeping the most descriptive note.
+ */
+function buildGazetteer(chunks: SourceChunk[]): GazetteerEntry[] {
+  const byName = new Map<string, GazetteerEntry>();
+  const consider = (name: string, note: string, heading: string) => {
+    name = name.trim();
+    note = cleanNote(note);
+    if (!looksLikeName(name) || note.length < 4) return;
+    const existing = byName.get(name);
+    if (!existing || note.length > existing.note.length) {
+      byName.set(name, { name, note, heading });
+    }
+  };
+
+  const namedRe = /\b(?:named|called)\s+([A-Z][A-Za-z'’-]+(?:\s+[A-Z][A-Za-z'’-]+){0,2})\b([^.]{0,90})/g;
+  const apposRe = /\b([A-Z][A-Za-z'’-]+(?:\s+[A-Z][A-Za-z'’-]+){0,2}),\s+(an?|the)\s+([a-z][^.,;()]{4,80})/g;
+  const parenRe = /\b([A-Z][A-Za-z'’-]+(?:\s+[A-Z][A-Za-z'’-]+){0,2})\s*\(([A-Z]{1,2}\b[^)]{4,80})\)/g;
+
+  for (const c of chunks) {
+    let m: RegExpExecArray | null;
+    namedRe.lastIndex = 0;
+    while ((m = namedRe.exec(c.text))) consider(m[1], m[2] ? `${m[2]}` : c.heading, c.heading);
+    apposRe.lastIndex = 0;
+    while ((m = apposRe.exec(c.text))) consider(m[1], `${m[2]} ${m[3]}`, c.heading);
+    parenRe.lastIndex = 0;
+    while ((m = parenRe.exec(c.text))) consider(m[1], m[2], c.heading);
+  }
+  return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
 function main() {
   const key = process.argv[2];
   if (!key) {
@@ -132,6 +192,7 @@ function main() {
     process.exit(1);
   }
   const index = build(key, inputPath);
+  index.gazetteer = buildGazetteer(index.chunks);
   const outPath = path.join(dir, 'index.json');
   writeFileSync(outPath, JSON.stringify(index), 'utf8');
   const bytes = Buffer.byteLength(JSON.stringify(index));
@@ -139,6 +200,7 @@ function main() {
     key,
     title: index.title,
     chunks: index.chunks.length,
+    gazetteer: index.gazetteer?.length ?? 0,
     indexBytes: bytes,
     out: outPath,
   }, null, 2));

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildIdf, retrieveRelevant, tokenize } from '@/lib/llm/source-lore/retrieve';
+import { buildIdf, retrieveRelevant, selectGazetteer, tokenize } from '@/lib/llm/source-lore/retrieve';
 import { sourceKeyForAdventure } from '@/lib/llm/source-lore/store.server';
 import { SOURCE_INDEX_FORMAT, type SourceIndex } from '@/lib/llm/source-lore/types';
 
@@ -12,6 +12,11 @@ const index: SourceIndex = {
     { id: 't-2', heading: '14. NANDAR KEEP', text: 'Nandar Keep was left in a sorry state. Lady Velrosa Nandar, the High Steward, was buried under rubble and died of her wounds before the guards could reach her.' },
     { id: 't-3', heading: 'TOWER OF ZEPHYROS', text: 'A massive tower glides over the hills like a slow storm cloud, home to the eccentric cloud giant wizard Zephyros.' },
     { id: 't-4', heading: 'CREDITS', text: 'Lead designer and editors and illustrators and cartographers worked on this book together.' },
+  ],
+  gazetteer: [
+    { name: 'Xolkin Alassandar', note: 'LE half-elf bandit captain who leads the Seven Snakes', heading: 'SEVEN SNAKES' },
+    { name: 'Gurrash', note: 'Ear Seekers orc war chief', heading: 'EAR SEEKERS' },
+    { name: 'Lady Velrosa Nandar', note: 'High Steward of Nightstone, slain in the keep', heading: '14. NANDAR KEEP' },
   ],
 };
 
@@ -61,6 +66,24 @@ describe('source-lore retrieval', () => {
   it('respects topK and the character budget', () => {
     const hits = retrieveRelevant(index, 'bridge keep tower Nandar Zephyros', idf, { topK: 2, charBudget: 10_000 });
     expect(hits.length).toBeLessThanOrEqual(2);
+  });
+});
+
+describe('selectGazetteer', () => {
+  it('includes entities named in the retrieved passages', () => {
+    const hits = retrieveRelevant(index, 'Lady Nandar in the keep', buildIdf(index), { topK: 2 });
+    const names = selectGazetteer(index, 'Lady Nandar in the keep', hits).map((e) => e.name);
+    expect(names).toContain('Lady Velrosa Nandar');
+  });
+
+  it('surfaces a canonical name from a vague follow-up via conversation terms', () => {
+    // Passage retrieval may miss, but "Seven Snakes" in the query still pulls Xolkin.
+    const names = selectGazetteer(index, "what is the leader's name? the Seven Snakes rode in", []).map((e) => e.name);
+    expect(names).toContain('Xolkin Alassandar');
+  });
+
+  it('returns nothing when no entity matches', () => {
+    expect(selectGazetteer(index, 'a spaceship full of robots', [])).toEqual([]);
   });
 });
 

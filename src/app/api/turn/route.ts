@@ -88,13 +88,17 @@ export async function POST(req: Request) {
       // Ground the DM in the table's owned sourcebook (e.g. Storm King's Thunder):
       // retrieve the most relevant official passages and tell the DM to defer to
       // them when in doubt. No-op for adventures without an owned source index.
-      // Retrieve source lore from the player's own words only. The scene goal and
-      // adventureId were intentionally dropped: their generic terms (e.g.
-      // "Nightstone", "abandoned village") drowned out the specific location the
-      // player named, pulling the wrong sections.
-      const sourceLore = await buildSourceLoreSection(state.adventureId, playerInput);
-      if (sourceLore.headings.length > 0) {
-        writeDevLog({ type: 'source_lore_injected', sessionId, adventureId: state.adventureId, headings: sourceLore.headings });
+      // Retrieve source lore using the player's words plus recent narration as
+      // context, so vague follow-ups ("what's his name?") inherit the entities
+      // from the previous turn instead of missing. The player's input leads;
+      // recent narration is lighter context.
+      const conversationText = recentRecaps.map((r) => r.narration).join(' ');
+      const retrievalQuery = `${playerInput} ${recentRecaps.slice(-2).map((r) => r.narration).join(' ')}`;
+      const sourceLore = await buildSourceLoreSection(state.adventureId, retrievalQuery, {
+        conversationText,
+      });
+      if (sourceLore.headings.length > 0 || sourceLore.entities.length > 0) {
+        writeDevLog({ type: 'source_lore_injected', sessionId, adventureId: state.adventureId, headings: sourceLore.headings, entities: sourceLore.entities });
       }
       systemPrompt =
         buildSystemPrompt(state) +
