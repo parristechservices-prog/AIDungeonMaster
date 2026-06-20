@@ -39,6 +39,21 @@ describe('source-lore retrieval', () => {
     expect(hits[0].heading).toBe('TOWER OF ZEPHYROS');
   });
 
+  it('surfaces a section via its heading even when the term is absent from the body', () => {
+    // A rare area name in the query should pull its own section even if the body
+    // text never repeats the heading word.
+    const idxWithHeadingOnly: SourceIndex = {
+      ...index,
+      chunks: [
+        ...index.chunks,
+        { id: 't-5', heading: '10. WINDMILL', text: 'Two goblins named Longo and Yek climb among the rafters near the roof, heckling intruders and shooting arrows with half cover.' },
+      ],
+    };
+    const idf2 = buildIdf(idxWithHeadingOnly);
+    const hits = retrieveRelevant(idxWithHeadingOnly, 'I enter the windmill, who is inside?', idf2, { topK: 1 });
+    expect(hits[0].heading).toBe('10. WINDMILL');
+  });
+
   it('returns nothing for a query with no overlapping content terms', () => {
     expect(retrieveRelevant(index, 'spaceship laser dinosaur', idf, { topK: 3 })).toEqual([]);
   });

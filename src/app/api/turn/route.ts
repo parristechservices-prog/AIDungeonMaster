@@ -7,8 +7,7 @@ import { detectNarrationWarnings, healNarration } from '@/lib/orchestrator/heal-
 import { buildSourceLoreSection } from '@/lib/llm/source-lore/prompt.server';
 import { summarizeCanonLog } from '@/lib/llm/summarizer';
 import { buildRecap } from '@/lib/game/recap';
-import { getPlayableScene } from '@/lib/game/adventures/helpers';
-import { getAdventure, isValidAdventureId } from '@/lib/game/adventures/registry.server';
+import { isValidAdventureId } from '@/lib/game/adventures/registry.server';
 import { deriveDmTurnFromInput } from '@/lib/orchestrator/mock-dm';
 import { runTurn } from '@/lib/orchestrator/run-turn';
 import { buildDmTurnRepairPrompt, validateDmTurn, validateManualD20Roll } from '@/lib/orchestrator/validate-dm-turn';
@@ -89,13 +88,11 @@ export async function POST(req: Request) {
       // Ground the DM in the table's owned sourcebook (e.g. Storm King's Thunder):
       // retrieve the most relevant official passages and tell the DM to defer to
       // them when in doubt. No-op for adventures without an owned source index.
-      const sceneGoalForQuery = getPlayableScene(getAdventure(state.adventureId), state.sceneId)?.goal ?? '';
-      // Player intent leads the retrieval query; the scene goal is lighter context.
-      // (The adventureId is intentionally omitted — it only biased every search.)
-      const sourceLore = await buildSourceLoreSection(
-        state.adventureId,
-        `${playerInput} ${sceneGoalForQuery}`,
-      );
+      // Retrieve source lore from the player's own words only. The scene goal and
+      // adventureId were intentionally dropped: their generic terms (e.g.
+      // "Nightstone", "abandoned village") drowned out the specific location the
+      // player named, pulling the wrong sections.
+      const sourceLore = await buildSourceLoreSection(state.adventureId, playerInput);
       if (sourceLore.headings.length > 0) {
         writeDevLog({ type: 'source_lore_injected', sessionId, adventureId: state.adventureId, headings: sourceLore.headings });
       }

@@ -19,6 +19,14 @@ export function tokenize(text: string): string[] {
     .filter((t) => t.length > 2 && !STOPWORDS.has(t));
 }
 
+/**
+ * How strongly a section heading's terms count toward a chunk's score. Headings
+ * are high-signal location/topic labels (e.g. "10. WINDMILL", "9. TRADING POST"),
+ * so a rare area name in the query pulls its own section. IDF weighting keeps
+ * common heading words (e.g. "village", "keep") from dominating.
+ */
+export const HEADING_BOOST = 3;
+
 export type RetrievalOptions = {
   /** Max number of chunks to return. */
   topK?: number;
@@ -37,7 +45,8 @@ export type ScoredChunk = SourceChunk & { score: number };
 export function buildIdf(index: SourceIndex): Map<string, number> {
   const df = new Map<string, number>();
   for (const chunk of index.chunks) {
-    const seen = new Set(tokenize(chunk.text));
+    // Headings are searchable too, so a heading-only term still gets an IDF.
+    const seen = new Set([...tokenize(chunk.text), ...tokenize(chunk.heading)]);
     for (const term of seen) df.set(term, (df.get(term) ?? 0) + 1);
   }
   const n = index.chunks.length || 1;
@@ -73,6 +82,8 @@ export function retrieveRelevant(
     if (tokens.length === 0) continue;
     const tf = new Map<string, number>();
     for (const t of tokens) tf.set(t, (tf.get(t) ?? 0) + 1);
+    // Boost heading terms so a query naming an area surfaces that area's section.
+    for (const t of tokenize(chunk.heading)) tf.set(t, (tf.get(t) ?? 0) + HEADING_BOOST);
 
     let score = 0;
     for (const [term, qw] of queryWeights) {

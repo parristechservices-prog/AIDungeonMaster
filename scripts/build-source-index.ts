@@ -23,15 +23,26 @@ function cleanLine(line: string): string {
   return line.replace(/­/g, '').replace(/\s+/g, ' ').trimEnd();
 }
 
+function upperRatio(s: string): number {
+  const letters = s.replace(/[^A-Za-z]/g, '');
+  if (letters.length === 0) return 0;
+  return s.replace(/[^A-Z]/g, '').length / letters.length;
+}
+
 /** Heading-ish: short, mostly uppercase, or an area marker like "11. BRIDGE" / "14A. GREAT HALL". */
 function isHeading(line: string): boolean {
   const t = line.trim();
   if (t.length === 0 || t.length > 60) return false;
-  if (/^\d{1,3}[A-Z]?\.\s+[A-Z]/.test(t)) return true;
+  // Area marker like "11. BRIDGE" / "14A. GREAT HALL": the TITLE after the number
+  // must be a title (mostly uppercase), not a numbered sentence ("12. After ...").
+  const marker = t.match(/^\d{1,3}[A-Z]?\.\s+(.+)$/);
+  if (marker) {
+    const title = marker[1];
+    return title.replace(/[^A-Za-z]/g, '').length >= 2 && upperRatio(title) > 0.7;
+  }
   const letters = t.replace(/[^A-Za-z]/g, '');
   if (letters.length < 3) return false;
-  const upper = t.replace(/[^A-Z]/g, '').length;
-  return upper / letters.length > 0.7;
+  return upperRatio(t) > 0.7;
 }
 
 /** Table-of-contents lines: dot leaders or trailing page numbers. */
@@ -61,6 +72,8 @@ function build(key: string, inputPath: string): SourceIndex {
 
   const chunks: SourceChunk[] = [];
   let heading = TITLES[key] ?? key;
+  let areaPrefix = ''; // last top-level area, e.g. "8. NIGHTSTONE INN"
+  let areaNum = '';
   let buf: string[] = [];
   let bufLen = 0;
   let counter = 0;
@@ -78,7 +91,19 @@ function build(key: string, inputPath: string): SourceIndex {
     if (isTocNoise(line)) continue;
     if (isHeading(line)) {
       flush();
-      heading = line.trim();
+      const t = line.trim();
+      const top = t.match(/^(\d{1,2})\.\s+[A-Z]/); // top-level area: "8. NIGHTSTONE INN"
+      const sub = t.match(/^(\d{1,2})[A-Z]\.\s+/); // sub-area: "8A. DINING ROOM"
+      if (top) {
+        areaNum = top[1];
+        areaPrefix = t;
+        heading = t;
+      } else if (sub && sub[1] === areaNum && areaPrefix) {
+        // Carry parent context so sub-areas are searchable by their area name.
+        heading = `${areaPrefix} — ${t}`;
+      } else {
+        heading = t;
+      }
       continue;
     }
     if (line.trim().length === 0) {
