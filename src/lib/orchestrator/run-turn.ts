@@ -103,8 +103,16 @@ export function runTurn(
 
   let needsManualRoll = false;
   let manualRollContext: TurnResult['manualRollContext'] | undefined;
+  let skipConsequencesAfterFailedCheck = false;
 
   for (const request of limitedRequests) {
+    if (
+      skipConsequencesAfterFailedCheck &&
+      ['update_npc', 'add_canon_fact', 'update_inventory', 'apply_condition', 'remove_condition'].includes(request.kind)
+    ) {
+      continue;
+    }
+
     const manualRoll =
       context.manualRoll !== undefined &&
       (request.kind === 'skill_check' || request.kind === 'player_attack')
@@ -116,6 +124,9 @@ export function runTurn(
     });
     state = resolved.state;
     engineResults.push({ kind: request.kind, ...resolved.result });
+    if (request.kind === 'skill_check' && !resolved.result.ok) {
+      skipConsequencesAfterFailedCheck = true;
+    }
 
     if (resolved.result.needsManualRoll) {
       needsManualRoll = true;

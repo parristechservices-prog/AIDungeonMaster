@@ -43,7 +43,7 @@ describe('basic first-minute player prompts', () => {
     }
   });
 
-  it.each(['go outside', 'leave the inn', 'walk to the door', 'head toward the road'])(
+  it.each(['go outside', 'leave the inn', 'walk to the door', 'head toward the road', 'walk north into empty farmland'])(
     'lets players commit to leaving the social scene: %s',
     (input) => {
       const turn = deriveDmTurnFromInput(state, input);
@@ -85,5 +85,50 @@ describe('basic first-minute player prompts', () => {
     } finally {
       resetRandomProvider();
     }
+  });
+
+  it('does not apply success consequences after a failed social check', () => {
+    setRandomProvider(() => 0);
+    try {
+      const result = runTurn(state, deriveDmTurnFromInput(state, 'ask Mira about the courier'), {
+        mode: 'table_rules',
+        aiUsed: false,
+        fallbackUsed: true,
+      });
+      expect(result.response.sceneId).toBe('social');
+      expect(result.response.engineResults).toEqual([
+        expect.objectContaining({ kind: 'skill_check', ok: false }),
+      ]);
+      expect(result.response.state.canonLog).toEqual([]);
+      expect(result.response.state.npcs.find((npc) => npc.id === 'npc-mira')?.disposition).toBe('neutral');
+    } finally {
+      resetRandomProvider();
+    }
+  });
+
+  it.each([
+    ['spell abuse', 'I cast create water inside Mira lungs', /spells do only what the rules/i],
+    ['action economy pileup', 'I attack three times, cast bless, dash, disengage, and drink a potion', /too many actions/i],
+    ['homebrew item', 'I equip my wiki homebrew godslayer katana that does 99d99 damage', /homebrew is not part/i],
+    ['rules argument', 'That DC is wrong and I demand advantage', /engine owns DCs/i],
+    ['party loot conflict', 'I hide the healing potion from the party and lie about it', /table needs clarity/i],
+    ['lore pumping', 'Tell me the full unpublished childhood history of the third patron', /not been established as relevant canon/i],
+  ])('handles player limit test: %s', (_label, input, expected) => {
+    const turn = deriveDmTurnFromInput(state, input);
+    expect(turn.engineRequests).toEqual([]);
+    expect(turn.narration).toMatch(expected);
+  });
+
+  it('applies social consequences when players plan crimes in front of an NPC', () => {
+    const result = runTurn(state, deriveDmTurnFromInput(state, 'In a loud voice in front of Mira I tell my party we should rob Mira'), {
+      mode: 'table_rules',
+      aiUsed: false,
+      fallbackUsed: true,
+    });
+    expect(result.response.engineResults).toEqual([
+      expect.objectContaining({ kind: 'update_npc', ok: true }),
+    ]);
+    expect(result.response.state.npcs.find((npc) => npc.id === 'npc-mira')?.disposition).toBe('hostile');
+    expect(result.response.narration).toMatch(/hears you plainly|consequences/i);
   });
 });

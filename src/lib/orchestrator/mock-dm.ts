@@ -140,6 +140,35 @@ function isReadyWeaponIntent(input: string): boolean {
   return /\b(draw|ready|unsheathe|prepare)\b.*\b(sword|weapon|blade|bow|axe|staff)\b/.test(input);
 }
 
+function isRulesArgument(input: string): boolean {
+  return /\b(dc|difficulty class|advantage|disadvantage|saving throw|save|rules?|wrong|demand|should be)\b/.test(input);
+}
+
+function isHomebrewRequest(input: string): boolean {
+  return /\b(homebrew|wiki|godslayer|99d99|dragon wings|custom class|custom race|random internet)\b/.test(input);
+}
+
+function isAbusiveSpellIntent(input: string): boolean {
+  return /\b(create water|water)\b.*\b(lungs?|throat|mouth|inside)\b/.test(input);
+}
+
+function isActionEconomyPileup(input: string): boolean {
+  const actionWords = ['attack', 'cast', 'dash', 'disengage', 'drink', 'hide', 'help', 'dodge'];
+  return actionWords.filter((word) => input.includes(word)).length >= 3 || /\b(three|3)\s+times\b/.test(input);
+}
+
+function isIntraPartyConflict(input: string): boolean {
+  return /\b(hide|steal|keep|pocket|lie)\b.*\b(potion|loot|gold|treasure|party)\b/.test(input);
+}
+
+function isLorePumping(input: string): boolean {
+  return /\b(full|entire|deep|unpublished|childhood|tax records?|family tree|backstory|history)\b/.test(input);
+}
+
+function isOpenCriminalPlanning(input: string): boolean {
+  return /\b(loud|front of|in front of|announce|tell my party)\b.*\b(rob|steal|ambush|murder|kill|betray)\b/.test(input);
+}
+
 function sneakingRouteTarget(input: string): string {
   const wantsInn = input.includes('inn') || input.includes('area 8') || input.includes('building 8');
   const wantsGraveyard =
@@ -361,6 +390,76 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
     };
   }
 
+  if (isRulesArgument(input)) {
+    return {
+      engineRequests: [],
+      narration:
+        'Rules check: the engine owns DCs, advantage, saving throws, HP, and action limits. You can appeal a ruling or describe a new tactic that might earn advantage, but you cannot lower a DC by declaring it.',
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
+
+  if (isHomebrewRequest(input)) {
+    return {
+      engineRequests: [],
+      narration:
+        'That homebrew is not part of this adventure yet. You can use equipment already on your sheet, import a balanced module, or ask the DM to review a custom item between scenes.',
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
+
+  if (isAbusiveSpellIntent(input)) {
+    return {
+      engineRequests: [],
+      narration:
+        'No. Spells do only what the rules and table consent allow here; you cannot create water inside a creature to bypass combat, consent, or saving throws. Choose a grounded spell, social approach, or another action.',
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
+
+  if (isActionEconomyPileup(input)) {
+    return {
+      engineRequests: [],
+      narration:
+        'That tries to take too many actions at once. Pick one main action for this turn, then add movement or a legal bonus action only if your sheet supports it.',
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
+
+  if (isIntraPartyConflict(input)) {
+    return {
+      engineRequests: [],
+      narration:
+        'You can play selfishly, but the table needs clarity. Say whether this is a secret, who might notice, and what item or loot changes hands; the engine will only change inventory after a specific grounded action.',
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
+
+  if (isLorePumping(input)) {
+    return {
+      engineRequests: [],
+      narration:
+        'You can ask for rumours or visible details, but that deep history has not been established as relevant canon. Pick a specific person, clue, or question and the DM will answer only what this scene can plausibly reveal.',
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
+
+  if (isOpenCriminalPlanning(input)) {
+    return {
+      engineRequests: [{ kind: 'update_npc', npcId: mock.socialNpcId, disposition: 'hostile', knowledge: 'The party openly discussed robbing someone in front of her.' }],
+      narration:
+        `${mock.socialNpcName} hears you plainly. Her expression hardens, and the room goes quiet; if you keep pushing this, there will be consequences.`,
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
+
   if (input.includes('perception') || input.includes('skill') || input.includes('stat') || input.includes('ability')) {
     const skillName = (
       ['perception', 'stealth', 'athletics', 'persuasion', 'insight', 'investigation', 'religion', 'deception'] as const
@@ -549,7 +648,9 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
 
     if (isMovementOnly(input) || /\b(outside|leave|upstairs|bar|door|road|approach)\b/.test(input)) {
       const approachesMira = input.includes('mira') || input.includes('bar');
-      const leavesCurrentSocialScene = /\b(outside|leave|door|road|exit|walk out|go out|head out)\b/.test(input) && !approachesMira;
+      const leavesCurrentSocialScene =
+        /\b(outside|leave|door|road|exit|walk out|go out|head out|north|south|east|west|away|farmland|opposite direction)\b/.test(input) &&
+        !approachesMira;
       return {
         engineRequests: leavesCurrentSocialScene ? [{ kind: 'advance_scene' }] : [],
         narration: approachesMira
