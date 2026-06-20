@@ -43,6 +43,10 @@ Legend — Impact: 🔴 high · 🟠 medium · ⚪ low. Effort: 🏔️ large ·
 
 ## Details
 
+> **Detailed implementation plan for #1 and #2:** see
+> [persistence-and-spatial-plan.md](persistence-and-spatial-plan.md) — file-scoped
+> punch list (Postgres persistence + area graph), phased and independently testable.
+
 ### 1. Hard spatial-area gating + first-class scenes/NPCs 🔴🏔️ (pillar 3)
 Track the party's `currentArea` as real state and gate descriptions, allowed NPCs,
 monsters, exits, and source-lore retrieval to it — so the DM pulls only the active
