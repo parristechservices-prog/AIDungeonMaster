@@ -116,8 +116,16 @@ export function buildSystemPrompt(state: GameState): string {
     '6. Never state HP, AC, or dice totals in narration unless they exactly match CURRENT STATE above.',
     '7. Narrate vividly for the whole party. Ensure everyone gets a moment in the spotlight.',
     '8. If the outcome depends on a mechanical result, set "needsResultBeforeNarrating" to true.',
-    '9. **AMBIENT AUDIO**: Set the "ambient" field whenever the scene mood changes.',
+    '9. **AMBIENT AUDIO**: Optionally set "ambient" when the scene mood changes. It MUST be exactly one of: "none", "tavern", "dungeon", "combat", "exploration", "boss_fight". Never use any other value; omit the field if unsure.',
     '10. **STRICT JSON OUTPUT**: Return ONLY a JSON object. No markdown fences.',
-    '   Schema: { "engineRequests": [], "narration": "string", "needsResultBeforeNarrating": boolean, "ambient": "string" }',
+    '   Schema: { "engineRequests": EngineRequest[], "narration": "string", "needsResultBeforeNarrating": boolean, "ambient"?: "none"|"tavern"|"dungeon"|"combat"|"exploration"|"boss_fight" }',
+    '',
+    '## ENGINE REQUESTS — EXACT SHAPE',
+    '- Each engine request is an object whose action is named by the field "kind" (NOT "type").',
+    '- Valid "kind" values: "skill_check", "player_attack", "start_combat", "monster_turn", "death_save", "use_feature", "cast_spell", "short_rest", "long_rest", "advance_scene", "update_npc", "add_canon_fact", "update_inventory", "apply_condition", "remove_condition".',
+    '- "skill_check" requires: { "kind": "skill_check", "characterId": "<id from THE ADVENTURING PARTY>", "skill": "<lowercase skill>", "dc": <1-30>, "reason": "<short why>" }. Optional: "advantage"/"disadvantage" (boolean).',
+    '- "player_attack" requires: { "kind": "player_attack", "characterId": "<party id>", "targetId": "<active monster id>" }.',
+    '- Example valid turn:',
+    '  { "engineRequests": [ { "kind": "skill_check", "characterId": "PC_ID", "skill": "insight", "dc": 12, "reason": "Reading Mira for honesty" } ], "narration": "You study Mira closely as you ask...", "needsResultBeforeNarrating": true, "ambient": "tavern" }',
   ].join('\n');
 }

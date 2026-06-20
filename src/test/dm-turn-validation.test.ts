@@ -6,18 +6,34 @@ import { buildDmTurnRepairPrompt, validateDmTurn, validateManualD20Roll } from '
 import { deriveDmTurnFromInput } from '@/lib/orchestrator/mock-dm';
 
 describe('DM turn contracts and state validation', () => {
-  it('requires characterId on every player-owned action', () => {
+  it('drops player-owned actions that are missing a required characterId', () => {
+    // The schema is intentionally lenient: a malformed request is filtered out
+    // (so the rest of the turn still runs) rather than discarding the whole turn.
     const kinds = ['skill_check', 'player_attack', 'death_save', 'use_feature', 'cast_spell', 'update_inventory'];
     for (const kind of kinds) {
       const request = requestFor(kind);
       delete (request as { characterId?: string }).characterId;
-      expect(dmTurnSchema.safeParse(baseTurn(request)).success, kind).toBe(false);
+      const parsed = dmTurnSchema.safeParse(baseTurn(request));
+      expect(parsed.success, kind).toBe(true);
+      expect(parsed.success && parsed.data.engineRequests, kind).toEqual([]);
     }
   });
 
-  it('rejects unknown keys and narration over 2000 characters', () => {
-    expect(dmTurnSchema.safeParse({ ...baseTurn(), surprise: true }).success).toBe(false);
+  it('strips unknown keys but still rejects narration over 2000 characters', () => {
+    const stripped = dmTurnSchema.safeParse({ ...baseTurn(), surprise: true });
+    expect(stripped.success).toBe(true);
+    expect(stripped.success && 'surprise' in stripped.data).toBe(false);
     expect(dmTurnSchema.safeParse({ ...baseTurn(), narration: 'x'.repeat(2001) }).success).toBe(false);
+  });
+
+  it('normalizes an LLM request that uses "type" instead of "kind"', () => {
+    const parsed = dmTurnSchema.safeParse({
+      engineRequests: [{ type: 'skill_check', characterId: 'fighter', skill: 'insight', dc: 12 }],
+      narration: 'You read the room.',
+      needsResultBeforeNarrating: true,
+    });
+    expect(parsed.success).toBe(true);
+    expect(parsed.success && parsed.data.engineRequests[0]?.kind).toBe('skill_check');
   });
 
   it('rejects invalid party character IDs', () => {
