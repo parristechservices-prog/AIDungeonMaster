@@ -226,16 +226,37 @@ export function resolveEngineRequest(
       if (toHit.total < targetAc) {
         return { state: appendLog(state, `${attacker.name} missed ${target.name}.`), result: { ok: false, summary: `${attacker.name} missed.`, breakdown: toHit } };
       }
+
+      // 5e: a hit on a creature at 0 HP causes death-save failures rather than
+      // HP loss. A melee hit on a prone/unconscious target within 5 ft is an
+      // automatic critical, which is two failures; three failures means death.
+      if (target.unconscious || target.hp <= 0) {
+        const failure = Math.min(3, target.deathSaves.failure + 2);
+        const died = failure >= 3;
+        let next = updateCharacterInParty(state, target.id, (c) => ({
+          ...c,
+          deathSaves: { ...c.deathSaves, failure },
+        }));
+        if (died && next.party.every((p) => p.hp <= 0 && p.deathSaves.failure >= 3)) {
+          next = { ...next, sceneId: 'ending' };
+        }
+        const note = died ? `${target.name} has died!` : `${target.name} suffers two death-save failures (${failure}/3).`;
+        return {
+          state: appendLog(next, `${attacker.name} strikes the fallen ${target.name}. ${note}`),
+          result: { ok: true, summary: `${attacker.name} strikes the fallen ${target.name}. ${note}`, breakdown: toHit },
+        };
+      }
+
       // Use the monster's own damage dice rather than a flat 1d6+1.
       const dmg = rollFormula(attacker.damage);
       const hp = Math.max(0, target.hp - dmg.total);
       const unconscious = hp === 0;
-      
+
       const next = updateCharacterInParty(state, target.id, (c) => ({ ...c, hp, unconscious }));
-      
-      return { 
-        state: appendLog(next, `${attacker.name} hit ${target.name} for ${dmg.total}.${unconscious ? ` ${target.name} has fallen unconscious!` : ''}`), 
-        result: { ok: true, summary: `${attacker.name} hit ${target.name}.${unconscious ? ` ${target.name} is unconscious!` : ''}`, breakdown: dmg } 
+
+      return {
+        state: appendLog(next, `${attacker.name} hit ${target.name} for ${dmg.total}.${unconscious ? ` ${target.name} has fallen unconscious!` : ''}`),
+        result: { ok: true, summary: `${attacker.name} hit ${target.name}.${unconscious ? ` ${target.name} is unconscious!` : ''}`, breakdown: dmg }
       };
     }
     case 'death_save': {

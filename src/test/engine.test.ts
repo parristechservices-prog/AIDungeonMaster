@@ -147,6 +147,28 @@ describe('engine', () => {
     expect(out.result.ok).toBe(false); // kept roll 2 + 5 = 7 vs AC 13
   });
 
+  it('a monster hitting a downed character causes death-save failures, not HP loss', () => {
+    const state = createInitialState('downed');
+    state.party[0] = { ...state.party[0], hp: 0, unconscious: true, deathSaves: { success: 0, failure: 0 } };
+    state.player = state.party[0];
+    state.monsters = [{ id: 'goblin-1', name: 'Goblin', ac: 13, maxHp: 7, hp: 7, attackBonus: 4, damage: '1d6+2', conditions: [] }];
+    setRandomProvider(seq([0.99, 0.5, 0.5])); // hit
+    const out = resolveEngineRequest(state, { kind: 'monster_turn' });
+    expect(out.result.ok).toBe(true);
+    expect(out.state.party[0].deathSaves.failure).toBe(2);
+    expect(out.state.party[0].hp).toBe(0);
+  });
+
+  it('a third death-save failure kills the downed character', () => {
+    const state = createInitialState('dying');
+    state.party[0] = { ...state.party[0], hp: 0, unconscious: true, deathSaves: { success: 0, failure: 2 } };
+    state.player = state.party[0];
+    state.monsters = [{ id: 'goblin-1', name: 'Goblin', ac: 13, maxHp: 7, hp: 7, attackBonus: 4, damage: '1d6+2', conditions: [] }];
+    setRandomProvider(seq([0.99, 0.5, 0.5]));
+    const out = resolveEngineRequest(state, { kind: 'monster_turn' });
+    expect(out.state.party[0].deathSaves.failure).toBe(3);
+  });
+
   it('restores resources on long rest', () => {
     const state = createInitialState('t4');
     state.player.hp = 10;
