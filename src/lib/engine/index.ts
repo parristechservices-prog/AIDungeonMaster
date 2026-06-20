@@ -96,11 +96,8 @@ export function resolveEngineRequest(
       };
     }
     case 'start_combat': {
-      const init = [
-        ...state.party.map((p) => ({ actorId: p.id, roll: d20() + Math.floor((p.abilities.dex - 10) / 2) })),
-        ...state.monsters.map((m) => ({ actorId: m.id, roll: d20() + 1 })),
-      ].sort((a, b) => b.roll - a.roll);
-      
+      const init = rollInitiative(state);
+
       const adventure = getAdventure(state.adventureId);
       const combatSceneId =
         adventure.sceneOrder.find((id) => adventure.scenes[id]?.kind === 'combat') ?? 'combat';
@@ -185,7 +182,13 @@ export function resolveEngineRequest(
       const monsters = state.monsters.map((m) => m.id === target.id ? { ...m, hp: Math.max(0, m.hp - damage.total) } : m);
       let next = { ...state, monsters };
       const allDown = monsters.every((m) => m.hp <= 0);
-      if (allDown) next = advanceScene({ ...next, combat: { ...next.combat, active: false } });
+      if (allDown) {
+        next = advanceScene({ ...next, combat: { ...next.combat, active: false } });
+      } else if (!next.combat.active) {
+        // Attacking living enemies starts combat, so the HUD shows them and
+        // monster turns / initiative proceed instead of the fight staying hidden.
+        next = { ...next, combat: { active: true, initiative: rollInitiative(next), turnIndex: 0 } };
+      }
       return {
         state: appendLog(next, `${char.name} hit ${target.name} for ${damage.total}.`),
         result: { ok: true, summary: `Hit ${target.name} for ${damage.total} damage.`, breakdown: damage, critical },
@@ -590,6 +593,14 @@ function appendLog(state: GameState, line: string): GameState {
 
 function d20() {
   return Math.floor(randomProvider() * 20) + 1;
+}
+
+/** Rolls initiative for the whole party and all monsters, highest first. */
+function rollInitiative(state: GameState): { actorId: string; roll: number }[] {
+  return [
+    ...state.party.map((p) => ({ actorId: p.id, roll: d20() + Math.floor((p.abilities.dex - 10) / 2) })),
+    ...state.monsters.map((m) => ({ actorId: m.id, roll: d20() + 1 })),
+  ].sort((a, b) => b.roll - a.roll);
 }
 
 /** Doubles the dice count for a critical hit (5e: double the dice, keep the flat modifier). */

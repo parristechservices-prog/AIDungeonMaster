@@ -122,6 +122,19 @@ describe('engine', () => {
     expect(out.result.breakdown?.formula).toBe('2d4+2');
   });
 
+  it('activates combat when a player attacks a living enemy out of combat', () => {
+    const state = createInitialState('atk-autostart');
+    state.combat = { active: false, initiative: [], turnIndex: 0 };
+    state.monsters = [
+      { id: 'goblin-1', name: 'Goblin', ac: 13, maxHp: 7, hp: 7, attackBonus: 4, damage: '1d6+2', conditions: [] },
+      { id: 'bandit-1', name: 'Bandit', ac: 12, maxHp: 11, hp: 11, attackBonus: 3, damage: '1d6+1', conditions: [] },
+    ];
+    setRandomProvider(seq([0.99, 0.5, 0.99, 0.5, 0.5, 0.5, 0.5]));
+    const out = resolveEngineRequest(state, { kind: 'player_attack', characterId: state.player.id, targetId: 'goblin-1' });
+    expect(out.state.combat.active).toBe(true);
+    expect(out.state.combat.initiative.length).toBe(3); // 1 PC + 2 monsters
+  });
+
   it('does not crit on a natural 20 that was discarded by disadvantage', () => {
     const state = createInitialState('atk-disadv');
     state.monsters = [{ id: 'goblin-1', name: 'Goblin', ac: 13, maxHp: 7, hp: 7, attackBonus: 4, damage: '1d6+2', conditions: [] }];
