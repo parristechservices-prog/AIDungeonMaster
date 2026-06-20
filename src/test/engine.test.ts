@@ -122,6 +122,18 @@ describe('engine', () => {
     expect(out.result.breakdown?.formula).toBe('2d4+2');
   });
 
+  it('does not crit on a natural 20 that was discarded by disadvantage', () => {
+    const state = createInitialState('atk-disadv');
+    state.monsters = [{ id: 'goblin-1', name: 'Goblin', ac: 13, maxHp: 7, hp: 7, attackBonus: 4, damage: '1d6+2', conditions: [] }];
+    // Disadvantage rolls two d20s: 20 (discarded) then 2 (kept). Kept roll must not crit.
+    setRandomProvider(seq([0.99, 0.05]));
+    const out = resolveEngineRequest(state, {
+      kind: 'player_attack', characterId: state.player.id, targetId: 'goblin-1', disadvantage: true,
+    });
+    expect(out.result.critical).not.toBe(true);
+    expect(out.result.ok).toBe(false); // kept roll 2 + 5 = 7 vs AC 13
+  });
+
   it('restores resources on long rest', () => {
     const state = createInitialState('t4');
     state.player.hp = 10;

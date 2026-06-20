@@ -171,7 +171,10 @@ export function resolveEngineRequest(
         : rollFormula('1d20', attackMod, { advantage, disadvantage, bonusFormula });
       
       toHit.dc = target.ac;
-      const critical = toHit.rolls[0] === 20 || (request.advantage && (toHit.rolls[0] === 20 || toHit.rolls[1] === 20));
+      // Crit on the die actually KEPT: with advantage keptRoll is the higher die,
+      // with disadvantage the lower, so a natural 20 on a discarded die never crits.
+      const naturalRoll = toHit.keptRoll ?? toHit.rolls[0];
+      const critical = naturalRoll === 20;
       toHit.ok = toHit.total >= target.ac || critical;
 
       if (!toHit.ok) {
