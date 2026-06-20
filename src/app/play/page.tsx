@@ -15,6 +15,7 @@ import { AppealButton } from '@/components/play/AppealButton';
 import { AmbientAudio } from '@/components/play/AmbientAudio';
 import { ManualRollModal } from '@/components/play/ManualRollModal';
 import { FailedCheckRecovery } from '@/components/play/FailedCheckRecovery';
+import { CampaignMemory } from '@/components/play/CampaignMemory';
 import { isFeatureEnabled } from '@/lib/config/features';
 import { DEFAULT_ADVENTURE_ID, getAdventure, getFirstPlayableSceneId, getSceneGoal } from '@/lib/game/adventures';
 import type { TurnResponse } from '@/lib/play/types';
@@ -354,6 +355,7 @@ export default function PlayPage() {
         <aside className="rounded-lg border border-zinc-300 bg-white p-4 text-sm shadow-sm dark:border-zinc-700 dark:bg-zinc-900 hidden md:block">
           <h2 className="font-semibold">Character</h2>
           <CharacterSheet state={state} />
+          <CampaignMemory state={state} sceneGoal={sceneGoal} choices={choices} />
           {process.env.NODE_ENV !== 'production' && warnings.length > 0 && (
             <p className="mt-3 text-xs text-amber-700 dark:text-amber-300" title={warnings.join(' ')}>
               Narration checked against engine state.
@@ -385,6 +387,7 @@ export default function PlayPage() {
             </button>
           </div>
           <CharacterSheet state={state} />
+          <CampaignMemory state={state} sceneGoal={sceneGoal} choices={choices} />
           {process.env.NODE_ENV !== 'production' && warnings.length > 0 && (
             <p className="mt-3 text-xs text-amber-700 dark:text-amber-300" title={warnings.join(' ')}>
               Narration checked against engine state.

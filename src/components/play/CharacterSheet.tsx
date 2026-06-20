@@ -197,18 +197,6 @@ export function CharacterSheet({ state }: Props) {
           )}
         </div>
 
-        <p className="mt-6 font-bold text-xs uppercase text-zinc-400 tracking-widest">Canon Log</p>
-        <div className="mt-1 max-h-40 overflow-y-auto border-l-2 border-zinc-100 dark:border-zinc-800 pl-3">
-          {state.canonLog?.length > 0 ? (
-            state.canonLog.map((f) => (
-              <p key={f.id} className="mb-2 text-[11px] text-zinc-600 dark:text-zinc-400 italic">
-                &quot;{f.content}&quot;
-              </p>
-            ))
-          ) : (
-            <p className="italic text-zinc-500 text-xs">No facts established yet.</p>
-          )}
-        </div>
       </div>
     </div>
   );
