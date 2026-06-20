@@ -23,6 +23,9 @@ const requiredPromptRules = [
   'No meme logic',
   'needsResultBeforeNarrating',
   'Allowed exits:',
+  'RULES AUTHORITY (be firm)',
+  'Reject homebrew/imported classes',
+  '5e action economy',
 ];
 const failures: string[] = [];
 
