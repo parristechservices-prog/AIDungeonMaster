@@ -320,14 +320,10 @@ export default function PlayPage() {
             {isFeatureEnabled('appealTheDm') && (
               <AppealButton
                 busy={busy}
-                onAppeal={() => {
-                  const detail = input.trim();
-                  sendTurn(
-                    detail
-                      ? `[APPEAL] ${detail}`
-                      : '[APPEAL] I want to question the last ruling — please explain or reconsider.',
-                  );
-                }}
+                lastEngineResults={lastEngineResults}
+                recentRolls={recentRolls}
+                state={state}
+                onAppeal={(detail) => sendTurn(`[APPEAL] ${detail}`)}
               />
             )}
 
