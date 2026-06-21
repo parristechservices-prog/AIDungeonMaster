@@ -3,6 +3,7 @@ import { buildCharacter } from './characters/templates';
 import { getSceneKind } from './adventures/helpers';
 import { initialMonstersForAdventure, resolveCombatMonsters } from './adventures/encounters';
 import { DEFAULT_ADVENTURE_ID, getAdventure, getFirstPlayableSceneId } from './adventures/registry.server';
+import { buildExplorationState } from './adventures/area-graphs';
 import type { CanonFact, GameState, NewGameOptions } from './types';
 
 export type { NewGameOptions };
@@ -51,6 +52,7 @@ export function createInitialState(sessionId: string, options?: NewGameOptions):
     monsters: initialMonstersForAdventure(adventure, party[0].level),
     npcs: structuredClone(adventure.npcs),
     combat: { active: false, initiative: [], turnIndex: 0 },
+    exploration: buildExplorationState(adventureId, party.map((p) => p.id)),
   };
 }
 
@@ -77,7 +79,9 @@ export function migrateGameState(state: GameState): GameState {
   const party = state.party ?? (state.player ? [state.player] : []);
   const player = state.player ?? party[0];
   const activeCharacterId = state.activeCharacterId ?? player?.id;
-  
+  const exploration =
+    state.exploration ?? buildExplorationState(adventureId, party.map((p) => p.id));
+
   if (
     state.adventureId === adventureId &&
     state.characterTemplateIds === characterTemplateIds &&
@@ -86,6 +90,7 @@ export function migrateGameState(state: GameState): GameState {
     state.party === party &&
     state.player === player &&
     state.activeCharacterId === activeCharacterId &&
+    state.exploration === exploration &&
     (!state.combat?.active || state.combat.grid)
   ) {
     return state;
@@ -103,6 +108,7 @@ export function migrateGameState(state: GameState): GameState {
     player,
     activeCharacterId,
     combat,
+    exploration,
   };
 }
 
