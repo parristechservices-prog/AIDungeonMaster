@@ -18,6 +18,7 @@ import { FailedCheckRecovery } from '@/components/play/FailedCheckRecovery';
 import { CampaignMemory } from '@/components/play/CampaignMemory';
 import { DevPanelToggle } from '@/components/play/DevPanelToggle';
 import { Battlemap } from '@/components/play/Battlemap';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { DmPanels } from '@/components/play/DmPanels';
 import { useDevPanelSettings, anyDevPanelSectionEnabled } from '@/lib/play/dev-panel';
 import type { EngineLogEntry } from '@/lib/play/dev-panel-format';
@@ -269,14 +270,14 @@ export default function PlayPage() {
           {/* ── LEFT: Main game panel ── */}
           <section className="flex flex-col flex-1 min-h-0 rounded-none md:rounded-lg border-0 md:border border-zinc-300 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900 overflow-hidden">
 
-            {/* Panel header */}
-            <header className="shrink-0 flex items-start justify-between gap-2 px-4 pt-4 pb-3 border-b border-zinc-200 dark:border-zinc-700">
+            {/* Panel header — stacks on mobile (title row, then wrapping controls) */}
+            <header className="shrink-0 flex flex-col gap-2 border-b border-zinc-200 px-3 py-2 dark:border-zinc-700 md:flex-row md:items-start md:justify-between md:px-4 md:pt-4 md:pb-3">
               <div className="min-w-0">
-                <h1 className="text-xl font-bold truncate">{adventureTitle}</h1>
-                <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                <h1 className="text-base font-bold leading-tight line-clamp-2 md:text-xl md:truncate">{adventureTitle}</h1>
+                <p className="mt-0.5 truncate text-[11px] text-zinc-500 dark:text-zinc-400 md:text-xs">
                   Scene: <b>{sceneId}</b> · {sceneGoal}
                 </p>
-                <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-zinc-500">
+                <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-zinc-500 md:text-xs">
                   <span className="rounded-full border border-zinc-300 px-2 py-0.5 font-semibold dark:border-zinc-700">
                     {mode === 'ai_director' ? 'AI Director' : 'Table Rules'}
                   </span>
@@ -286,29 +287,30 @@ export default function PlayPage() {
                   {turnCount > 0 ? <span>Turn {turnCount}</span> : null}
                 </p>
               </div>
-              <div className="shrink-0 flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5 md:shrink-0 md:justify-end">
                 <button
                   onClick={() => setShowMobileCharacterSheet(true)}
-                  className="md:hidden rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                  className="md:hidden rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
                 >
                   Character
                 </button>
                 <button
                   onClick={() => setShowMobileMap(true)}
-                  className="md:hidden rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                  className="md:hidden rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
                 >
                   {state?.combat?.active ? 'Map ⚔' : 'Map'}
                 </button>
+                <DevPanelToggle settings={devPanel} setSetting={setDevPanel} />
                 <button
                   onClick={handleExportRecap}
-                  className="rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                  className="rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
                 >
                   Export
                 </button>
-                <DevPanelToggle settings={devPanel} setSetting={setDevPanel} />
+                <ThemeToggle floating={false} className="rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800" />
                 <Link
                   href="/start"
-                  className="rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                  className="rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
                 >
                   ← Back
                 </Link>
@@ -347,8 +349,13 @@ export default function PlayPage() {
               </div>
             </div>
 
-            {/* Composer — always pinned at the bottom of the panel */}
-            <div className="shrink-0 px-4 pb-4 pt-3 border-t border-zinc-200 dark:border-zinc-700 space-y-2">
+            {/* Composer — always pinned at the bottom of the panel (safe-area aware) */}
+            <div
+              className="shrink-0 px-4 pt-3 border-t border-zinc-200 dark:border-zinc-700 space-y-2"
+              style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+            >
+              {/* Docked ambient audio bar — in flow, never overlays input/suggestions */}
+              <AmbientAudio type={ambient} />
               <InputBox
                 value={input}
                 busy={busy}
@@ -423,8 +430,6 @@ export default function PlayPage() {
 
         </div>
       </div>
-
-      <AmbientAudio type={ambient} />
 
       {manualRollContext && (
         <ManualRollModal

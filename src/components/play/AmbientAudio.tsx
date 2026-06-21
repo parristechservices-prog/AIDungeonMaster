@@ -152,38 +152,32 @@ export function AmbientAudio({ type = 'none' }: Props) {
   const profile = profiles[active];
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2" role="status" aria-live="polite">
-      <div className="flex items-center gap-3 rounded-full border border-zinc-300 bg-white/95 px-4 py-2 text-xs text-zinc-800 shadow-lg backdrop-blur-sm transition-all hover:scale-105 dark:border-zinc-600 dark:bg-zinc-900/95 dark:text-zinc-100">
-        <button
-          onClick={() => setIsPlaying(!isPlaying)}
-          className="rounded border border-zinc-200 px-2 py-1 font-semibold transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-          aria-label={isPlaying ? 'Pause ambient audio' : 'Play ambient audio'}
-        >
-          {isPlaying ? 'Pause' : 'Play'}
-        </button>
-
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2">
-            <span aria-hidden>{profile.icon}</span>
-            <span className="font-medium">{profile.label}</span>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={volume}
-            onChange={(event) => setVolume(parseFloat(event.target.value))}
-            className="mt-1 h-1 w-24 accent-zinc-800 dark:accent-zinc-200"
-            aria-label="Ambient volume"
-          />
-        </div>
-      </div>
-      {isPlaying && (
-        <span className="rounded-full bg-zinc-900/10 px-2 text-[10px] text-zinc-500 dark:bg-zinc-100/10 dark:text-zinc-400">
-          Live ambience
-        </span>
-      )}
+    // Inline, compact bar — sits in normal flow (docked above the composer) so it
+    // can never overlay the input or suggested actions on mobile.
+    <div
+      className="flex items-center gap-2 rounded border border-zinc-200 bg-zinc-50 px-2 py-1 text-[11px] text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-200"
+      role="status"
+      aria-live="polite"
+    >
+      <button
+        onClick={() => setIsPlaying(!isPlaying)}
+        className="rounded border border-zinc-200 px-2 py-0.5 font-semibold hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+        aria-label={isPlaying ? 'Pause ambient audio' : 'Play ambient audio'}
+      >
+        {isPlaying ? 'Pause' : 'Play'}
+      </button>
+      <span aria-hidden>{profile.icon}</span>
+      <span className="truncate font-medium">{profile.label}</span>
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        value={volume}
+        onChange={(event) => setVolume(parseFloat(event.target.value))}
+        className="ml-auto h-1 w-20 accent-zinc-800 dark:accent-zinc-200"
+        aria-label="Ambient volume"
+      />
     </div>
   );
 }

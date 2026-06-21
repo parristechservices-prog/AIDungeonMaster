@@ -92,3 +92,13 @@ Legend: ✅ automated · 🟡 partial · 👁 manual-only · ⬜ not covered
 | Empty/non-combat fallback | ✅ | `Battlemap.tsx` (no-map state) |
 | Desktop sidebar Map tab / mobile Map drawer | 👁 | manual (no browser env) |
 | Terrain overlay gated by DM View | ✅ | `Battlemap.tsx` + `showTerrainOverlay` |
+
+## Mobile UI status (this pass)
+Fixed (structurally; **not browser-verified — no browser in this environment**):
+- Compact header that stacks on mobile (title `text-base` + `line-clamp-2`; controls wrap as chips on a second row).
+- Light/Dark toggle no longer floats over content on `/play` — it's an inline header chip (global floating toggle hides on `/play`).
+- Ambient audio is a docked inline bar above the composer (was `fixed bottom-4 right-4`) — it can no longer overlay input/suggested actions.
+- Composer uses `env(safe-area-inset-bottom)` padding; story area remains the flexible internally-scrolling region; suggested actions wrap above the composer.
+- Character / Map / DM View open as drawers/sidebar tabs (unchanged behaviour).
+
+Verification: `pnpm test` / `tsc` / `lint` / `pnpm build` pass. Viewports 360×800 / 390×844 / 412×915 and desktop 1366×768 / 1920×1080 are **not** automated (Playwright not added) and need a manual browser pass.
