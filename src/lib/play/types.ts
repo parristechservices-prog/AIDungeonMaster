@@ -1,5 +1,6 @@
 import type { GameState } from '@/lib/game/types';
-import type { RollBreakdown } from '@/lib/engine/types';
+import type { RollBreakdown, CoverOutcome, OpportunityAttackOutcome } from '@/lib/engine/types';
+import type { TacticalEngineResult } from '@/lib/engine/spatial/tactical';
 
 export type TurnResponse = {
   ok: boolean;
@@ -29,6 +30,11 @@ export type TurnResponse = {
     ok: boolean;
     breakdown?: RollBreakdown;
     critical?: boolean;
+    // Already produced by the engine and serialised in the turn response; surfaced
+    // for the DM-view dev panels (read-only — never affects game logic).
+    tactical?: TacticalEngineResult;
+    cover?: CoverOutcome;
+    opportunityAttacks?: OpportunityAttackOutcome[];
   }[];
   recentRolls: RollBreakdown[];
   state: {

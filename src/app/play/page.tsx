@@ -17,7 +17,9 @@ import { ManualRollModal } from '@/components/play/ManualRollModal';
 import { FailedCheckRecovery } from '@/components/play/FailedCheckRecovery';
 import { CampaignMemory } from '@/components/play/CampaignMemory';
 import { DevPanelToggle } from '@/components/play/DevPanelToggle';
-import { useDevPanelSettings } from '@/lib/play/dev-panel';
+import { DmPanels } from '@/components/play/DmPanels';
+import { useDevPanelSettings, anyDevPanelSectionEnabled } from '@/lib/play/dev-panel';
+import type { EngineLogEntry } from '@/lib/play/dev-panel-format';
 import { isFeatureEnabled } from '@/lib/config/features';
 import { DEFAULT_ADVENTURE_ID, getAdventure, getFirstPlayableSceneId, getSceneGoal } from '@/lib/game/adventures';
 import type { TurnResponse } from '@/lib/play/types';
@@ -50,6 +52,8 @@ export default function PlayPage() {
   const [manualRollContext, setManualRollContext] = useState<TurnResponse['manualRollContext'] | null>(null);
   const [showMobileCharacterSheet, setShowMobileCharacterSheet] = useState(false);
   const { settings: devPanel, setSetting: setDevPanel } = useDevPanelSettings();
+  const [engineLog, setEngineLog] = useState<EngineLogEntry[]>([]);
+  const showDmPanels = anyDevPanelSectionEnabled(devPanel);
 
   async function hydrateSession(nextSessionId: string) {
     const res = await fetch(`/api/session?sessionId=${encodeURIComponent(nextSessionId)}`);
@@ -202,6 +206,9 @@ export default function PlayPage() {
         setRecentRolls(data.recentRolls ?? []);
         setWarnings(data.narrationWarnings ?? []);
         setLastEngineResults(data.engineResults ?? []);
+        setEngineLog((prev) =>
+          [{ turn: data.recap?.turnNumber ?? prev.length + 1, input: nextInput, results: data.engineResults ?? [] }, ...prev].slice(0, 50),
+        );
         setAmbient(data.ambient ?? 'none');
         setTurnCount((n) => n + 1);
         if (data.state) setState(data.state);
@@ -361,6 +368,7 @@ export default function PlayPage() {
               Narration checked against engine state.
             </p>
           )}
+          <DmPanels settings={devPanel} state={state} engineLog={engineLog} warnings={warnings} showAny={showDmPanels} />
         </aside>
 
         <AmbientAudio type={ambient} />
@@ -393,6 +401,7 @@ export default function PlayPage() {
               Narration checked against engine state.
             </p>
           )}
+          <DmPanels settings={devPanel} state={state} engineLog={engineLog} warnings={warnings} showAny={showDmPanels} />
         </div>
       </div>
     )}
