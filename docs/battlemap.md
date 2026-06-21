@@ -51,3 +51,26 @@ unit-tested (node-only test env); logic lives in the tested pure helpers.
 - Condition badges are in labels, not icons.
 - Map taps suggest text commands; there is no click-to-confirm-move shortcut.
 - Not verified in a real browser in this pass (no browser environment).
+
+## Unified Map: exploration + combat modes
+
+The Map panel now works outside combat. `src/lib/play/map-view.ts` resolves a
+mode and view-model; `Battlemap.tsx` renders it:
+
+- **combat** (priority): the tactical battlemap (grid, tokens, terrain, cover,
+  reachable cells) — unchanged.
+- **exploration**: a zone/node map of the party's current area — "You are here"
+  card (name + description), connected **exits** as tappable cards (label,
+  difficulty, distance; gated exits shown 🔒 and disabled), present party/NPC
+  chips, and base prompts. Built from `state.exploration` (area graph).
+- **empty**: a useful fallback ("No authored map for this scene yet") with
+  "Where am I? / What exits are available? / Who is here?" suggestion chips.
+
+Taps **suggest commands only** (e.g. `Move to Drawbridge`, `Talk to Mira`) that
+populate the input — they never mutate state; the engine still validates on send.
+DM-only data is not surfaced (no hidden monsters; gated exits show as locked,
+not as secrets). In **SKT Nightstone Chapter 1** the exploration map shows the
+current area (e.g. the gatehouse) and its real connected exits with distances.
+
+Adventures without an authored area graph (e.g. brindlehook-inn) show the empty
+fallback. Exploration is a zone map, not an exact 5-ft tactical grid.

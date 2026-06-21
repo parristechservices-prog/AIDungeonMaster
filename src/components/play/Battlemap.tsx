@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { buildBattlemapView, interpretCellTap, toDisplayCommand, type TokenView } from '@/lib/play/battlemap-view';
+import { buildExplorationMapView } from '@/lib/play/map-view';
 import { terrainStyle, coverBadge } from '@/lib/play/dev-panel-format';
 import type { TurnResponse } from '@/lib/play/types';
 
@@ -22,14 +23,9 @@ export function Battlemap({ state, showTerrainOverlay = false, onSuggestCommand 
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const map = state?.combat?.active ? state.combat.battleMap : undefined;
 
+  // Combat takes priority; outside combat show the exploration (zone) map.
   if (!map) {
-    return (
-      <section className="rounded border border-zinc-200 bg-zinc-50 p-4 text-xs text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900/40" aria-label="Tactical map">
-        <p className="font-semibold text-zinc-600 dark:text-zinc-300">No tactical map active</p>
-        <p className="mt-1">A battle map appears when combat begins.</p>
-        {state?.exploration ? <ExplorationSummary state={state} /> : null}
-      </section>
-    );
+    return <ExplorationMap state={state} onSuggestCommand={onSuggestCommand} />;
   }
 
   const currentTurnId = state?.combat?.initiative[state.combat.turnIndex]?.actorId;
@@ -135,20 +131,104 @@ export function Battlemap({ state, showTerrainOverlay = false, onSuggestCommand 
   );
 }
 
-function ExplorationSummary({ state }: { state: NonNullable<TurnResponse['state']> }) {
-  const exploration = state.exploration;
-  if (!exploration) return null;
-  const areaId = exploration.locations[state.activeCharacterId];
-  const area = areaId ? exploration.graph.areas[areaId] : undefined;
-  if (!area) return null;
+/**
+ * Exploration (zone) map for non-combat scenes: current area at top, connected
+ * exits and present actors as tappable cards/chips. Taps suggest commands only.
+ * Falls back to a useful prompt when no area graph exists for the scene.
+ */
+function ExplorationMap({
+  state,
+  onSuggestCommand,
+}: {
+  state: TurnResponse['state'] | null;
+  onSuggestCommand?: (command: string) => void;
+}) {
+  const view = state ? buildExplorationMapView(state) : null;
+
+  if (!view) {
+    const base = ['Where am I?', 'What exits are available?', 'Who is here?'];
+    return (
+      <section className="rounded border border-zinc-200 bg-zinc-50 p-4 text-xs text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900/40" aria-label="Map">
+        <p className="font-semibold text-zinc-600 dark:text-zinc-300">No authored map for this scene yet</p>
+        <p className="mt-1">You can still ask the DM to orient you:</p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {base.map((s) => (
+            <button
+              key={s}
+              onClick={() => onSuggestCommand?.(s)}
+              className="rounded-full border border-zinc-300 bg-white px-2 py-1 text-[11px] hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800 dark:hover:bg-zinc-700"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <div className="mt-2 border-t border-zinc-200 pt-2 dark:border-zinc-700">
-      <p className="text-[11px] font-medium text-zinc-600 dark:text-zinc-300">Current area: {area.name}</p>
-      {area.connections.length > 0 && (
-        <p className="mt-0.5 text-[10px] text-zinc-500">
-          Exits: {area.connections.map((c) => exploration.graph.areas[c.to]?.name ?? c.to).join(', ')}
-        </p>
+    <section className="text-xs" aria-label="Exploration map">
+      <div className="rounded border border-sky-300 bg-sky-50 p-2 dark:border-sky-800 dark:bg-sky-950/30">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-sky-700 dark:text-sky-300">You are here</p>
+        <p className="font-semibold text-zinc-800 dark:text-zinc-100">{view.currentAreaName}</p>
+        {view.currentAreaDescription && <p className="mt-0.5 text-[11px] text-zinc-500">{view.currentAreaDescription}</p>}
+      </div>
+
+      <p className="mt-3 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Exits</p>
+      {view.exits.length === 0 ? (
+        <p className="mt-1 italic text-zinc-500">No known exits from here.</p>
+      ) : (
+        <div className="mt-1 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+          {view.exits.map((exit) => (
+            <button
+              key={exit.areaId}
+              onClick={() => !exit.locked && onSuggestCommand?.(exit.command)}
+              disabled={exit.locked}
+              className={`rounded border p-2 text-left ${
+                exit.locked
+                  ? 'cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/40'
+                  : 'border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800'
+              }`}
+              title={exit.locked ? 'Locked — needs a key or condition' : exit.command}
+            >
+              <span className="font-medium text-zinc-800 dark:text-zinc-100">{exit.name}{exit.locked ? ' 🔒' : ''}</span>
+              <span className="block text-[10px] text-zinc-500">
+                {exit.label ? `${exit.label} · ` : ''}{exit.difficulty}{exit.distanceFt ? ` · ${exit.distanceFt} ft` : ''}
+              </span>
+            </button>
+          ))}
+        </div>
       )}
-    </div>
+
+      {view.actorsPresent.length > 0 && (
+        <>
+          <p className="mt-3 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Present</p>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {view.actorsPresent.map((a) => (
+              <button
+                key={a.id}
+                onClick={() => onSuggestCommand?.(a.command)}
+                className="rounded-full border border-zinc-300 bg-white px-2 py-1 text-[11px] hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800 dark:hover:bg-zinc-700"
+              >
+                {a.name} <span className="text-[9px] uppercase text-zinc-400">{a.kind}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {view.baseSuggestions.map((s) => (
+          <button
+            key={s}
+            onClick={() => onSuggestCommand?.(s)}
+            className="rounded-full border border-zinc-200 px-2 py-0.5 text-[10px] text-zinc-500 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+      <p className="mt-2 text-[10px] text-zinc-400">Taps suggest a command — nothing happens until you send it.</p>
+    </section>
   );
 }
