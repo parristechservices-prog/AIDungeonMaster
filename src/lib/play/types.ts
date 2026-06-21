@@ -59,7 +59,20 @@ export type TurnResponse = {
       conditions: import('@/lib/game/types').Condition[];
     }[];
     activeCharacterId: string;
-    monsters: { id: string; name: string; hp: number; maxHp: number; ac: number; conditions: import('@/lib/game/types').Condition[] }[];
+    monsters: {
+      id: string;
+      name: string;
+      hp: number;
+      maxHp: number;
+      ac: number;
+      conditions: import('@/lib/game/types').Condition[];
+      attackBonus?: number;
+      damage?: string;
+      attacks?: import('@/lib/game/types').Monster['attacks'];
+      speedFt?: number;
+      reachFt?: number;
+      size?: import('@/lib/engine/spatial/tactical').CreatureSize;
+    }[];
     npcs: GameState['npcs'];
     canonLog: GameState['canonLog'];
     combat: GameState['combat'];

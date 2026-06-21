@@ -75,7 +75,20 @@ export type TurnResult = {
       conditions: import('@/lib/game/types').Condition[];
     }>;
     activeCharacterId: string;
-    monsters: { id: string; name: string; hp: number; maxHp: number; ac: number; conditions: import('@/lib/game/types').Condition[] }[];
+    monsters: {
+      id: string;
+      name: string;
+      hp: number;
+      maxHp: number;
+      ac: number;
+      conditions: import('@/lib/game/types').Condition[];
+      attackBonus?: number;
+      damage?: string;
+      attacks?: import('@/lib/game/types').Monster['attacks'];
+      speedFt?: number;
+      reachFt?: number;
+      size?: import('@/lib/engine/spatial/tactical').CreatureSize;
+    }[];
     npcs: GameState['npcs'];
     canonLog: GameState['canonLog'];
     combat: GameState['combat'];
@@ -215,7 +228,21 @@ export function runTurn(
           conditions: p.conditions,
         })),
         activeCharacterId: state.activeCharacterId,
-        monsters: visibleMonsters.map((m) => ({ id: m.id, name: m.name, hp: m.hp, maxHp: m.maxHp, ac: m.ac, conditions: m.conditions })),
+        monsters: visibleMonsters.map((m) => ({
+          id: m.id,
+          name: m.name,
+          hp: m.hp,
+          maxHp: m.maxHp,
+          ac: m.ac,
+          conditions: m.conditions,
+          // Combat-facing stat-block data for the DM-view monster panel (not secret).
+          attackBonus: m.attackBonus,
+          damage: m.damage,
+          attacks: m.attacks,
+          speedFt: m.speedFt,
+          reachFt: m.reachFt,
+          size: m.size,
+        })),
         npcs: visibleNpcsForScene(state.adventureId, state.sceneId, state.npcs),
         canonLog: state.canonLog,
         combat: state.combat,

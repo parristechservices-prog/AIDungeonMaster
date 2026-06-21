@@ -120,6 +120,7 @@ export const MONSTER_LIBRARY: Record<string, MonsterTemplate> = {
     damage: '2d8+4',
     cr: 2,
     size: 'large',
+    speedFt: 40,
     conditions: [],
   },
   hill_giant: {

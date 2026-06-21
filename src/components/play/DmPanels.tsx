@@ -4,6 +4,7 @@ import type { DevPanelSettings } from '@/lib/play/dev-panel';
 import type { EngineLogEntry } from '@/lib/play/dev-panel-format';
 import type { TurnResponse } from '@/lib/play/types';
 import { EngineLogPanel } from '@/components/play/EngineLogPanel';
+import { MonsterStatBlock } from '@/components/play/MonsterStatBlock';
 
 type Props = {
   settings: DevPanelSettings;
@@ -17,11 +18,12 @@ type Props = {
  * only when its toggle is on; with everything off this renders nothing, keeping
  * the default player view clean.
  */
-export function DmPanels({ settings, engineLog, showAny }: Props & { showAny: boolean }) {
+export function DmPanels({ settings, state, engineLog, showAny }: Props & { showAny: boolean }) {
   if (!showAny) return null;
   return (
     <div className="mt-4 border-t border-zinc-200 pt-3 dark:border-zinc-700">
       <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">DM View</p>
+      {settings.showMonsterStatBlocks && <MonsterStatBlock monsters={state?.monsters ?? []} />}
       {settings.showEngineLog && (
         <EngineLogPanel
           entries={engineLog}

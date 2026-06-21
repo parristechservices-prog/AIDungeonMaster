@@ -63,6 +63,8 @@ export type Monster = {
   attacks?: MonsterAttack[];
   /** Default melee reach in feet when using the legacy attack (defaults to 5). */
   reachFt?: number;
+  /** Walking speed in feet (defaults to the tactical-layer 30 ft when omitted). */
+  speedFt?: number;
   /** Tactical footprint size (defaults to medium / single cell). */
   size?: CreatureSize;
   conditions: Condition[];

@@ -7,6 +7,31 @@ import type { BattleMap, Cell } from '@/lib/engine/spatial/tactical';
 import type { TurnResponse } from '@/lib/play/types';
 
 export type EngineResultView = TurnResponse['engineResults'][number];
+export type MonsterView = TurnResponse['state']['monsters'][number];
+
+/** Tactical-layer defaults, mirrored here for display when a monster omits them. */
+export const DEFAULT_MONSTER_SPEED_FT = 30;
+export const DEFAULT_MONSTER_REACH_FT = 5;
+
+export function monsterSpeedFt(m: Pick<MonsterView, 'speedFt'>): number {
+  return m.speedFt ?? DEFAULT_MONSTER_SPEED_FT;
+}
+
+export function monsterReachFt(m: Pick<MonsterView, 'reachFt'>): number {
+  return m.reachFt ?? DEFAULT_MONSTER_REACH_FT;
+}
+
+/** Normalised attack lines for a monster's stat block (melee/ranged, bonus, dmg). */
+export function monsterAttackLines(m: MonsterView): string[] {
+  if (m.attacks && m.attacks.length > 0) {
+    return m.attacks.map((a) => {
+      const range = a.kind === 'ranged' ? `range ${a.rangeFt ?? '?'}${a.longRangeFt ? `/${a.longRangeFt}` : ''} ft` : `reach ${a.reachFt ?? 5} ft`;
+      return `${a.name} (${a.kind}): +${a.attackBonus}, ${a.damage}, ${range}`;
+    });
+  }
+  if (m.attackBonus === undefined || m.damage === undefined) return [];
+  return [`Attack (melee): +${m.attackBonus}, ${m.damage}, reach ${monsterReachFt(m)} ft`];
+}
 
 export type EngineLogEntry = {
   turn: number;

@@ -102,7 +102,7 @@ export function buildBattleMap(
   });
   state.monsters.forEach((monster, index) => {
     positions[monster.id] = place(monster.id, width - 2, index);
-    actors[monster.id] = makeSpatialActor(monster.id, 'monster', monster.size, monster.reachFt);
+    actors[monster.id] = makeSpatialActor(monster.id, 'monster', monster.size, monster.reachFt, monster.speedFt);
   });
 
   return {
@@ -139,12 +139,13 @@ function makeSpatialActor(
   faction: SpatialActor['faction'],
   size: SpatialActor['size'] = 'medium',
   reachFt: number = DEFAULT_REACH_FT,
+  speedFt: number = DEFAULT_SPEED_FT,
 ): SpatialActor {
   return {
     id,
     faction,
     size,
-    speedFt: DEFAULT_SPEED_FT,
+    speedFt,
     reachFt,
     movementSpentFt: 0,
     extraMovementFt: 0,
