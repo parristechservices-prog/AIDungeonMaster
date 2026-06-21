@@ -5,7 +5,7 @@ import { buildSystemPrompt } from '@/lib/llm/system-prompt';
 import { buildEngineSafeNarration } from '@/lib/llm/validate-narration';
 import { detectNarrationWarnings, healNarration } from '@/lib/orchestrator/heal-narration';
 import { buildSourceLoreSection } from '@/lib/llm/source-lore/prompt.server';
-import { summarizeCanonLog } from '@/lib/llm/summarizer';
+import { pruneCanonLog, summarizeCanonLog } from '@/lib/llm/summarizer';
 import { buildRecap } from '@/lib/game/recap';
 import { isValidAdventureId } from '@/lib/game/adventures/registry.server';
 import { deriveDmTurnFromInput } from '@/lib/orchestrator/mock-dm';
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    let state = getOrCreateSession(sessionId);
+    let state = await getOrCreateSession(sessionId);
     const configuredMaxTurns = Number(process.env.PARTYQUEST_MAX_TURNS_PER_SESSION ?? 0);
     const maxTurns = Number.isFinite(configuredMaxTurns) && configuredMaxTurns > 0
       ? Math.floor(configuredMaxTurns)
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
         requestedAdventureId,
         sessionAdventureId: state.adventureId,
       });
-      state = startNewGame(sessionId, {
+      state = await startNewGame(sessionId, {
         adventureId: requestedAdventureId,
         characterIds: state.characterTemplateIds,
         playerNames: state.party.map((p) => p.name),
@@ -84,7 +84,7 @@ export async function POST(req: Request) {
       rawTurn = pending;
       clearPendingTurn(sessionId);
     } else {
-      const recentRecaps = getRecaps(sessionId).slice(-5);
+      const recentRecaps = (await getRecaps(sessionId)).slice(-5);
       // Ground the DM in the table's owned sourcebook (e.g. Storm King's Thunder):
       // retrieve the most relevant official passages and tell the DM to defer to
       // them when in doubt. No-op for adventures without an owned source index.
@@ -223,8 +223,10 @@ export async function POST(req: Request) {
       const summarized = await summarizeCanonLog(state.canonLog);
       state = { ...state, canonLog: summarized };
     }
+    // Deterministic pruning bounds canon-log growth over a long campaign.
+    state = { ...state, canonLog: pruneCanonLog(state.canonLog) };
 
-    saveSession(state);
+    await saveSession(state);
     const turnNumber = nextTurnNumber(sessionId);
 
     narration = fallbackUsed && shouldUseMockFlavorPrefix()
@@ -247,7 +249,7 @@ export async function POST(req: Request) {
       aiUsed: turn.response.aiUsed,
       fallbackUsed: turn.response.fallbackUsed,
     });
-    saveRecap(sessionId, recap);
+    await saveRecap(sessionId, recap);
 
     const response = {
       ...turn.response,

@@ -1,108 +1,113 @@
 import { createInitialState, migrateGameState } from '@/lib/game/state';
 import type { PartyQuestRecap } from '@/lib/game/recap';
 import type { GameState, NewGameOptions } from '@/lib/game/types';
-import fs from 'fs';
-import path from 'path';
+import { getDb, hasDb } from '@/lib/db/client';
 
-const STORAGE_DIR = path.join(process.cwd(), '.data');
-const IS_VERCEL = process.env.VERCEL === '1';
-
-// Only try to create directory if not on Vercel
-if (!IS_VERCEL) {
-  try {
-    if (!fs.existsSync(STORAGE_DIR)) fs.mkdirSync(STORAGE_DIR, { recursive: true });
-  } catch (e) {
-    console.warn('Could not create storage directory, persistence disabled.', e);
-  }
-}
-
+/**
+ * Durable session storage backed by Postgres (Supabase), with an in-memory
+ * read-through cache. When DATABASE_URL is unset (tests, local dev without a DB),
+ * the in-memory Map is the sole store — same ephemeral behaviour as before, but
+ * no filesystem writes.
+ *
+ * Read-through cache: `sessions`/`recapsCache` are checked first; on a miss we
+ * load from the DB and populate the cache. Writes go to both. `turnCounters` and
+ * `pendingTurns` are per-active-request and intentionally in-memory only.
+ */
 const sessions = new Map<string, GameState>();
 const turnCounters = new Map<string, number>();
-const latestRecaps = new Map<string, PartyQuestRecap[]>();
+const recapsCache = new Map<string, PartyQuestRecap[]>();
 const pendingTurns = new Map<string, unknown>();
 
-function getSessionPath(sessionId: string) { return path.join(STORAGE_DIR, `session-${sessionId}.json`); }
-function getRecapsPath(sessionId: string) { return path.join(STORAGE_DIR, `recaps-${sessionId}.json`); }
+/** Applies legacy field migrations to a loaded state blob, then normalizes it. */
+function migrateLoaded(sessionId: string, raw: unknown): GameState {
+  const state = raw as Record<string, unknown> & Partial<GameState>;
+  const defaults = createInitialState(sessionId);
 
-export function startNewGame(sessionId: string, options: NewGameOptions): GameState {
+  if (state.player && !state.party) state.party = [state.player];
+  if (state.characterTemplateId && !state.characterTemplateIds) {
+    state.characterTemplateIds = [state.characterTemplateId];
+  }
+  if (!state.player && state.party && state.party.length > 0) state.player = state.party[0];
+  if (!state.characterTemplateId && (state.characterTemplateIds?.length ?? 0) > 0) {
+    state.characterTemplateId = state.characterTemplateIds![0];
+  }
+  if (!state.activeCharacterId && state.party && state.party.length > 0) {
+    state.activeCharacterId = state.party[0].id;
+  }
+  if (!state.npcs) state.npcs = defaults.npcs;
+  if (!state.canonLog) state.canonLog = defaults.canonLog;
+
+  return migrateGameState(state as GameState);
+}
+
+export async function startNewGame(sessionId: string, options: NewGameOptions): Promise<GameState> {
   const state = createInitialState(sessionId, options);
   sessions.set(sessionId, state);
   turnCounters.set(sessionId, 0);
-  latestRecaps.set(sessionId, []);
-  saveSession(state);
-  if (!IS_VERCEL) {
+  recapsCache.set(sessionId, []);
+  await saveSession(state);
+  const db = getDb();
+  if (db) {
     try {
-      const recapsPath = getRecapsPath(sessionId);
-      if (fs.existsSync(recapsPath)) fs.unlinkSync(recapsPath);
-    } catch {
-      // ignore
+      await db`delete from recaps where session_id = ${sessionId}`;
+    } catch (e) {
+      console.warn('Failed to clear recaps for new game', e);
     }
   }
   return state;
 }
 
-export function getOrCreateSession(sessionId: string): GameState {
+export async function getOrCreateSession(sessionId: string): Promise<GameState> {
   if (sessions.has(sessionId)) {
     const cached = migrateGameState(sessions.get(sessionId)!);
     sessions.set(sessionId, cached);
     return cached;
   }
-  
-  if (!IS_VERCEL) {
-    const filePath = getSessionPath(sessionId);
-    if (fs.existsSync(filePath)) {
-      try {
-        const state = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-        
-        // Migration: Ensure new fields exist in loaded state
-        const defaults = createInitialState(sessionId);
-        
-        // Handle player -> party migration while keeping compatibility aliases.
-        if (state.player && !state.party) {
-          state.party = [state.player];
-        }
-        if (state.characterTemplateId && !state.characterTemplateIds) {
-          state.characterTemplateIds = [state.characterTemplateId];
-        }
-        if (!state.player && state.party && state.party.length > 0) {
-          state.player = state.party[0];
-        }
-        if (!state.characterTemplateId && state.characterTemplateIds?.length > 0) {
-          state.characterTemplateId = state.characterTemplateIds[0];
-        }
-        if (!state.activeCharacterId && state.party && state.party.length > 0) {
-          state.activeCharacterId = state.party[0].id;
-        }
 
-        if (!state.npcs) state.npcs = defaults.npcs;
-        if (!state.canonLog) state.canonLog = defaults.canonLog;
-
-        const migrated = migrateGameState(state as import('@/lib/game/types').GameState);
+  const db = getDb();
+  if (db) {
+    try {
+      const rows = await db`select state from sessions where session_id = ${sessionId}`;
+      if (rows.length > 0) {
+        const migrated = migrateLoaded(sessionId, rows[0].state);
         sessions.set(sessionId, migrated);
+        // Seed the turn counter from stored recaps so numbering survives a cold start.
+        try {
+          const counted = await db`select count(*)::int as n from recaps where session_id = ${sessionId}`;
+          turnCounters.set(sessionId, counted[0].n);
+        } catch {
+          // non-fatal; counter defaults to 0
+        }
         return migrated;
-      } catch (e) { console.error('Failed to load session', e); }
+      }
+    } catch (e) {
+      console.error('Failed to load session from DB', e);
     }
   }
 
   const next = migrateGameState(createInitialState(sessionId));
-  saveSession(next);
+  sessions.set(sessionId, next);
+  await saveSession(next);
   return next;
 }
 
-export function saveSession(state: GameState): void {
+export async function saveSession(state: GameState): Promise<void> {
   sessions.set(state.sessionId, state);
-  if (!IS_VERCEL) {
+  const db = getDb();
+  if (db) {
     try {
-      fs.writeFileSync(getSessionPath(state.sessionId), JSON.stringify(state, null, 2));
+      await db`
+        insert into sessions (session_id, state, updated_at)
+        values (${state.sessionId}, ${db.json(state as never)}, now())
+        on conflict (session_id) do update set state = excluded.state, updated_at = now()`;
     } catch (e) {
-      console.warn('Failed to persist session to disk', e);
+      console.warn('Failed to persist session to DB', e);
     }
   }
 }
 
 export function nextTurnNumber(sessionId: string): number {
-  const current = turnCounters.get(sessionId) ?? 0;
-  const next = current + 1;
+  const next = (turnCounters.get(sessionId) ?? 0) + 1;
   turnCounters.set(sessionId, next);
   return next;
 }
@@ -111,19 +116,20 @@ export function getTurnCount(sessionId: string): number {
   return turnCounters.get(sessionId) ?? 0;
 }
 
-export function getSessionStorageMode(): 'memory' | 'local_files' {
-  return IS_VERCEL ? 'memory' : 'local_files';
+export function getSessionStorageMode(): 'postgres' | 'memory' {
+  return hasDb() ? 'postgres' : 'memory';
 }
 
-export function saveRecap(sessionId: string, recap: PartyQuestRecap): void {
-  const recaps = getRecaps(sessionId);
+export async function saveRecap(sessionId: string, recap: PartyQuestRecap): Promise<void> {
+  const recaps = await getRecaps(sessionId);
   recaps.push(recap);
-  latestRecaps.set(sessionId, recaps);
-  if (!IS_VERCEL) {
+  recapsCache.set(sessionId, recaps);
+  const db = getDb();
+  if (db) {
     try {
-      fs.writeFileSync(getRecapsPath(sessionId), JSON.stringify(recaps, null, 2));
+      await db`insert into recaps (session_id, recap) values (${sessionId}, ${db.json(recap as never)})`;
     } catch (e) {
-      console.warn('Failed to persist recaps to disk', e);
+      console.warn('Failed to persist recap to DB', e);
     }
   }
 }
@@ -140,23 +146,24 @@ export function clearPendingTurn(sessionId: string): void {
   pendingTurns.delete(sessionId);
 }
 
-export function getRecaps(sessionId: string): PartyQuestRecap[] {
-  if (latestRecaps.has(sessionId)) return latestRecaps.get(sessionId)!;
+export async function getRecaps(sessionId: string): Promise<PartyQuestRecap[]> {
+  if (recapsCache.has(sessionId)) return recapsCache.get(sessionId)!;
 
-  if (!IS_VERCEL) {
-    const filePath = getRecapsPath(sessionId);
-    if (fs.existsSync(filePath)) {
-      try {
-        const recaps = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-        latestRecaps.set(sessionId, recaps);
-        return recaps;
-      } catch (e) { console.error('Failed to load recaps', e); }
+  const db = getDb();
+  if (db) {
+    try {
+      const rows = await db`select recap from recaps where session_id = ${sessionId} order by id asc`;
+      const recaps = rows.map((r) => r.recap as PartyQuestRecap);
+      recapsCache.set(sessionId, recaps);
+      return recaps;
+    } catch (e) {
+      console.error('Failed to load recaps from DB', e);
     }
   }
   return [];
 }
 
-export function getLatestRecap(sessionId: string): PartyQuestRecap | null {
-  const recaps = getRecaps(sessionId);
+export async function getLatestRecap(sessionId: string): Promise<PartyQuestRecap | null> {
+  const recaps = await getRecaps(sessionId);
   return recaps.length > 0 ? recaps[recaps.length - 1] : null;
 }

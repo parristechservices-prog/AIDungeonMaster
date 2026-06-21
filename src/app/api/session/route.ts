@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: 'sessionId required' }, { status: 400 });
   }
 
-  const state = getOrCreateSession(sessionId);
+  const state = await getOrCreateSession(sessionId);
   const adventure = getAdventure(state.adventureId);
   const currentSceneStarter = adventure.scenes[state.sceneId]?.starter;
   return NextResponse.json({

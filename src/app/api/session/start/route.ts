@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     ? Math.min(maxL, Math.max(minL, Math.round(rawLevel)))
     : undefined;
 
-  const state = startNewGame(sessionId, {
+  const state = await startNewGame(sessionId, {
     adventureId,
     characterIds,
     playerNames,

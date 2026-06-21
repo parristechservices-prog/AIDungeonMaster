@@ -57,3 +57,10 @@ docs/**/__*.pdf
 
 # Local dev turn logs
 /.logs/
+
+# Supabase CLI local link state
+/supabase/.temp/
+
+# Local temp/secret scratch files
+*.pw.tmp
+.pw.tmp
