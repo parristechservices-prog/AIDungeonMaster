@@ -3,9 +3,9 @@ import { getAdventure } from '@/lib/game/adventures/registry.server';
 import { encounterBattleMap } from '@/lib/game/adventures/encounters';
 import type { GameState, Character } from '@/lib/game/types';
 import { advanceScene, buildBattleMap } from '@/lib/game/state';
-import type { EngineRequest, EngineResult, RollBreakdown, OpportunityAttackOutcome } from './types';
+import type { EngineRequest, EngineResult, RollBreakdown, OpportunityAttackOutcome, CoverOutcome } from './types';
 import { resolveSpatialRequest, type SpatialEngineResult } from './spatial';
-import { resolveTacticalRequest, type TacticalEngineRequest, type TacticalEngineResult } from './spatial/tactical';
+import { resolveTacticalRequest, lineOfSight, coverAcBonus, type TacticalEngineRequest, type TacticalEngineResult } from './spatial/tactical';
 
 let randomProvider = Math.random;
 
@@ -198,6 +198,31 @@ export function resolveEngineRequest(
       const target = state.monsters.find((m) => m.id === request.targetId && m.hp > 0);
       if (!target) return { state, result: { ok: false, summary: 'No valid target.' } };
 
+      // Spatial cover for ranged/spell attacks: total cover (or a blocked sight
+      // line) makes the shot impossible; half/three-quarters raise effective AC.
+      // Melee attacks ignore cover (5e), so this only applies when ranged.
+      let coverOutcome: CoverOutcome | undefined;
+      let effectiveTargetAc = target.ac;
+      const attackBattleMap = state.combat.battleMap;
+      if (request.ranged && attackBattleMap?.positions[char.id] && attackBattleMap.positions[target.id]) {
+        const sight = lineOfSight(attackBattleMap, attackBattleMap.positions[char.id], attackBattleMap.positions[target.id]);
+        if (!sight.hasLineOfSight || sight.cover === 'total') {
+          return {
+            state,
+            result: {
+              ok: false,
+              summary: `${target.name} has total cover and cannot be targeted directly.`,
+              cover: { kind: 'total', baseAc: target.ac, bonus: 0, effectiveAc: target.ac },
+            },
+          };
+        }
+        const bonus = coverAcBonus(sight.cover);
+        if (bonus > 0) {
+          effectiveTargetAc = target.ac + bonus;
+          coverOutcome = { kind: sight.cover, baseAc: target.ac, bonus, effectiveAc: effectiveTargetAc };
+        }
+      }
+
       const attackMod = char.weapon.attackBonus;
       let advantage = request.advantage;
       let disadvantage = request.disadvantage;
@@ -226,7 +251,7 @@ export function resolveEngineRequest(
             manualRollContext: {
               kind: 'player_attack',
               formula: `1d20+${attackMod}${bonusFormula ? '+1d4' : ''}`,
-              dc: target.ac,
+              dc: effectiveTargetAc,
               advantage,
               disadvantage,
             },
@@ -235,18 +260,19 @@ export function resolveEngineRequest(
       }
 
       const toHit = request.manualRoll !== undefined
-        ? { formula: `1d20+${attackMod}`, rolls: [request.manualRoll], modifier: attackMod, total: request.manualRoll + attackMod, dc: target.ac }
+        ? { formula: `1d20+${attackMod}`, rolls: [request.manualRoll], modifier: attackMod, total: request.manualRoll + attackMod, dc: effectiveTargetAc }
         : rollFormula('1d20', attackMod, { advantage, disadvantage, bonusFormula });
-      
-      toHit.dc = target.ac;
+
+      toHit.dc = effectiveTargetAc;
       // Crit on the die actually KEPT: with advantage keptRoll is the higher die,
       // with disadvantage the lower, so a natural 20 on a discarded die never crits.
       const naturalRoll = toHit.keptRoll ?? toHit.rolls[0];
       const critical = naturalRoll === 20;
-      toHit.ok = toHit.total >= target.ac || critical;
+      toHit.ok = toHit.total >= effectiveTargetAc || critical;
 
       if (!toHit.ok) {
-        return { state: appendLog(state, `${char.name} missed ${target.name}.`), result: { ok: false, summary: 'Attack missed.', breakdown: toHit } };
+        const coverNote = coverOutcome ? ` (${coverOutcome.kind.replace('_', '-')} cover: AC ${coverOutcome.baseAc}+${coverOutcome.bonus})` : '';
+        return { state: appendLog(state, `${char.name} missed ${target.name}.`), result: { ok: false, summary: `Attack missed${coverNote}.`, breakdown: toHit, cover: coverOutcome } };
       }
       // Use the attacker's actual weapon damage; a crit doubles the dice (5e).
       const damage = rollFormula(critical ? critFormula(char.weapon.damage) : char.weapon.damage);
@@ -262,7 +288,7 @@ export function resolveEngineRequest(
       }
       return {
         state: appendLog(next, `${char.name} hit ${target.name} for ${damage.total}.`),
-        result: { ok: true, summary: `Hit ${target.name} for ${damage.total} damage.`, breakdown: damage, critical },
+        result: { ok: true, summary: `Hit ${target.name} for ${damage.total} damage.${coverOutcome ? ` (${coverOutcome.kind.replace('_', '-')} cover applied, AC ${coverOutcome.effectiveAc})` : ''}`, breakdown: damage, critical, cover: coverOutcome },
       };
     }
     case 'monster_turn': {

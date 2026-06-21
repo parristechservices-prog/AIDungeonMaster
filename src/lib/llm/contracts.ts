@@ -22,7 +22,7 @@ const gridCoordSchema = z.object({
 const engineRequestSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('skill_check'), characterId: z.string(), skill: skillSchema, dc: z.number().int().min(1).max(30), reason: z.string(), advantage: z.boolean().optional(), disadvantage: z.boolean().optional() }),
   z.object({ kind: z.literal('start_combat') }),
-  z.object({ kind: z.literal('player_attack'), characterId: z.string(), targetId: z.string(), advantage: z.boolean().optional(), disadvantage: z.boolean().optional() }),
+  z.object({ kind: z.literal('player_attack'), characterId: z.string(), targetId: z.string(), advantage: z.boolean().optional(), disadvantage: z.boolean().optional(), ranged: z.boolean().optional() }),
   z.object({ kind: z.literal('monster_turn') }),
   z.object({ kind: z.literal('death_save'), characterId: z.string() }),
   z.object({ kind: z.literal('use_feature'), characterId: z.string(), featureId: z.string() }),
