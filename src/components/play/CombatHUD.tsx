@@ -1,4 +1,5 @@
 import type { GameState } from '@/lib/game/types';
+import { remainingMovementFt } from '@/lib/engine/spatial/tactical';
 
 type Props = {
   combat: GameState['combat'];
@@ -17,6 +18,7 @@ export function CombatHUD({ combat, party, monsters }: Props) {
 
   const current = combat.initiative[combat.turnIndex];
   const grid = combat.battleMap;
+  const activeActor = grid && current ? grid.actors[current.actorId] : undefined;
   const actorsByCell = new Map<string, { id: string; label: string; kind: 'party' | 'monster'; defeated?: boolean }>();
 
   if (grid) {
@@ -46,6 +48,14 @@ export function CombatHUD({ combat, party, monsters }: Props) {
   return (
     <div className="mt-3 rounded border border-red-200 bg-red-50 p-3 text-xs dark:border-red-900 dark:bg-red-950/30">
       <p className="font-semibold text-red-900 dark:text-red-200">Combat - initiative</p>
+
+      {activeActor && (
+        <p className="mt-1 text-[11px] text-zinc-600 dark:text-zinc-400">
+          {actorLabel(current.actorId, party, monsters)}: {remainingMovementFt(activeActor)} ft movement ·{' '}
+          action {activeActor.actionUsed ? 'used' : 'ready'} ·{' '}
+          reaction {activeActor.reactionAvailable ? 'ready' : 'used'}
+        </p>
+      )}
 
       {grid && (
         <div className="mt-3" aria-label="Tactical combat grid">

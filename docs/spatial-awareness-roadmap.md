@@ -1,8 +1,27 @@
 # Spatial Awareness Roadmap
 
-Status: P1–P7 implemented. Square-grid tactical combat is the default; the hex
-adapter exists and is wired behind the same interface but is not yet selected by
-any scenario.
+Status: P1–P7 implemented, plus the combat-integration layer (opportunity
+attacks, cover AC, authored terrain). Square-grid tactical combat is the
+default; the hex adapter exists and is wired behind the same interface but is
+not yet selected by any scenario.
+
+## Combat integration layer (2026-06-21)
+
+These close the "deferred" gaps from the P2–P7 pass:
+
+- **Opportunity attacks — DONE.** `move_creature` now resolves real OAs: each
+  hostile whose reach is left (reaction available, not Disengaged) rolls a melee
+  attack against the mover, applies damage through the engine, and consumes its
+  reaction. Outcomes ride on `EngineResult.opportunityAttacks`; narration drift
+  is checked. (`resolveOpportunityAttacks` in `engine/index.ts`.)
+- **Cover AC — DONE.** `player_attack` takes a `ranged` flag; ranged/spell
+  attacks fold line-of-sight cover into effective AC (half +2, three-quarters
+  +5) and total cover / blocked LOS refuses the shot. Melee ignores cover (5e).
+- **Authored terrain — DONE.** `AuthoredBattleMap` + `authoring.ts` parse sparse
+  scenario terrain (cells + regions) into `BattleMap.cells`; `start_combat`
+  consumes it; Crypt of Whispers is authored with pillars, cover, and rubble.
+- **HUD visibility — DONE (modest).** CombatHUD shows the active actor's
+  remaining movement and action/reaction state.
 
 ## Implementation status
 
@@ -108,25 +127,40 @@ should update validation so the final prose cannot claim impossible movement,
 invalid range, nonexistent sight lines, unsupported cover, or engine-denied
 arrival.
 
-## Deliberately deferred / simplified
+## Status of previously-deferred items
 
-These are conscious cuts, not oversights:
+Updated after the combat-integration pass (2026-06-21):
 
-- **Creature size & space.** All actors occupy a single cell (medium). Large+
-  multi-cell footprints, squeezing, and size-based hostile pass-through are not
-  modeled yet (`SpatialActor.size` is tracked but unused in geometry).
-- **Opportunity attacks flag, don't resolve.** `move_creature` returns the ids
-  of creatures that get an OA; rolling/applying that reaction is left to the
-  existing attack pipeline (not yet hooked up to auto-resolve).
-- **Cover model is approximate.** Cover is derived from sight-blocking and
-  movement-blocking cells along the Bresenham line plus a target cell's static
-  `cover`; it does not do true corner-to-corner 5e cover tracing.
-- **Z-axis is partial.** Elevation affects distance and falling; flying movement
-  cost, three-dimensional pathfinding, and climb/jump action costs are not done.
-- **Hex not wired to content.** `HexGridAdapter` works and is tested, but no
-  scenario builds a hex `BattleMap`; `buildBattleMap` always emits square.
-- **Battle maps are featureless by default.** `buildBattleMap` seeds empty
-  terrain; authoring per-encounter terrain/cover/elevation from module data is a
-  follow-up.
+- **Opportunity attacks — RESOLVED.** Now rolled, applied, and reaction-consumed
+  (see above).
+- **Featureless battle maps — RESOLVED.** Authored terrain is supported and used
+  by at least one encounter (see above).
+- **Cover not applied to attacks — RESOLVED.** Cover now modifies effective AC
+  and blocks total-cover shots in `player_attack`.
+
+Still deferred, with reasons:
+
+- **Multi-cell creature size — DEFERRED.** All actors occupy a single cell.
+  Large+ footprints touch `occupantAt`, pathfinding, LOS, reach, and targeting
+  simultaneously, so a correct 2×2+ implementation is its own focused pass.
+  Deferred now because **all current content is Small/Medium**, so single-cell
+  occupancy is exactly right for shipped scenarios; revisit when a Large+ monster
+  is actually authored. (`SpatialActor.size` is tracked, unused in geometry.)
+- **True corner-to-corner cover — ACCEPTED SIMPLIFICATION.** Cover is derived
+  from sight/movement blockers along the Bresenham line plus the target cell's
+  static `cover`. For text combat this is deterministic and good enough; exact 5e
+  corner tracing changes outcomes only in rare grazing cases and isn't worth the
+  complexity until there's a visible grid the player reasons about precisely.
+- **Hex not proven via a scenario — DEFERRED.** `HexGridAdapter` is unit-tested
+  but no scenario authors a hex `BattleMap` (`buildBattleMap` emits square, with
+  authored override). End-to-end hex play is deferred until a wilderness-skirmish
+  scenario needs it; the adapter seam means that's authoring, not engine work.
+- **Flying movement cost / 3D pathfinding — DEFERRED (later phase).** Elevation
+  affects distance, range, and falling, but pathfinding is 2D and flying has no
+  movement-cost model. Genuinely a later phase: it needs a 3D cost model and UI
+  to be playable, and no current encounter has verticality beyond falling.
+- **Monster ranged cover — DEFERRED.** Cover is applied to `player_attack`
+  (which now carries a `ranged` flag); `monster_turn` is treated as melee
+  because the monster model has no ranged/reach metadata yet.
 - **diagonalMode default is `simple_5ft`** (diagonal = 1 square). The
   `alternating_5_10` variant is implemented in the adapter but defaults off.
