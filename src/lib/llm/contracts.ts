@@ -29,6 +29,11 @@ const engineRequestSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('update_inventory'), characterId: z.string(), add: z.array(z.string()).optional(), remove: z.array(z.string()).optional(), goldDelta: z.number().optional() }),
   z.object({ kind: z.literal('apply_condition'), targetId: z.string(), condition: conditionSchema }),
   z.object({ kind: z.literal('remove_condition'), targetId: z.string(), condition: conditionSchema }),
+  z.object({ kind: z.literal('move_area'), actorId: z.string(), targetAreaId: z.string() }),
+  z.object({ kind: z.literal('query_current_area'), actorId: z.string() }),
+  z.object({ kind: z.literal('query_exits'), actorId: z.string() }),
+  z.object({ kind: z.literal('query_actors_present'), actorId: z.string() }),
+  z.object({ kind: z.literal('query_path_exists'), fromAreaId: z.string(), toAreaId: z.string() }),
 ]);
 
 export type EngineRequestInput = z.infer<typeof engineRequestSchema>;

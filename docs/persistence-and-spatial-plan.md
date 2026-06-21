@@ -1,5 +1,68 @@
 # Persistence + Spatial Tracking — Implementation Plan
 
+## 2026-06-21 Spatial Awareness Package Intake
+
+The imported AIDM Spatial Awareness package converges on one strong rule:
+the LLM should propose spatial intent, but deterministic engine code must own
+movement legality, area reachability, terrain cost, combat distance, and any
+result the narration is allowed to claim.
+
+Consensus build order from the package:
+
+1. Area graph / zone movement first for exploration: named areas, exits,
+   actor locations, blocked/gated connections, and query requests.
+2. Square-grid tactical combat second: 5-foot cells, configurable diagonal
+   mode, terrain costs, occupied/blocked cells, movement budget, Dash,
+   Disengage, reach, and opportunity-attack triggers.
+3. Line of sight, cover, AoE templates, verticality/falling, and hex adapters
+   come after basic tactical movement is solid.
+4. Narration validation must be extended so prose cannot imply a move, melee
+   reach, line of sight, or arrival that the engine did not grant.
+
+### Shipped in the first intake pass
+
+- Added `src/lib/engine/spatial/` with pure area graph types and functions:
+  `createExplorationState`, `canMove`, `moveActor`, `actorsInSameArea`, and
+  `findPath`.
+- Added structured spatial engine requests:
+  `move_area`, `query_current_area`, `query_exits`, `query_actors_present`,
+  and `query_path_exists`.
+- Extended the main `EngineRequest` contract, LLM schema, prompt request list,
+  `GameState`, and turn response shape so sessions can carry optional
+  `exploration` state.
+- Added Vitest coverage for the area graph and a main-engine movement smoke
+  test.
+
+### Next roadmap slice: make exploration spatial data real
+
+- Add an `areas`/`exploration` authoring field to module schemas and content
+  templates, then validate malformed area graphs during module import.
+- Author the Nightstone area graph and seed `GameState.exploration` when an
+  adventure provides an area graph.
+- Compute `satisfiedTags` from inventory, canon flags, and resolved checks so
+  `requires: { tag }` gates work for locked doors, repaired bridges, secret
+  routes, and skill-gated transitions.
+- Filter prompt spatial context to current area plus adjacent areas only. The
+  prompt now supports this when exploration state exists; the remaining work is
+  feeding it real module data.
+- Add narration drift checks for failed `move_area` results and for prose that
+  claims arrival in a non-current area.
+
+### Next roadmap slice: tactical movement
+
+- Extend `CombatState.grid` into a battle map with cells, terrain tags,
+  blocked/sight-blocking flags, actor size, reach, speed, movement spent,
+  action state, reaction availability, and configurable diagonal movement.
+- Add requests for `query_reachable`, `move_combat`, `dash`, `disengage`, and
+  `query_targets_in_range`.
+- Use Dijkstra/A* path costs for movement: normal 5 ft cells, difficult terrain
+  costing extra, occupied spaces, blocked cells, prone/crawling, Dash, and
+  hostile reach.
+- Surface engine-computed answers to the LLM rather than asking it to calculate
+  distance, line of sight, cover, or AoE legality.
+
+---
+
 Concrete, file-scoped plan for the two production-architecture gaps (roadmap #1 and
 #2). Both are contained patches, not rebuilds — the engine-validates / LLM-narrates
 bones are already right. Run `pnpm test` / `pnpm build` after each phase.

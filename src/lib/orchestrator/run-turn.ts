@@ -53,7 +53,7 @@ export type TurnResult = {
     advantage?: boolean;
     disadvantage?: boolean;
   };
-  engineResults: Array<{ kind: string; summary: string; ok: boolean; breakdown?: import('@/lib/engine/types').RollBreakdown; critical?: boolean }>;
+  engineResults: Array<{ kind: string; summary: string; ok: boolean; breakdown?: import('@/lib/engine/types').RollBreakdown; critical?: boolean; spatial?: import('@/lib/engine/spatial').SpatialEngineResult }>;
   recentRolls: import('@/lib/engine/types').RollBreakdown[];
   narrationWarnings?: string[];
   state: {
@@ -79,6 +79,7 @@ export type TurnResult = {
     npcs: GameState['npcs'];
     canonLog: GameState['canonLog'];
     combat: GameState['combat'];
+    exploration?: GameState['exploration'];
     log: string[];
   };
 };
@@ -218,6 +219,7 @@ export function runTurn(
         npcs: visibleNpcsForScene(state.adventureId, state.sceneId, state.npcs),
         canonLog: state.canonLog,
         combat: state.combat,
+        exploration: state.exploration,
         log: state.log.slice(-10),
       },
     },

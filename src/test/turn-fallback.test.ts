@@ -19,7 +19,7 @@ describe('Table Rules fallback when AI generation fails', () => {
     process.env.GROQ_API_KEY = 'mock-groq-key';
     process.env.GROQ_API_KEYS = '';
 
-    providerModule = await import('@/lib/llm/provider');
+    providerModule = await import('@/lib/llm/provider') as unknown as typeof providerModule;
     providerModule.generateDmTurn.mockResolvedValue(null);
     providerModule.generateNarration.mockResolvedValue(null);
 

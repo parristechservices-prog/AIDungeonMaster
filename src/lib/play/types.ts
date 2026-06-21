@@ -57,6 +57,7 @@ export type TurnResponse = {
     npcs: GameState['npcs'];
     canonLog: GameState['canonLog'];
     combat: GameState['combat'];
+    exploration?: GameState['exploration'];
     log: string[];
   };
   recap: { turnNumber: number };

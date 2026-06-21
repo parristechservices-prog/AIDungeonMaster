@@ -10,6 +10,18 @@ export function buildSystemPrompt(state: GameState): string {
   const persona = DM_PERSONAS[state.personaId || 'balanced'];
   const sceneMeta =
     state.sceneId !== ENDING_SCENE_ID ? getPlayableScene(adventure, state.sceneId) : undefined;
+  const activeAreaId = state.exploration?.locations[state.activeCharacterId];
+  const activeArea = activeAreaId ? state.exploration?.graph.areas[activeAreaId] : undefined;
+  const adjacentAreas = activeArea
+    ? activeArea.connections
+        .map((connection) => {
+          const area = state.exploration?.graph.areas[connection.to];
+          return area
+            ? `- ${area.id}: ${area.name}${connection.label ? ` via ${connection.label}` : ''} (${connection.difficulty})`
+            : `- ${connection.to}: unknown area (${connection.difficulty})`;
+        })
+        .join('\n')
+    : undefined;
 
   const partyDescription = state.party.map(p => {
     const featuresList = p.features.map((f) => `${f.name} (${f.usesRemaining}/${f.usesMax})`).join(', ');
@@ -96,6 +108,14 @@ export function buildSystemPrompt(state: GameState): string {
     sceneMeta ? `Allowed exits: ${sceneMeta.allowedExits.join(', ') || 'none'}` : '',
     sceneMeta ? `Forbidden: ${sceneMeta.forbidden.join('; ') || 'none'}` : '',
     sceneMeta ? `Success conditions: ${sceneMeta.successConditions.join('; ') || 'none'}` : '',
+    activeArea ? '' : '',
+    activeArea ? '## SPATIAL STATE' : '',
+    activeArea ? `Current area for active character ${state.activeCharacterId}: ${activeArea.id} - ${activeArea.name}` : '',
+    activeArea?.description ? `Area description: ${activeArea.description}` : '',
+    activeArea ? `Known exits:\n${adjacentAreas || '- none'}` : '',
+    activeArea
+      ? 'Use "move_area" when the party or an actor moves to a directly connected area. Query exits/current area if unsure. Never narrate arrival in an unconnected or blocked area unless the engine result says the move succeeded.'
+      : '',
     '',
     '## THE ADVENTURING PARTY',
     partyDescription,
@@ -130,9 +150,10 @@ export function buildSystemPrompt(state: GameState): string {
     '',
     '## ENGINE REQUESTS — EXACT SHAPE',
     '- Each engine request is an object whose action is named by the field "kind" (NOT "type").',
-    '- Valid "kind" values: "skill_check", "player_attack", "start_combat", "monster_turn", "death_save", "use_feature", "cast_spell", "short_rest", "long_rest", "advance_scene", "update_npc", "add_canon_fact", "update_inventory", "apply_condition", "remove_condition".',
+    '- Valid "kind" values: "skill_check", "player_attack", "start_combat", "monster_turn", "death_save", "use_feature", "cast_spell", "short_rest", "long_rest", "advance_scene", "update_npc", "add_canon_fact", "update_inventory", "apply_condition", "remove_condition", "move_area", "query_current_area", "query_exits", "query_actors_present", "query_path_exists".',
     '- "skill_check" requires: { "kind": "skill_check", "characterId": "<id from THE ADVENTURING PARTY>", "skill": "<lowercase skill>", "dc": <1-30>, "reason": "<short why>" }. Optional: "advantage"/"disadvantage" (boolean).',
     '- "player_attack" requires: { "kind": "player_attack", "characterId": "<party id>", "targetId": "<active monster id>" }.',
+    '- "move_area" requires: { "kind": "move_area", "actorId": "<party or NPC id>", "targetAreaId": "<connected area id>" }.',
     '- Example valid turn:',
     '  { "engineRequests": [ { "kind": "skill_check", "characterId": "PC_ID", "skill": "insight", "dc": 12, "reason": "Reading Mira for honesty" } ], "narration": "You study Mira closely as you ask...", "needsResultBeforeNarrating": true, "ambient": "tavern" }',
   ].join('\n');

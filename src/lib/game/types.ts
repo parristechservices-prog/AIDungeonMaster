@@ -68,6 +68,8 @@ export type CombatState = {
   };
 };
 
+export type { ExplorationState } from '@/lib/engine/spatial/types';
+
 export type DMPersonaId = 'balanced' | 'gritty' | 'epic' | 'whimsical';
 
 export type DMPersona = {
@@ -95,6 +97,7 @@ export type GameState = {
   monsters: Monster[];
   npcs: NPC[];
   combat: CombatState;
+  exploration?: import('@/lib/engine/spatial/types').ExplorationState;
 };
 
 export type NewGameOptions = {

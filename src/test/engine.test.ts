@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { createInitialState } from '@/lib/game/state';
 import { resolveEngineRequest, setRandomProvider, resetRandomProvider } from '@/lib/engine';
+import { createExplorationState, type AreaGraph } from '@/lib/engine/spatial';
 
 /** Scripted random provider: each call returns the next value (then repeats). */
 function seq(values: number[]) {
@@ -179,5 +180,41 @@ describe('engine', () => {
     expect(out.state.player.hp).toBe(state.player.maxHp);
     expect(out.state.player.spellSlots[1].remaining).toBe(2);
     expect(out.state.player.features[0].usesRemaining).toBe(state.player.features[0].usesMax);
+  });
+
+  it('resolves spatial movement through the engine when an area graph exists', () => {
+    const graph: AreaGraph = {
+      areas: {
+        square: {
+          id: 'square',
+          name: 'Town Square',
+          connections: [{ to: 'inn', difficulty: 'normal', label: 'the lantern-lit lane' }],
+        },
+        inn: {
+          id: 'inn',
+          name: 'Wayside Inn',
+          connections: [{ to: 'square', difficulty: 'normal' }],
+        },
+      },
+    };
+    const state = createInitialState('spatial-engine');
+    state.exploration = createExplorationState(graph, { [state.player.id]: 'square' });
+
+    const moved = resolveEngineRequest(state, {
+      kind: 'move_area',
+      actorId: state.player.id,
+      targetAreaId: 'inn',
+    });
+    expect(moved.result.ok).toBe(true);
+    expect(moved.result.spatial).toMatchObject({ kind: 'move_area', ok: true, from: 'square', to: 'inn' });
+    expect(moved.state.exploration?.locations[state.player.id]).toBe('inn');
+
+    const invalid = resolveEngineRequest(moved.state, {
+      kind: 'move_area',
+      actorId: state.player.id,
+      targetAreaId: 'missing',
+    });
+    expect(invalid.result.ok).toBe(false);
+    expect(invalid.state.exploration?.locations[state.player.id]).toBe('inn');
   });
 });

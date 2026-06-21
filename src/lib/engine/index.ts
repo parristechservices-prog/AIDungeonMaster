@@ -3,6 +3,7 @@ import { getAdventure } from '@/lib/game/adventures/registry.server';
 import type { GameState, Character } from '@/lib/game/types';
 import { advanceScene, buildTacticalGrid } from '@/lib/game/state';
 import type { EngineRequest, EngineResult, RollBreakdown } from './types';
+import { resolveSpatialRequest, type SpatialEngineResult } from './spatial';
 
 let randomProvider = Math.random;
 
@@ -41,6 +42,30 @@ export function resolveEngineRequest(
   options?: { physicalDice?: boolean }
 ): { state: GameState; result: EngineResult } {
   switch (request.kind) {
+    case 'move_area':
+    case 'query_current_area':
+    case 'query_exits':
+    case 'query_actors_present':
+    case 'query_path_exists': {
+      if (!state.exploration) {
+        return {
+          state,
+          result: { ok: false, summary: 'No exploration area graph is available for this session.' },
+        };
+      }
+      try {
+        const resolved = resolveSpatialRequest(state.exploration, request);
+        return {
+          state: { ...state, exploration: resolved.state },
+          result: spatialResultToEngineResult(resolved.result),
+        };
+      } catch (e) {
+        return {
+          state,
+          result: { ok: false, summary: e instanceof Error ? e.message : 'Spatial request failed.' },
+        };
+      }
+    }
     case 'skill_check': {
       const char = state.party.find((p) => p.id === requestedCharacterId(request.characterId));
       if (!char) return { state, result: { ok: false, summary: 'Character not found.' } };
@@ -606,6 +631,33 @@ export function resolveEngineRequest(
       const summary = `${targetName} is no longer ${request.condition}.`;
       return { state: appendLog(next, summary), result: { ok: true, summary } };
     }
+  }
+}
+
+function spatialResultToEngineResult(spatial: SpatialEngineResult): EngineResult {
+  switch (spatial.kind) {
+    case 'move_area':
+      return spatial.ok
+        ? {
+            ok: true,
+            summary: `Moved from ${spatial.from} to ${spatial.to}.`,
+            spatial,
+          }
+        : {
+            ok: false,
+            summary: spatial.reason === 'requires_unmet'
+              ? `Movement blocked by unmet requirement: ${spatial.requiredTag}.`
+              : `Movement failed: ${spatial.reason}.`,
+            spatial,
+          };
+    case 'query_current_area':
+      return { ok: true, summary: `Current area: ${spatial.areaId}.`, spatial };
+    case 'query_exits':
+      return { ok: true, summary: `${spatial.exits.length} exit(s) available.`, spatial };
+    case 'query_actors_present':
+      return { ok: true, summary: `${spatial.actorIds.length} actor(s) present.`, spatial };
+    case 'query_path_exists':
+      return { ok: spatial.path !== null, summary: spatial.path ? `Path exists: ${spatial.path.join(' -> ')}.` : 'No path exists.', spatial };
   }
 }
 
