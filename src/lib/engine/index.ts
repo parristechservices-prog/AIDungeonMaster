@@ -1,5 +1,6 @@
 import { getSceneKind } from '@/lib/game/adventures/helpers';
 import { getAdventure } from '@/lib/game/adventures/registry.server';
+import { encounterBattleMap } from '@/lib/game/adventures/encounters';
 import type { GameState, Character } from '@/lib/game/types';
 import { advanceScene, buildBattleMap } from '@/lib/game/state';
 import type { EngineRequest, EngineResult, RollBreakdown, OpportunityAttackOutcome } from './types';
@@ -170,16 +171,17 @@ export function resolveEngineRequest(
       const adventure = getAdventure(state.adventureId);
       const combatSceneId =
         adventure.sceneOrder.find((id) => adventure.scenes[id]?.kind === 'combat') ?? 'combat';
-      
+
       const draft = {
         ...state,
         combat: { active: true, initiative: init, turnIndex: 0 },
         sceneId: combatSceneId,
         activeCharacterId: init[0].actorId,
       };
+      const authoredMap = encounterBattleMap(adventure, combatSceneId);
       const next = {
         ...draft,
-        combat: { ...draft.combat, battleMap: buildBattleMap(draft) },
+        combat: { ...draft.combat, battleMap: buildBattleMap(draft, undefined, authoredMap) },
       };
       return { state: appendLog(next, 'Combat started. Roll for initiative!'), result: { ok: true, summary: 'Initiative rolled.' } };
     }

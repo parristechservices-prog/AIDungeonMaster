@@ -11,6 +11,8 @@ export function scenarioToAdventure(scenario: Scenario): Adventure {
     combat: { kind: 'combat', ...scenario.scenes.combat },
   };
 
+  const combatBattleMap = scenario.scenes.combat.battleMap;
+
   return {
     id: scenario.id,
     title: scenario.title,
@@ -21,6 +23,7 @@ export function scenarioToAdventure(scenario: Scenario): Adventure {
     source: 'builtin',
     sceneOrder: [...BUILTIN_SCENE_ORDER],
     scenes,
+    sceneEncounters: combatBattleMap ? { combat: { battleMap: combatBattleMap } } : undefined,
     endingMessage: scenario.endingMessage,
     npcs: structuredClone(scenario.npcs),
     monsters: scenario.buildMonsters(),

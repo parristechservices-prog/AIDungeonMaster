@@ -1,5 +1,6 @@
 export * from './types';
 export * from './adapter';
+export * from './authoring';
 export * from './grid';
 export * from './movement';
 export * from './range-los';

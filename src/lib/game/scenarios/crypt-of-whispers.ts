@@ -57,6 +57,24 @@ export const cryptOfWhispers: Scenario = {
       allowedExits: ['ending'],
       forbidden: ['Do not end combat while a skeleton remains active.'],
       successConditions: ['Defeat all active monsters.'],
+      // A pillared crypt: two stone pillars (block movement + sight) flank a
+      // central aisle, a sarcophagus gives half cover, and rubble (difficult
+      // terrain) clogs the eastern alcove.
+      battleMap: {
+        gridType: 'square',
+        width: 10,
+        height: 8,
+        cellSizeFt: 5,
+        terrain: [
+          { x: 4, y: 2, terrain: 'blocked', blocksMovement: true, blocksSight: true },
+          { x: 4, y: 5, terrain: 'blocked', blocksMovement: true, blocksSight: true },
+          { x: 5, y: 3, cover: 'half' },
+          { x: 5, y: 4, cover: 'half' },
+        ],
+        regions: [
+          { from: { x: 7, y: 1 }, to: { x: 9, y: 2 }, terrain: 'difficult' },
+        ],
+      },
     },
   },
   endingMessage: 'The whispers fall silent. The crypt is sealed once more.',

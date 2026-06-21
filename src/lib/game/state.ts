@@ -4,7 +4,8 @@ import { getSceneKind } from './adventures/helpers';
 import { initialMonstersForAdventure, resolveCombatMonsters } from './adventures/encounters';
 import { DEFAULT_ADVENTURE_ID, getAdventure, getFirstPlayableSceneId } from './adventures/registry.server';
 import { buildExplorationState } from './adventures/area-graphs';
-import type { BattleMap, GridCoord, SpatialActor } from '@/lib/engine/spatial/tactical';
+import type { AuthoredBattleMap, BattleMap, GridCoord, SpatialActor } from '@/lib/engine/spatial/tactical';
+import { buildCellsFromAuthoring } from '@/lib/engine/spatial/tactical';
 import type { CanonFact, GameState, NewGameOptions } from './types';
 
 export type { NewGameOptions };
@@ -63,37 +64,74 @@ const DEFAULT_REACH_FT = 5;
 /**
  * Builds the tactical BattleMap that exists while combat is active: party on the
  * west edge, monsters on the east, every actor with default 5e speed/reach and a
- * fresh per-turn action economy. Terrain is empty (all normal) by default;
- * scenarios/modules can layer terrain on top later.
+ * fresh per-turn action economy. When the encounter authored terrain (via
+ * `authored`), its dimensions and cells are used and actors are placed on free,
+ * non-blocked cells; otherwise a featureless square grid is generated.
  */
 export function buildBattleMap(
   state: GameState,
   preservePositions?: Record<string, GridCoord>,
+  authored?: AuthoredBattleMap,
 ): BattleMap {
-  const width = 8;
-  const height = 6;
+  const width = authored?.width ?? 8;
+  const height = authored?.height ?? 6;
+  const cells = authored ? buildCellsFromAuthoring(authored, width, height).cells : {};
   const positions: Record<string, GridCoord> = {};
   const actors: BattleMap['actors'] = {};
 
+  const isBlocked = (x: number, y: number) => {
+    const c = cells[`${x},${y}`];
+    return !!c && (c.terrain === 'blocked' || c.blocksMovement === true);
+  };
+  const takenKeys = new Set<string>();
+  const place = (id: string, preferredX: number, index: number): GridCoord => {
+    const fromSave = preservePositions?.[id];
+    if (fromSave) {
+      takenKeys.add(`${fromSave.x},${fromSave.y}`);
+      return fromSave;
+    }
+    const preferredY = Math.min(height - 1, 1 + index);
+    const candidate = firstFreeCell(preferredX, preferredY, width, height, isBlocked, takenKeys);
+    takenKeys.add(`${candidate.x},${candidate.y}`);
+    return { ...candidate, z: 0 };
+  };
+
   state.party.forEach((member, index) => {
-    positions[member.id] = preservePositions?.[member.id] ?? { x: 1, y: Math.min(height - 1, 1 + index), z: 0 };
+    positions[member.id] = place(member.id, 1, index);
     actors[member.id] = makeSpatialActor(member.id, 'party');
   });
   state.monsters.forEach((monster, index) => {
-    positions[monster.id] = preservePositions?.[monster.id] ?? { x: width - 2, y: Math.min(height - 1, 1 + index), z: 0 };
+    positions[monster.id] = place(monster.id, width - 2, index);
     actors[monster.id] = makeSpatialActor(monster.id, 'monster');
   });
 
   return {
-    gridType: 'square',
-    cellSizeFt: 5,
+    gridType: authored?.gridType ?? 'square',
+    cellSizeFt: authored?.cellSizeFt ?? 5,
     width,
     height,
-    diagonalMode: 'simple_5ft',
-    cells: {},
+    diagonalMode: authored?.diagonalMode ?? 'simple_5ft',
+    cells,
     positions,
     actors,
   };
+}
+
+/** Finds the nearest free, non-blocked cell to (preferredX, preferredY). */
+function firstFreeCell(
+  preferredX: number,
+  preferredY: number,
+  width: number,
+  height: number,
+  isBlocked: (x: number, y: number) => boolean,
+  taken: Set<string>,
+): { x: number; y: number } {
+  const free = (x: number, y: number) => x >= 0 && y >= 0 && x < width && y < height && !isBlocked(x, y) && !taken.has(`${x},${y}`);
+  if (free(preferredX, preferredY)) return { x: preferredX, y: preferredY };
+  // Spiral-ish scan: same column first, then the whole grid.
+  for (let y = 0; y < height; y++) if (free(preferredX, y)) return { x: preferredX, y };
+  for (let x = 0; x < width; x++) for (let y = 0; y < height; y++) if (free(x, y)) return { x, y };
+  return { x: preferredX, y: preferredY }; // fully packed: fall back to preferred
 }
 
 function makeSpatialActor(id: string, faction: SpatialActor['faction']): SpatialActor {

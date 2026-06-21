@@ -79,3 +79,29 @@ export interface BattleMap {
   positions: Record<string, GridCoord>;
   actors: Record<string, SpatialActor>;
 }
+
+// --- Authoring (scenario/module data) -------------------------------------
+// Sparse, human-readable shape that scenarios use to describe a battle map.
+// `authoring.ts` normalises this into BattleMap.cells with bounds validation.
+
+export interface AuthoredCell extends Partial<Cell> {
+  x: number;
+  y: number;
+}
+
+export interface AuthoredRegion extends Partial<Omit<Cell, never>> {
+  from: { x: number; y: number };
+  to: { x: number; y: number };
+}
+
+export interface AuthoredBattleMap {
+  gridType?: GridType;
+  width: number;
+  height: number;
+  cellSizeFt?: number;
+  diagonalMode?: DiagonalMode;
+  /** Per-cell terrain/cover overrides. */
+  terrain?: AuthoredCell[];
+  /** Rectangular regions filled with the same attributes. */
+  regions?: AuthoredRegion[];
+}

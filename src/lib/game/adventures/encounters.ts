@@ -1,6 +1,7 @@
 import { buildBalancedEncounter, type Difficulty } from '@/lib/engine/balancer';
 import { getMonster } from '@/lib/game/monsters';
 import type { Monster } from '@/lib/game/types';
+import type { AuthoredBattleMap } from '@/lib/engine/spatial/tactical';
 import type { Adventure } from './types';
 
 export type SceneEncounterSpec = {
@@ -10,7 +11,14 @@ export type SceneEncounterSpec = {
   /** Build from CR budget using these ids */
   auto?: boolean;
   preferredTemplates?: string[];
+  /** Optional authored tactical terrain for this encounter's battle map. */
+  battleMap?: AuthoredBattleMap;
 };
+
+/** The authored battle map for a combat scene, if any. */
+export function encounterBattleMap(adventure: Adventure, sceneId: string): AuthoredBattleMap | undefined {
+  return adventure.sceneEncounters?.[sceneId]?.battleMap;
+}
 
 export function resolveCombatMonsters(
   adventure: Adventure,

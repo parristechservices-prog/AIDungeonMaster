@@ -1,4 +1,5 @@
 import type { Monster, NPC } from '../types';
+import type { AuthoredBattleMap } from '@/lib/engine/spatial/tactical';
 
 export type PlayableSceneId = 'social' | 'exploration' | 'combat';
 
@@ -13,6 +14,8 @@ export type ScenarioScene = {
   allowedExits: string[];
   forbidden: string[];
   successConditions: string[];
+  /** Optional authored tactical terrain for a combat scene. */
+  battleMap?: AuthoredBattleMap;
 };
 
 export type ScenarioMock = {
