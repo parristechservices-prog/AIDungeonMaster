@@ -8,6 +8,7 @@ export type NarrationEngineResult = {
   spatial?: import('@/lib/engine/spatial').SpatialEngineResult;
   tactical?: import('@/lib/engine/spatial/tactical').TacticalEngineResult;
   opportunityAttacks?: import('@/lib/engine/types').OpportunityAttackOutcome[];
+  cover?: import('@/lib/engine/types').CoverOutcome;
 };
 
 /**
@@ -136,6 +137,14 @@ export function validateNarrationAgainstResults(
   }
   if (!oas.length && narrationOa && impliesAttackLands(narration)) {
     warnings.push('Tactical: Narration describes an opportunity attack the engine did not resolve.');
+  }
+
+  // Monster attack drift: a failed monster attack (out of reach, or blocked by
+  // cover / line of sight) must not be narrated as a landed hit.
+  const monsterMiss = results.find((r) => r.kind === 'monster_turn' && !r.ok);
+  if (monsterMiss && impliesAttackLands(narration)) {
+    const why = monsterMiss.cover?.kind === 'total' ? 'the target had total cover / no line of sight' : monsterMiss.cover ? 'cover raised the AC and the attack missed' : 'the monster could not reach or hit the target';
+    warnings.push(`Tactical: Narration implies the monster's attack landed, but ${why}.`);
   }
 
   const allowedNumbers = new Set(

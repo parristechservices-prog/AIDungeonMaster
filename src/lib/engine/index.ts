@@ -5,7 +5,9 @@ import type { GameState, Character } from '@/lib/game/types';
 import { advanceScene, buildBattleMap } from '@/lib/game/state';
 import type { EngineRequest, EngineResult, RollBreakdown, OpportunityAttackOutcome, CoverOutcome } from './types';
 import { resolveSpatialRequest, type SpatialEngineResult } from './spatial';
-import { resolveTacticalRequest, lineOfSight, coverAcBonus, type TacticalEngineRequest, type TacticalEngineResult } from './spatial/tactical';
+import { resolveTacticalRequest, lineOfSight, coverAcBonus, reachableCells, resolveMove, distanceFt, distanceBetweenActors, type TacticalEngineRequest, type TacticalEngineResult, type BattleMap, type CoverKind, type GridCoord } from './spatial/tactical';
+import { monsterAttacks } from '@/lib/game/monsters';
+import type { Monster, MonsterAttack } from '@/lib/game/types';
 
 let randomProvider = Math.random;
 
@@ -203,10 +205,9 @@ export function resolveEngineRequest(
       // Melee attacks ignore cover (5e), so this only applies when ranged.
       let coverOutcome: CoverOutcome | undefined;
       let effectiveTargetAc = target.ac;
-      const attackBattleMap = state.combat.battleMap;
-      if (request.ranged && attackBattleMap?.positions[char.id] && attackBattleMap.positions[target.id]) {
-        const sight = lineOfSight(attackBattleMap, attackBattleMap.positions[char.id], attackBattleMap.positions[target.id]);
-        if (!sight.hasLineOfSight || sight.cover === 'total') {
+      if (request.ranged) {
+        const cov = resolveSpatialCover(state.combat.battleMap, char.id, target.id);
+        if (cov.available && cov.blocked) {
           return {
             state,
             result: {
@@ -216,10 +217,9 @@ export function resolveEngineRequest(
             },
           };
         }
-        const bonus = coverAcBonus(sight.cover);
-        if (bonus > 0) {
-          effectiveTargetAc = target.ac + bonus;
-          coverOutcome = { kind: sight.cover, baseAc: target.ac, bonus, effectiveAc: effectiveTargetAc };
+        if (cov.available && cov.bonus > 0) {
+          effectiveTargetAc = target.ac + cov.bonus;
+          coverOutcome = { kind: cov.cover, baseAc: target.ac, bonus: cov.bonus, effectiveAc: effectiveTargetAc };
         }
       }
 
@@ -294,68 +294,74 @@ export function resolveEngineRequest(
     case 'monster_turn': {
       const attacker = state.monsters.find((m) => m.hp > 0);
       if (!attacker) return { state, result: { ok: true, summary: 'No monsters remain.' } };
-      
-      // Target a random conscious player (uses the injectable provider so the
-      // choice is deterministic under tests, matching the rest of the engine).
-      const consciousPlayers = state.party.filter(p => !p.unconscious);
-      const target = consciousPlayers.length > 0
-        ? consciousPlayers[Math.floor(randomProvider() * consciousPlayers.length)]
-        : state.party[0];
 
-      let advantage = false;
-      let disadvantage = false;
-      let bonusFormula = undefined;
+      const consciousPlayers = state.party.filter((p) => !p.unconscious);
+      const battleMap = state.combat.battleMap;
+      const attacks = monsterAttacks(attacker);
+      const melee = attacks.find((a) => a.kind === 'melee');
+      const ranged = attacks.find((a) => a.kind === 'ranged');
 
-      // Attacker conditions
-      if (hasCondition(attacker, 'blinded')) disadvantage = true;
-      if (hasCondition(attacker, 'poisoned')) disadvantage = true;
-      if (hasCondition(attacker, 'prone')) disadvantage = true;
-      if (hasCondition(attacker, 'restrained')) disadvantage = true;
-      if (hasCondition(attacker, 'blessed')) bonusFormula = '1d4';
-
-      // Target conditions
-      if (hasCondition(target, 'blinded')) advantage = true;
-      if (hasCondition(target, 'paralyzed') || hasCondition(target, 'stunned') || hasCondition(target, 'unconscious')) advantage = true;
-      if (hasCondition(target, 'restrained')) advantage = true;
-
-      const targetAc = hasCondition(target, 'shielded') ? target.ac + 5 : target.ac;
-
-      const toHit = rollFormula('1d20', attacker.attackBonus, { advantage, disadvantage, bonusFormula });
-      if (toHit.total < targetAc) {
-        return { state: appendLog(state, `${attacker.name} missed ${target.name}.`), result: { ok: false, summary: `${attacker.name} missed.`, breakdown: toHit } };
+      // Legacy / non-spatial path: no battle map (or attacker not placed). Keep
+      // the original random-target melee behaviour so old saves/tests are intact.
+      if (!battleMap || !battleMap.positions[attacker.id]) {
+        const target = consciousPlayers.length > 0
+          ? consciousPlayers[Math.floor(randomProvider() * consciousPlayers.length)]
+          : state.party[0];
+        return resolveMonsterStrike(state, attacker, target, melee ?? attacks[0], {});
       }
 
-      // 5e: a hit on a creature at 0 HP causes death-save failures rather than
-      // HP loss. A melee hit on a prone/unconscious target within 5 ft is an
-      // automatic critical, which is two failures; three failures means death.
-      if (target.unconscious || target.hp <= 0) {
-        const failure = Math.min(3, target.deathSaves.failure + 2);
-        const died = failure >= 3;
-        let next = updateCharacterInParty(state, target.id, (c) => ({
-          ...c,
-          deathSaves: { ...c.deathSaves, failure },
-        }));
-        if (died && next.party.every((p) => p.hp <= 0 && p.deathSaves.failure >= 3)) {
-          next = { ...next, sceneId: 'ending' };
+      // Spatial path: target the nearest conscious, placed player.
+      const placed = consciousPlayers.filter((p) => battleMap.positions[p.id]);
+      if (placed.length === 0) {
+        return { state, result: { ok: true, summary: `${attacker.name} has no reachable target.` } };
+      }
+      let target = placed[0];
+      let bestDist = distanceBetweenActors(battleMap, attacker.id, target.id) ?? Infinity;
+      for (const p of placed) {
+        const d = distanceBetweenActors(battleMap, attacker.id, p.id) ?? Infinity;
+        if (d < bestDist) { bestDist = d; target = p; }
+      }
+      const reach = melee?.reachFt ?? 5;
+
+      // 1. Melee if already in reach.
+      if (melee && bestDist <= reach) {
+        return resolveMonsterStrike(state, attacker, target, melee, {});
+      }
+      // 2. Ranged if in range with a clear shot.
+      if (ranged && bestDist <= (ranged.rangeFt ?? 0)) {
+        const cover = resolveSpatialCover(battleMap, attacker.id, target.id);
+        if (!cover.blocked) {
+          return resolveMonsterStrike(state, attacker, target, ranged, { coverKind: cover.cover, coverBonus: cover.bonus });
         }
-        const note = died ? `${target.name} has died!` : `${target.name} suffers two death-save failures (${failure}/3).`;
+      }
+      // 3. Move into melee reach if movement allows, then strike.
+      if (melee) {
+        const dest = bestReachableCellWithinReach(battleMap, attacker.id, target.id, reach);
+        if (dest) {
+          const moved = resolveMove(battleMap, attacker.id, dest);
+          if (moved.result.ok) {
+            const movedState: GameState = { ...state, combat: { ...state.combat, battleMap: moved.map } };
+            const newDist = distanceBetweenActors(moved.map, attacker.id, target.id) ?? Infinity;
+            if (newDist <= reach) {
+              const struck = resolveMonsterStrike(movedState, attacker, target, melee, {});
+              return { state: struck.state, result: { ...struck.result, summary: `${attacker.name} moves into reach. ${struck.result.summary}` } };
+            }
+            return {
+              state: appendLog(movedState, `${attacker.name} advances but cannot reach ${target.name}.`),
+              result: { ok: false, summary: `${attacker.name} moved but could not reach ${target.name}.` },
+            };
+          }
+        }
+      }
+      // 4. Ranged in range but blocked by cover / line of sight.
+      if (ranged && bestDist <= (ranged.rangeFt ?? 0)) {
         return {
-          state: appendLog(next, `${attacker.name} strikes the fallen ${target.name}. ${note}`),
-          result: { ok: true, summary: `${attacker.name} strikes the fallen ${target.name}. ${note}`, breakdown: toHit },
+          state,
+          result: { ok: false, summary: `${attacker.name} has no clear shot at ${target.name} (cover or line of sight).`, cover: { kind: 'total', baseAc: target.ac, bonus: 0, effectiveAc: target.ac } },
         };
       }
-
-      // Use the monster's own damage dice rather than a flat 1d6+1.
-      const dmg = rollFormula(attacker.damage);
-      const hp = Math.max(0, target.hp - dmg.total);
-      const unconscious = hp === 0;
-
-      const next = updateCharacterInParty(state, target.id, (c) => ({ ...c, hp, unconscious }));
-
-      return {
-        state: appendLog(next, `${attacker.name} hit ${target.name} for ${dmg.total}.${unconscious ? ` ${target.name} has fallen unconscious!` : ''}`),
-        result: { ok: true, summary: `${attacker.name} hit ${target.name}.${unconscious ? ` ${target.name} is unconscious!` : ''}`, breakdown: dmg }
-      };
+      // 5. Nothing legal this turn.
+      return { state, result: { ok: false, summary: `${attacker.name} cannot reach or target any foe this turn.` } };
     }
     case 'death_save': {
       const char = state.party.find((p) => p.id === requestedCharacterId(request.characterId));
@@ -851,6 +857,104 @@ function resolveOpportunityAttacks(
     });
   }
   return { state: working, outcomes };
+}
+
+/** Spatial cover between two placed actors, attacker-agnostic (shared by player and monster attacks). */
+function resolveSpatialCover(
+  battleMap: BattleMap | undefined,
+  attackerId: string,
+  targetId: string,
+): { available: boolean; blocked: boolean; cover: CoverKind; bonus: number } {
+  if (!battleMap?.positions[attackerId] || !battleMap.positions[targetId]) {
+    return { available: false, blocked: false, cover: 'none', bonus: 0 };
+  }
+  const sight = lineOfSight(battleMap, battleMap.positions[attackerId], battleMap.positions[targetId]);
+  if (!sight.hasLineOfSight || sight.cover === 'total') return { available: true, blocked: true, cover: 'total', bonus: 0 };
+  return { available: true, blocked: false, cover: sight.cover, bonus: coverAcBonus(sight.cover) };
+}
+
+/** Least-cost reachable cell that puts the mover within `reachFt` of the target. */
+function bestReachableCellWithinReach(
+  battleMap: BattleMap,
+  attackerId: string,
+  targetId: string,
+  reachFt: number,
+): GridCoord | undefined {
+  const targetPos = battleMap.positions[targetId];
+  if (!targetPos) return undefined;
+  let best: GridCoord | undefined;
+  let bestCost = Infinity;
+  for (const cell of reachableCells(battleMap, attackerId)) {
+    if (distanceFt(battleMap, cell.coord, targetPos) <= reachFt && cell.costFt < bestCost) {
+      best = cell.coord;
+      bestCost = cell.costFt;
+    }
+  }
+  return best;
+}
+
+/**
+ * Resolves a single monster attack against a party member. Attacker-agnostic in
+ * the cover sense — melee attacks pass no cover; ranged attacks pass the cover
+ * bonus computed from the battle map. Reuses the same dice/damage/death-save
+ * pipeline the monster_turn melee path always used.
+ */
+function resolveMonsterStrike(
+  state: GameState,
+  attacker: Monster,
+  target: Character,
+  attack: MonsterAttack,
+  opts: { coverKind?: CoverKind; coverBonus?: number },
+): { state: GameState; result: EngineResult } {
+  let advantage = false;
+  let disadvantage = false;
+  let bonusFormula: string | undefined;
+
+  if (hasCondition(attacker, 'blinded')) disadvantage = true;
+  if (hasCondition(attacker, 'poisoned')) disadvantage = true;
+  if (hasCondition(attacker, 'prone')) disadvantage = true;
+  if (hasCondition(attacker, 'restrained')) disadvantage = true;
+  if (hasCondition(attacker, 'blessed')) bonusFormula = '1d4';
+
+  if (hasCondition(target, 'blinded')) advantage = true;
+  if (hasCondition(target, 'paralyzed') || hasCondition(target, 'stunned') || hasCondition(target, 'unconscious')) advantage = true;
+  if (hasCondition(target, 'restrained')) advantage = true;
+
+  const baseAc = hasCondition(target, 'shielded') ? target.ac + 5 : target.ac;
+  const coverBonus = opts.coverBonus ?? 0;
+  const effectiveAc = baseAc + coverBonus;
+  const cover: CoverOutcome | undefined =
+    opts.coverKind && opts.coverKind !== 'none' ? { kind: opts.coverKind, baseAc, bonus: coverBonus, effectiveAc } : undefined;
+  const coverNote = cover ? ` (${cover.kind.replace('_', '-')} cover: AC ${baseAc}+${coverBonus})` : '';
+
+  const toHit = rollFormula('1d20', attack.attackBonus, { advantage, disadvantage, bonusFormula });
+  if (toHit.total < effectiveAc) {
+    return {
+      state: appendLog(state, `${attacker.name} missed ${target.name}.`),
+      result: { ok: false, summary: `${attacker.name} missed${coverNote}.`, breakdown: toHit, cover },
+    };
+  }
+
+  if (target.unconscious || target.hp <= 0) {
+    const failure = Math.min(3, target.deathSaves.failure + 2);
+    const died = failure >= 3;
+    let next = updateCharacterInParty(state, target.id, (c) => ({ ...c, deathSaves: { ...c.deathSaves, failure } }));
+    if (died && next.party.every((p) => p.hp <= 0 && p.deathSaves.failure >= 3)) next = { ...next, sceneId: 'ending' };
+    const note = died ? `${target.name} has died!` : `${target.name} suffers two death-save failures (${failure}/3).`;
+    return {
+      state: appendLog(next, `${attacker.name} strikes the fallen ${target.name}. ${note}`),
+      result: { ok: true, summary: `${attacker.name} strikes the fallen ${target.name}. ${note}`, breakdown: toHit },
+    };
+  }
+
+  const dmg = rollFormula(attack.damage);
+  const hp = Math.max(0, target.hp - dmg.total);
+  const unconscious = hp === 0;
+  const next = updateCharacterInParty(state, target.id, (c) => ({ ...c, hp, unconscious }));
+  return {
+    state: appendLog(next, `${attacker.name} hit ${target.name} for ${dmg.total}.${unconscious ? ` ${target.name} has fallen unconscious!` : ''}`),
+    result: { ok: true, summary: `${attacker.name} hit ${target.name}.${coverNote}${unconscious ? ` ${target.name} is unconscious!` : ''}`, breakdown: dmg, cover },
+  };
 }
 
 function tacticalResultToEngineResult(tactical: TacticalEngineResult): EngineResult {

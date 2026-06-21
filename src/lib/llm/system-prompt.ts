@@ -147,6 +147,7 @@ export function buildSystemPrompt(state: GameState): string {
     '- "query_targets_in_range": { "kind": "query_targets_in_range", "actorId": "<id>", "rangeFt": <int> } — returns targets with distance, line of sight, and cover.',
     '- "check_line_of_sight": { "kind": "check_line_of_sight", "actorId": "<id>", "targetId": "<id>", "rangeFt"?: <int> }.',
     '- Never narrate a creature reaching, striking, or seeing a target unless the matching engine result said it was legal. If an attack is out of reach/range, narrate the failure the engine reported.',
+    '- "monster_turn" is fully engine-resolved: the engine picks the monster\'s target, checks melee reach and ranged range/line-of-sight/cover, moves the monster into reach when possible, and rolls the attack. Narrate ONLY what its result says — do not invent a monster hit, do not let a monster strike through total cover or from out of reach, and respect a cover-caused miss.',
     '- Example valid turn:',
     '  { "engineRequests": [ { "kind": "skill_check", "characterId": "PC_ID", "skill": "insight", "dc": 12, "reason": "Reading Mira for honesty" } ], "narration": "You study Mira closely as you ask...", "needsResultBeforeNarrating": true, "ambient": "tavern" }',
   ].join('\n');
