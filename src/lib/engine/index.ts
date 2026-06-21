@@ -2,7 +2,7 @@ import { getSceneKind } from '@/lib/game/adventures/helpers';
 import { getAdventure } from '@/lib/game/adventures/registry.server';
 import type { GameState, Character } from '@/lib/game/types';
 import { advanceScene, buildBattleMap } from '@/lib/game/state';
-import type { EngineRequest, EngineResult, RollBreakdown } from './types';
+import type { EngineRequest, EngineResult, RollBreakdown, OpportunityAttackOutcome } from './types';
 import { resolveSpatialRequest, type SpatialEngineResult } from './spatial';
 import { resolveTacticalRequest, type TacticalEngineRequest, type TacticalEngineResult } from './spatial/tactical';
 
@@ -79,10 +79,30 @@ export function resolveEngineRequest(
       }
       try {
         const resolved = resolveTacticalRequest(battleMap, request as TacticalEngineRequest);
-        return {
-          state: { ...state, combat: { ...state.combat, battleMap: resolved.map } },
-          result: tacticalResultToEngineResult(resolved.result),
-        };
+        let nextState: GameState = { ...state, combat: { ...state.combat, battleMap: resolved.map } };
+        const engineResult = tacticalResultToEngineResult(resolved.result);
+
+        // A successful move that left hostile reach triggers real opportunity
+        // attacks: roll them here against the just-moved creature.
+        if (resolved.result.kind === 'move_creature' && resolved.result.result.ok) {
+          const triggers = resolved.result.result.opportunityAttacks;
+          if (triggers.length > 0) {
+            const oa = resolveOpportunityAttacks(nextState, request.actorId, triggers);
+            nextState = oa.state;
+            if (oa.outcomes.length > 0) {
+              engineResult.opportunityAttacks = oa.outcomes;
+              const oaSummary = oa.outcomes
+                .map((o) => o.warning ?? `${o.attackerName} opportunity attack ${o.hit ? `hits ${o.targetName} for ${o.damage}` : `misses ${o.targetName}`}`)
+                .join('; ');
+              engineResult.summary = `${engineResult.summary} ${oaSummary}.`;
+              for (const o of oa.outcomes) {
+                nextState = appendLog(nextState, o.warning ?? `${o.attackerName}'s opportunity attack ${o.hit ? `hits ${o.targetName} for ${o.damage} damage` : `misses ${o.targetName}`}.`);
+              }
+            }
+          }
+        }
+
+        return { state: nextState, result: engineResult };
       } catch (e) {
         return {
           state,
@@ -683,6 +703,126 @@ function spatialResultToEngineResult(spatial: SpatialEngineResult): EngineResult
     case 'query_path_exists':
       return { ok: spatial.path !== null, summary: spatial.path ? `Path exists: ${spatial.path.join(' -> ')}.` : 'No path exists.', spatial };
   }
+}
+
+type CombatantRef = {
+  name: string;
+  ac: number;
+  conditions: import('@/lib/game/types').Condition[];
+  attackBonus: number;
+  damageFormula: string;
+  isParty: boolean;
+};
+
+/** Looks up a combatant (party or monster) by id, normalising attack data. */
+function findCombatant(state: GameState, id: string): CombatantRef | undefined {
+  const char = state.party.find((p) => p.id === id);
+  if (char) {
+    return {
+      name: char.name,
+      ac: char.ac,
+      conditions: char.conditions,
+      attackBonus: char.weapon.attackBonus,
+      damageFormula: char.weapon.damage,
+      isParty: true,
+    };
+  }
+  const monster = state.monsters.find((m) => m.id === id);
+  if (monster) {
+    return {
+      name: monster.name,
+      ac: monster.ac,
+      conditions: monster.conditions,
+      attackBonus: monster.attackBonus,
+      damageFormula: monster.damage,
+      isParty: false,
+    };
+  }
+  return undefined;
+}
+
+/** Applies damage to any combatant (party or monster), knocking PCs out at 0 HP. */
+function applyDamageTo(state: GameState, id: string, damage: number): GameState {
+  if (state.party.some((p) => p.id === id)) {
+    return updateCharacterInParty(state, id, (c) => {
+      const hp = Math.max(0, c.hp - damage);
+      return { ...c, hp, unconscious: hp === 0 ? true : c.unconscious };
+    });
+  }
+  return { ...state, monsters: state.monsters.map((m) => (m.id === id ? { ...m, hp: Math.max(0, m.hp - damage) } : m)) };
+}
+
+function setReactionUnavailable(state: GameState, attackerId: string): GameState {
+  const battleMap = state.combat.battleMap;
+  const actor = battleMap?.actors[attackerId];
+  if (!battleMap || !actor) return state;
+  return {
+    ...state,
+    combat: {
+      ...state.combat,
+      battleMap: { ...battleMap, actors: { ...battleMap.actors, [attackerId]: { ...actor, reactionAvailable: false } } },
+    },
+  };
+}
+
+/**
+ * Resolves opportunity attacks triggered by a move. Each attacker (already
+ * filtered to reaction-available hostiles by the spatial layer) rolls a melee
+ * attack against the mover, applies damage on a hit, and has its reaction
+ * consumed. Deterministic and engine-owned — the LLM only narrates the outcome.
+ */
+function resolveOpportunityAttacks(
+  state: GameState,
+  moverId: string,
+  attackerIds: string[],
+): { state: GameState; outcomes: OpportunityAttackOutcome[] } {
+  let working = state;
+  const outcomes: OpportunityAttackOutcome[] = [];
+  const target = findCombatant(working, moverId);
+  if (!target) return { state: working, outcomes };
+
+  for (const attackerId of attackerIds) {
+    const attacker = findCombatant(working, attackerId);
+    if (!attacker) continue;
+    if (!Number.isFinite(attacker.attackBonus) || !attacker.damageFormula) {
+      outcomes.push({
+        attackerId,
+        attackerName: attacker.name,
+        targetId: moverId,
+        targetName: target.name,
+        hit: false,
+        damage: 0,
+        warning: `${attacker.name} has no usable melee attack for an opportunity attack.`,
+      });
+      working = setReactionUnavailable(working, attackerId);
+      continue;
+    }
+
+    const toHit = rollFormula('1d20', attacker.attackBonus);
+    const natural = toHit.keptRoll ?? toHit.rolls[0];
+    const critical = natural === 20;
+    const hit = toHit.total >= target.ac || critical;
+    toHit.dc = target.ac;
+    toHit.ok = hit;
+
+    let damage = 0;
+    if (hit) {
+      const dmg = rollFormula(critical ? critFormula(attacker.damageFormula) : attacker.damageFormula);
+      damage = dmg.total;
+      working = applyDamageTo(working, moverId, damage);
+    }
+    working = setReactionUnavailable(working, attackerId);
+    outcomes.push({
+      attackerId,
+      attackerName: attacker.name,
+      targetId: moverId,
+      targetName: target.name,
+      hit,
+      damage,
+      breakdown: toHit,
+    });
+  }
+  return { state: working, outcomes };
 }
 
 function tacticalResultToEngineResult(tactical: TacticalEngineResult): EngineResult {

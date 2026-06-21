@@ -12,7 +12,7 @@ export type Skill =
 export type EngineRequest =
   | { kind: 'skill_check'; characterId: string; skill: Skill; dc: number; reason: string; manualRoll?: number; advantage?: boolean; disadvantage?: boolean }
   | { kind: 'start_combat' }
-  | { kind: 'player_attack'; characterId: string; targetId: string; manualRoll?: number; advantage?: boolean; disadvantage?: boolean }
+  | { kind: 'player_attack'; characterId: string; targetId: string; manualRoll?: number; advantage?: boolean; disadvantage?: boolean; ranged?: boolean }
   | { kind: 'monster_turn' }
   | { kind: 'death_save'; characterId: string; manualRoll?: number }
   | { kind: 'use_feature'; characterId: string; featureId: string }
@@ -27,6 +27,27 @@ export type EngineRequest =
   | { kind: 'remove_condition'; targetId: string; condition: Condition }
   | SpatialEngineRequest
   | TacticalEngineRequest;
+
+/** One resolved opportunity attack from a creature whose reach a mover left. */
+export type OpportunityAttackOutcome = {
+  attackerId: string;
+  attackerName: string;
+  targetId: string;
+  targetName: string;
+  hit: boolean;
+  damage: number;
+  breakdown?: RollBreakdown;
+  /** Set when no attack was rolled (e.g. attacker lacks usable melee data). */
+  warning?: string;
+};
+
+/** Cover applied to an attack for narration/debug visibility. */
+export type CoverOutcome = {
+  kind: 'none' | 'half' | 'three_quarters' | 'total';
+  baseAc: number;
+  bonus: number;
+  effectiveAc: number;
+};
 
 export type RollBreakdown = {
   formula: string;
@@ -55,4 +76,8 @@ export type EngineResult = {
   };
   spatial?: SpatialEngineResult;
   tactical?: TacticalEngineResult;
+  /** Opportunity attacks resolved as a side effect of a move_creature request. */
+  opportunityAttacks?: OpportunityAttackOutcome[];
+  /** Cover that modified this attack's effective AC. */
+  cover?: CoverOutcome;
 };

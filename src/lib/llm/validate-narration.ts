@@ -7,6 +7,7 @@ export type NarrationEngineResult = {
   breakdown?: { rolls: number[]; total: number };
   spatial?: import('@/lib/engine/spatial').SpatialEngineResult;
   tactical?: import('@/lib/engine/spatial/tactical').TacticalEngineResult;
+  opportunityAttacks?: import('@/lib/engine/types').OpportunityAttackOutcome[];
 };
 
 /**
@@ -124,6 +125,17 @@ export function validateNarrationAgainstResults(
     if (tac.kind === 'check_line_of_sight' && !tac.ok && impliesAttackLands(narration)) {
       warnings.push(`Tactical: Narration implies a clear attack, but the engine reported ${tac.reason ?? 'no clear shot'}.`);
     }
+  }
+
+  // Opportunity-attack drift: prose must match what the engine actually resolved.
+  const oas = results.flatMap((r) => r.opportunityAttacks ?? []);
+  const engineOaHit = oas.some((o) => o.hit);
+  const narrationOa = /\bopportunity attack|parting (?:blow|strike|shot)|as (?:you|they|it) (?:flee|retreat|withdraw|pull away)\b/i.test(narration);
+  if (engineOaHit && !narrationOa) {
+    warnings.push('Tactical: The engine resolved an opportunity attack, but the narration does not mention it.');
+  }
+  if (!oas.length && narrationOa && impliesAttackLands(narration)) {
+    warnings.push('Tactical: Narration describes an opportunity attack the engine did not resolve.');
   }
 
   const allowedNumbers = new Set(
