@@ -6,6 +6,7 @@ export type NarrationEngineResult = {
   ok: boolean;
   breakdown?: { rolls: number[]; total: number };
   spatial?: import('@/lib/engine/spatial').SpatialEngineResult;
+  tactical?: import('@/lib/engine/spatial/tactical').TacticalEngineResult;
 };
 
 /**
@@ -112,6 +113,19 @@ export function validateNarrationAgainstResults(
     }
   }
 
+  // Tactical drift: prose that claims a creature closed distance / struck a foe
+  // when the engine denied the move or the attack was out of reach/range.
+  for (const result of results) {
+    const tac = result.tactical;
+    if (!tac) continue;
+    if (tac.kind === 'move_creature' && !tac.result.ok && impliesSpatialArrival(narration)) {
+      warnings.push(`Tactical: Narration implies movement, but move_creature failed (${tac.result.reason}).`);
+    }
+    if (tac.kind === 'check_line_of_sight' && !tac.ok && impliesAttackLands(narration)) {
+      warnings.push(`Tactical: Narration implies a clear attack, but the engine reported ${tac.reason ?? 'no clear shot'}.`);
+    }
+  }
+
   const allowedNumbers = new Set(
     results.flatMap((result) => result.breakdown ? [...result.breakdown.rolls, result.breakdown.total] : []),
   );
@@ -123,6 +137,10 @@ export function validateNarrationAgainstResults(
   }
 
   return [...new Set(warnings)];
+}
+
+function impliesAttackLands(narration: string): boolean {
+  return /\b(strikes?|hits?|lands? a (?:blow|hit|shot)|slashes?|stabs?|skewers?|cuts? down|shoots?|fells?|cleaves?)\b/i.test(narration);
 }
 
 function impliesSpatialArrival(narration: string): boolean {

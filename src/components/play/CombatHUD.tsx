@@ -16,7 +16,7 @@ export function CombatHUD({ combat, party, monsters }: Props) {
   if (!combat.active || combat.initiative.length === 0) return null;
 
   const current = combat.initiative[combat.turnIndex];
-  const grid = combat.grid;
+  const grid = combat.battleMap;
   const actorsByCell = new Map<string, { id: string; label: string; kind: 'party' | 'monster'; defeated?: boolean }>();
 
   if (grid) {

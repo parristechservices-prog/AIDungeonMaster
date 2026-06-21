@@ -13,6 +13,12 @@ const conditionSchema = z.enum(['blinded', 'charmed', 'deafened', 'frightened', 
 // NOTE: variants intentionally omit `.strict()`. LLMs frequently tack on stray
 // keys (e.g. an extra `reason` or `target`); stripping them is far better than
 // discarding the entire turn and falling back to table-rules narration.
+const gridCoordSchema = z.object({
+  x: z.number().int(),
+  y: z.number().int(),
+  z: z.number().optional(),
+});
+
 const engineRequestSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('skill_check'), characterId: z.string(), skill: skillSchema, dc: z.number().int().min(1).max(30), reason: z.string(), advantage: z.boolean().optional(), disadvantage: z.boolean().optional() }),
   z.object({ kind: z.literal('start_combat') }),
@@ -34,6 +40,13 @@ const engineRequestSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('query_exits'), actorId: z.string() }),
   z.object({ kind: z.literal('query_actors_present'), actorId: z.string() }),
   z.object({ kind: z.literal('query_path_exists'), fromAreaId: z.string(), toAreaId: z.string() }),
+  // Tactical combat spatial requests (only meaningful while combat is active).
+  z.object({ kind: z.literal('move_creature'), actorId: z.string(), target: gridCoordSchema }),
+  z.object({ kind: z.literal('dash'), actorId: z.string() }),
+  z.object({ kind: z.literal('disengage'), actorId: z.string() }),
+  z.object({ kind: z.literal('query_reachable'), actorId: z.string() }),
+  z.object({ kind: z.literal('query_targets_in_range'), actorId: z.string(), rangeFt: z.number().int().min(0).max(1000) }),
+  z.object({ kind: z.literal('check_line_of_sight'), actorId: z.string(), targetId: z.string(), rangeFt: z.number().int().min(0).max(1000).optional() }),
 ]);
 
 export type EngineRequestInput = z.infer<typeof engineRequestSchema>;

@@ -11,6 +11,8 @@ companion: v0-feature-spec.md
 # Rules Engine Technical Spec — DM-in-a-Box
 
 > **Accuracy note (2026-06-02):** This document is the intended rules-engine contract, not a complete description of current code. The current engine has a narrower `EngineRequest` union in `src/lib/engine/types.ts`, resolves requests through `resolveEngineRequest` in `src/lib/engine/index.ts`, uses `Math.random()` rather than a seedable PRNG, and implements partial conditions, spells, rests, features, physical dice, and encounter balancing. Use `docs/todo.md` for current implementation gaps.
+>
+> **Spatial update (2026-06-21):** Spatial awareness now lives in `src/lib/engine/spatial/`. Exploration uses an area graph (`ExplorationState`, `move_area`/`query_*`). Tactical combat uses `src/lib/engine/spatial/tactical/` — `BattleMap`/`Cell`/`SpatialActor`, Dijkstra movement, Dash/Disengage, opportunity-attack flags, range/reach, Bresenham line of sight, cover, z-axis falling, and a `SpatialAdapter` (square default, hex available). The combat grid is `CombatState.battleMap` (the old `{width,height,positions}` shape is migrated). See `docs/spatial-awareness-roadmap.md` for the full status and deferred items.
 
 ## Purpose
 

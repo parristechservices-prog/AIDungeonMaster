@@ -1,3 +1,5 @@
+import type { BattleMap } from '@/lib/engine/spatial/tactical/types';
+
 /** Built-in one-shots use social → exploration → combat → ending; modules use custom ids. */
 export type SceneId = string;
 
@@ -61,14 +63,15 @@ export type CombatState = {
   active: boolean;
   initiative: { actorId: string; roll: number }[];
   turnIndex: number;
-  grid?: {
-    width: number;
-    height: number;
-    positions: Record<string, { x: number; y: number }>;
-  };
+  /**
+   * Tactical spatial state. Only present while combat is active. Replaces the
+   * old `{width,height,positions}` grid; `migrateGameState` upgrades old saves.
+   */
+  battleMap?: BattleMap;
 };
 
 export type { ExplorationState } from '@/lib/engine/spatial/types';
+export type { BattleMap } from '@/lib/engine/spatial/tactical/types';
 
 export type DMPersonaId = 'balanced' | 'gritty' | 'epic' | 'whimsical';
 

@@ -1,9 +1,10 @@
 import { getSceneKind } from '@/lib/game/adventures/helpers';
 import { getAdventure } from '@/lib/game/adventures/registry.server';
 import type { GameState, Character } from '@/lib/game/types';
-import { advanceScene, buildTacticalGrid } from '@/lib/game/state';
+import { advanceScene, buildBattleMap } from '@/lib/game/state';
 import type { EngineRequest, EngineResult, RollBreakdown } from './types';
 import { resolveSpatialRequest, type SpatialEngineResult } from './spatial';
+import { resolveTacticalRequest, type TacticalEngineRequest, type TacticalEngineResult } from './spatial/tactical';
 
 let randomProvider = Math.random;
 
@@ -63,6 +64,29 @@ export function resolveEngineRequest(
         return {
           state,
           result: { ok: false, summary: e instanceof Error ? e.message : 'Spatial request failed.' },
+        };
+      }
+    }
+    case 'move_creature':
+    case 'dash':
+    case 'disengage':
+    case 'query_reachable':
+    case 'query_targets_in_range':
+    case 'check_line_of_sight': {
+      const battleMap = state.combat.battleMap;
+      if (!state.combat.active || !battleMap) {
+        return { state, result: { ok: false, summary: 'No tactical battle map is active.' } };
+      }
+      try {
+        const resolved = resolveTacticalRequest(battleMap, request as TacticalEngineRequest);
+        return {
+          state: { ...state, combat: { ...state.combat, battleMap: resolved.map } },
+          result: tacticalResultToEngineResult(resolved.result),
+        };
+      } catch (e) {
+        return {
+          state,
+          result: { ok: false, summary: e instanceof Error ? e.message : 'Tactical request failed.' },
         };
       }
     }
@@ -135,7 +159,7 @@ export function resolveEngineRequest(
       };
       const next = {
         ...draft,
-        combat: { ...draft.combat, grid: buildTacticalGrid(draft) },
+        combat: { ...draft.combat, battleMap: buildBattleMap(draft) },
       };
       return { state: appendLog(next, 'Combat started. Roll for initiative!'), result: { ok: true, summary: 'Initiative rolled.' } };
     }
@@ -658,6 +682,32 @@ function spatialResultToEngineResult(spatial: SpatialEngineResult): EngineResult
       return { ok: true, summary: `${spatial.actorIds.length} actor(s) present.`, spatial };
     case 'query_path_exists':
       return { ok: spatial.path !== null, summary: spatial.path ? `Path exists: ${spatial.path.join(' -> ')}.` : 'No path exists.', spatial };
+  }
+}
+
+function tacticalResultToEngineResult(tactical: TacticalEngineResult): EngineResult {
+  switch (tactical.kind) {
+    case 'move_creature': {
+      const r = tactical.result;
+      if (!r.ok) {
+        return { ok: false, summary: `Move failed: ${r.reason}${r.requiredDashFt ? ` (needs ${r.requiredDashFt} ft)` : ''}.`, tactical };
+      }
+      const oa = r.opportunityAttacks.length
+        ? ` Provokes opportunity attack from: ${r.opportunityAttacks.join(', ')}.`
+        : '';
+      const final = r.finalPosition ? `(${r.finalPosition.x},${r.finalPosition.y})` : '';
+      return { ok: true, summary: `Moved to ${final}; spent ${r.movementSpentFt} ft, ${r.movementRemainingFt} ft left.${oa}`, tactical };
+    }
+    case 'dash':
+      return { ok: tactical.ok, summary: tactical.ok ? `Dashed; ${tactical.movementRemainingFt} ft available.` : `Dash failed: ${tactical.reason}.`, tactical };
+    case 'disengage':
+      return { ok: tactical.ok, summary: tactical.ok ? 'Disengaged; no opportunity attacks this turn.' : `Disengage failed: ${tactical.reason}.`, tactical };
+    case 'query_reachable':
+      return { ok: true, summary: `${tactical.cells.length} reachable cell(s).`, tactical };
+    case 'query_targets_in_range':
+      return { ok: true, summary: `${tactical.targets.length} target(s) in range.`, tactical };
+    case 'check_line_of_sight':
+      return { ok: tactical.ok, summary: tactical.ok ? `Line of sight clear${tactical.cover && tactical.cover !== 'none' ? ` (${tactical.cover} cover)` : ''}.` : `No clear shot: ${tactical.reason}.`, tactical };
   }
 }
 

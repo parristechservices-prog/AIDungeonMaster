@@ -1,5 +1,6 @@
 import type { NPC, CanonFact, Condition } from '../game/types';
 import type { SpatialEngineRequest, SpatialEngineResult } from './spatial';
+import type { TacticalEngineRequest, TacticalEngineResult } from './spatial/tactical';
 
 export type Skill =
   | 'acrobatics' | 'animal_handling' | 'arcana' | 'athletics'
@@ -24,7 +25,8 @@ export type EngineRequest =
   | { kind: 'update_inventory'; characterId: string; add?: string[]; remove?: string[]; goldDelta?: number }
   | { kind: 'apply_condition'; targetId: string; condition: Condition }
   | { kind: 'remove_condition'; targetId: string; condition: Condition }
-  | SpatialEngineRequest;
+  | SpatialEngineRequest
+  | TacticalEngineRequest;
 
 export type RollBreakdown = {
   formula: string;
@@ -52,4 +54,5 @@ export type EngineResult = {
     disadvantage?: boolean;
   };
   spatial?: SpatialEngineResult;
+  tactical?: TacticalEngineResult;
 };

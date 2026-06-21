@@ -5,6 +5,7 @@ import { ENDING_SCENE_ID } from '@/lib/game/adventures/types';
 import { DM_PERSONAS } from '@/lib/game/personas';
 import { GROUNDED_DM_RULES_V0_4 } from '@/lib/llm/prompts/active';
 import { actorsInSameArea, getArea, getNeighbors } from '@/lib/engine/spatial';
+import { remainingMovementFt, targetsInRange } from '@/lib/engine/spatial/tactical';
 
 export function buildSystemPrompt(state: GameState): string {
   const adventure = getAdventure(state.adventureId);
@@ -12,6 +13,7 @@ export function buildSystemPrompt(state: GameState): string {
   const sceneMeta =
     state.sceneId !== ENDING_SCENE_ID ? getPlayableScene(adventure, state.sceneId) : undefined;
   const spatialContext = buildSpatialPromptBlock(state);
+  const tacticalContext = buildTacticalPromptBlock(state);
 
   const partyDescription = state.party.map(p => {
     const featuresList = p.features.map((f) => `${f.name} (${f.usesRemaining}/${f.usesMax})`).join(', ');
@@ -99,6 +101,7 @@ export function buildSystemPrompt(state: GameState): string {
     sceneMeta ? `Forbidden: ${sceneMeta.forbidden.join('; ') || 'none'}` : '',
     sceneMeta ? `Success conditions: ${sceneMeta.successConditions.join('; ') || 'none'}` : '',
     spatialContext,
+    tacticalContext,
     '',
     '## THE ADVENTURING PARTY',
     partyDescription,
@@ -133,10 +136,17 @@ export function buildSystemPrompt(state: GameState): string {
     '',
     '## ENGINE REQUESTS — EXACT SHAPE',
     '- Each engine request is an object whose action is named by the field "kind" (NOT "type").',
-    '- Valid "kind" values: "skill_check", "player_attack", "start_combat", "monster_turn", "death_save", "use_feature", "cast_spell", "short_rest", "long_rest", "advance_scene", "update_npc", "add_canon_fact", "update_inventory", "apply_condition", "remove_condition", "move_area", "query_current_area", "query_exits", "query_actors_present", "query_path_exists".',
+    '- Valid "kind" values: "skill_check", "player_attack", "start_combat", "monster_turn", "death_save", "use_feature", "cast_spell", "short_rest", "long_rest", "advance_scene", "update_npc", "add_canon_fact", "update_inventory", "apply_condition", "remove_condition", "move_area", "query_current_area", "query_exits", "query_actors_present", "query_path_exists", "move_creature", "dash", "disengage", "query_reachable", "query_targets_in_range", "check_line_of_sight".',
     '- "skill_check" requires: { "kind": "skill_check", "characterId": "<id from THE ADVENTURING PARTY>", "skill": "<lowercase skill>", "dc": <1-30>, "reason": "<short why>" }. Optional: "advantage"/"disadvantage" (boolean).',
     '- "player_attack" requires: { "kind": "player_attack", "characterId": "<party id>", "targetId": "<active monster id>" }.',
     '- "move_area" requires: { "kind": "move_area", "actorId": "<party or NPC id>", "targetAreaId": "<connected area id>" }.',
+    '- TACTICAL COMBAT (only while combat is active and a battle map exists): the engine owns all grid math. NEVER compute distance, movement, range, or line of sight yourself.',
+    '- "move_creature" requires: { "kind": "move_creature", "actorId": "<id>", "target": { "x": <int>, "y": <int> } }. The engine validates the path, terrain cost, and reports opportunity attacks.',
+    '- "dash" / "disengage": { "kind": "dash", "actorId": "<id>" } — dash adds movement, disengage prevents opportunity attacks; both consume the action.',
+    '- "query_reachable": { "kind": "query_reachable", "actorId": "<id>" } — ask which cells are legally reachable BEFORE proposing a move, instead of guessing.',
+    '- "query_targets_in_range": { "kind": "query_targets_in_range", "actorId": "<id>", "rangeFt": <int> } — returns targets with distance, line of sight, and cover.',
+    '- "check_line_of_sight": { "kind": "check_line_of_sight", "actorId": "<id>", "targetId": "<id>", "rangeFt"?: <int> }.',
+    '- Never narrate a creature reaching, striking, or seeing a target unless the matching engine result said it was legal. If an attack is out of reach/range, narrate the failure the engine reported.',
     '- Example valid turn:',
     '  { "engineRequests": [ { "kind": "skill_check", "characterId": "PC_ID", "skill": "insight", "dc": 12, "reason": "Reading Mira for honesty" } ], "narration": "You study Mira closely as you ask...", "needsResultBeforeNarrating": true, "ambient": "tavern" }',
   ].join('\n');
@@ -167,6 +177,33 @@ function buildSpatialPromptBlock(state: GameState): string {
       `Other actors present: ${present.join(', ') || 'none'}`,
       'Never invent movement or arrival. Emit "move_area" for travel and narrate only the engine result. Use query_current_area, query_exits, query_actors_present, or query_path_exists before describing uncertain travel.',
     ].filter(Boolean).join('\n');
+  } catch {
+    return '';
+  }
+}
+
+function buildTacticalPromptBlock(state: GameState): string {
+  const map = state.combat.battleMap;
+  if (!state.combat.active || !map) return '';
+  const activeId = state.activeCharacterId;
+  const self = map.actors[activeId];
+  const pos = map.positions[activeId];
+  if (!self || !pos) return '';
+
+  try {
+    // Show only nearby actors (within a generous radius) with engine-computed
+    // distance/LOS/cover so the model never estimates geometry itself.
+    const nearby = targetsInRange(map, activeId, 60)
+      .map((t) => `- ${t.id}: ${t.distanceFt} ft${t.inReach ? ', in melee reach' : ''}${t.hasLineOfSight ? '' : ', no line of sight'}${t.cover !== 'none' ? `, ${t.cover} cover` : ''}`)
+      .join('\n');
+
+    return [
+      '## TACTICAL COMBAT STATE',
+      `Battle map: ${map.width}x${map.height}, ${map.cellSizeFt} ft squares (${map.diagonalMode}).`,
+      `Active actor ${activeId} at (${pos.x},${pos.y}); movement remaining ${remainingMovementFt(self)} ft; action ${self.actionUsed ? 'used' : 'available'}.`,
+      `Nearby actors:\n${nearby || '- none in 60 ft'}`,
+      'Do not compute movement, range, or line of sight. Use move_creature/query_reachable/query_targets_in_range/check_line_of_sight and narrate only what the engine returns.',
+    ].join('\n');
   } catch {
     return '';
   }

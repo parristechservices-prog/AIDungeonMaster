@@ -4,6 +4,7 @@ import { getSceneKind } from './adventures/helpers';
 import { initialMonstersForAdventure, resolveCombatMonsters } from './adventures/encounters';
 import { DEFAULT_ADVENTURE_ID, getAdventure, getFirstPlayableSceneId } from './adventures/registry.server';
 import { buildExplorationState } from './adventures/area-graphs';
+import type { BattleMap, GridCoord, SpatialActor } from '@/lib/engine/spatial/tactical';
 import type { CanonFact, GameState, NewGameOptions } from './types';
 
 export type { NewGameOptions };
@@ -56,19 +57,61 @@ export function createInitialState(sessionId: string, options?: NewGameOptions):
   };
 }
 
-export function buildTacticalGrid(state: GameState): NonNullable<GameState['combat']['grid']> {
+const DEFAULT_SPEED_FT = 30;
+const DEFAULT_REACH_FT = 5;
+
+/**
+ * Builds the tactical BattleMap that exists while combat is active: party on the
+ * west edge, monsters on the east, every actor with default 5e speed/reach and a
+ * fresh per-turn action economy. Terrain is empty (all normal) by default;
+ * scenarios/modules can layer terrain on top later.
+ */
+export function buildBattleMap(
+  state: GameState,
+  preservePositions?: Record<string, GridCoord>,
+): BattleMap {
   const width = 8;
   const height = 6;
-  const positions: Record<string, { x: number; y: number }> = {};
+  const positions: Record<string, GridCoord> = {};
+  const actors: BattleMap['actors'] = {};
 
   state.party.forEach((member, index) => {
-    positions[member.id] = { x: 1, y: Math.min(height - 1, 1 + index) };
+    positions[member.id] = preservePositions?.[member.id] ?? { x: 1, y: Math.min(height - 1, 1 + index), z: 0 };
+    actors[member.id] = makeSpatialActor(member.id, 'party');
   });
   state.monsters.forEach((monster, index) => {
-    positions[monster.id] = { x: width - 2, y: Math.min(height - 1, 1 + index) };
+    positions[monster.id] = preservePositions?.[monster.id] ?? { x: width - 2, y: Math.min(height - 1, 1 + index), z: 0 };
+    actors[monster.id] = makeSpatialActor(monster.id, 'monster');
   });
 
-  return { width, height, positions };
+  return {
+    gridType: 'square',
+    cellSizeFt: 5,
+    width,
+    height,
+    diagonalMode: 'simple_5ft',
+    cells: {},
+    positions,
+    actors,
+  };
+}
+
+function makeSpatialActor(id: string, faction: SpatialActor['faction']): SpatialActor {
+  return {
+    id,
+    faction,
+    size: 'medium',
+    speedFt: DEFAULT_SPEED_FT,
+    reachFt: DEFAULT_REACH_FT,
+    movementSpentFt: 0,
+    extraMovementFt: 0,
+    actionUsed: false,
+    bonusActionUsed: false,
+    reactionAvailable: true,
+    disengaged: false,
+    prone: false,
+    flying: false,
+  };
 }
 
 export function migrateGameState(state: GameState): GameState {
@@ -91,12 +134,20 @@ export function migrateGameState(state: GameState): GameState {
     state.player === player &&
     state.activeCharacterId === activeCharacterId &&
     state.exploration === exploration &&
-    (!state.combat?.active || state.combat.grid)
+    (!state.combat?.active || state.combat.battleMap)
   ) {
     return state;
   }
-  const combat = state.combat?.active && !state.combat.grid
-    ? { ...state.combat, grid: buildTacticalGrid({ ...state, party, player, activeCharacterId }) }
+  // Upgrade old saves: build a BattleMap when combat is active but none exists,
+  // preserving any positions from the legacy `{width,height,positions}` grid.
+  const legacyGrid = (state.combat as { grid?: { positions?: Record<string, GridCoord> } } | undefined)?.grid;
+  const combat = state.combat?.active && !state.combat.battleMap
+    ? {
+        active: state.combat.active,
+        initiative: state.combat.initiative,
+        turnIndex: state.combat.turnIndex,
+        battleMap: buildBattleMap({ ...state, party, player, activeCharacterId }, legacyGrid?.positions),
+      }
     : state.combat;
   return {
     ...state,
