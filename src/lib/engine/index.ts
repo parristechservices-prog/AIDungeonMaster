@@ -54,7 +54,7 @@ export function resolveEngineRequest(
         };
       }
       try {
-        const resolved = resolveSpatialRequest(state.exploration, request);
+        const resolved = resolveSpatialRequest(state.exploration, request, deriveSatisfiedTags(state));
         return {
           state: { ...state, exploration: resolved.state },
           result: spatialResultToEngineResult(resolved.result),
@@ -663,6 +663,38 @@ function spatialResultToEngineResult(spatial: SpatialEngineResult): EngineResult
 
 function appendLog(state: GameState, line: string): GameState {
   return { ...state, log: [...state.log, line] };
+}
+
+function slugifyTag(value: string): string {
+  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
+
+/**
+ * Computes the set of gating tags currently satisfied by the party, so the
+ * spatial engine can resolve `requires` on area connections (e.g. a locked
+ * gate `{ tag: 'key:nandar_keep_gate' }`). Tags come from:
+ *  - inventory items: each item yields `item:<slug>` and `key:<slug>`, and a
+ *    trailing "key" is also stripped so "Nandar Keep Gate Key" satisfies
+ *    `key:nandar_keep_gate`.
+ *  - canon facts written as a literal tag, e.g. `flag:bridge_repaired`.
+ */
+function deriveSatisfiedTags(state: GameState): Set<string> {
+  const tags = new Set<string>();
+  for (const member of state.party) {
+    for (const item of member.inventory) {
+      const slug = slugifyTag(item);
+      if (!slug) continue;
+      tags.add(`item:${slug}`);
+      tags.add(`key:${slug}`);
+      const withoutKey = slug.replace(/_?key_?/g, '_').replace(/^_+|_+$/g, '');
+      if (withoutKey && withoutKey !== slug) tags.add(`key:${withoutKey}`);
+    }
+  }
+  for (const fact of state.canonLog) {
+    const content = fact.content.trim();
+    if (/^(flag|key|item|skill):/.test(content)) tags.add(content);
+  }
+  return tags;
 }
 
 function d20() {
