@@ -171,6 +171,41 @@ function isDistanceQuestion(input: string): boolean {
   );
 }
 
+/**
+ * Ordinary-phrasing spatial distance/location questions valid in ANY scene
+ * (exploration or social), not just combat. Deliberately stricter than
+ * isDistanceQuestion so it doesn't swallow "how many goblins".
+ */
+export function isExplorationDistanceQuestion(input: string): boolean {
+  return (
+    /\bhow far\b/.test(input) ||
+    /\bhow close\b/.test(input) ||
+    /\bhow long\b.*\b(walk|reach|get to|travel|take)\b/.test(input) ||
+    /\bdistance (?:to|from|between)\b/.test(input) ||
+    /\bhow many (?:feet|yards|paces|steps)\b/.test(input) ||
+    /\bwhere is\b.*\b(water|shore|boathouse|dock|pier|inn|tavern|gate|drawbridge|square|keep|cave|trail|bell|tower)\b/.test(input)
+  );
+}
+
+const SPATIAL_ALIASES: { re: RegExp; label: string }[] = [
+  { re: /\b(water|shore|shoreline|river|lake|sea|coast)\b/, label: 'the water' },
+  { re: /\b(boathouse|boat house)\b/, label: 'the old boathouse' },
+  { re: /\b(dock|pier|jetty|quay|wharf)\b/, label: 'the dock' },
+  { re: /\b(drawbridge|bridge)\b/, label: 'the drawbridge' },
+  { re: /\b(gate|palisade)\b/, label: 'the gate' },
+  { re: /\b(village square|square)\b/, label: 'the village square' },
+  { re: /\b(inn|tavern)\b/, label: 'the inn' },
+  { re: /\b(keep)\b/, label: 'the keep' },
+  { re: /\b(bell|chapel|temple|tower)\b/, label: 'the bell tower' },
+  { re: /\b(caves?|trail)\b/, label: 'the trail to the caves' },
+];
+
+/** Best-effort human label for the spatial target named in the question. */
+export function extractSpatialTarget(input: string): string | null {
+  for (const alias of SPATIAL_ALIASES) if (alias.re.test(input)) return alias.label;
+  return null;
+}
+
 function isMovementOnly(input: string): boolean {
   return includesAny(input, MOVEMENT_PHRASES) && !includesAny(input, ACTIVE_SEARCH_PHRASES);
 }
@@ -369,6 +404,27 @@ function explorationPositionHint(state: GameState, input: string, activeChar: Ch
   const distanceText = distance.feet === 0 ? `You are already at ${distance.target}.` : `You are about ${distance.feet} feet from ${distance.target}.`;
   const movementText = distance.feet > 0 ? ` ${movementCostText(activeChar, distance.feet)}` : '';
   return `${distanceText}${movementText} ${distance.note}`.trim();
+}
+
+/**
+ * Answers an ordinary spatial/distance question in any scene. Prefers
+ * deterministic exploration state; when none exists, gives an honest approximate
+ * answer naming the target and listing known leads — never "no battle map", and
+ * never an invented exact distance.
+ */
+function answerExplorationDistanceQuestion(state: GameState, input: string, adventure: Adventure): string {
+  const activeChar = state.party.find((p) => p.id === state.activeCharacterId) ?? state.party[0];
+  if (state.exploration && getActorArea(state.exploration, state.activeCharacterId)) {
+    return explorationPositionHint(state, input, activeChar);
+  }
+  const target = extractSpatialTarget(input);
+  const scene = getPlayableScene(adventure, state.sceneId);
+  const leads = (scene?.choices ?? []).slice(0, 3);
+  const leadText = leads.length ? ` Known leads nearby: ${leads.join('; ')}.` : '';
+  if (target) {
+    return `I don't have an exact mapped distance to ${target} from here, but it's nearby — close enough to reach with a short walk once you head that way. You're at ${adventure.title}.${leadText}`;
+  }
+  return `I don't have an exact mapped distance for that from here. You're at ${adventure.title}.${leadText}`;
 }
 
 function explorationLocationSummary(sceneId: string): string {
@@ -611,6 +667,18 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
       ambient,
     };
   }
+  // Spatial/distance questions are valid in ANY scene — handle them before the
+  // scene-kind branches so exploration/social scenes never fall through to a
+  // tactical "no battle map" path.
+  if (isExplorationDistanceQuestion(input)) {
+    return {
+      engineRequests: [],
+      narration: answerExplorationDistanceQuestion(state, input, adventure),
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
+
   const feature = activeChar.features.find(
     (f) => input.includes(f.id.replace(/_/g, ' ')) || input.includes(f.name.toLowerCase()),
   );

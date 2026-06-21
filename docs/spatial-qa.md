@@ -56,3 +56,16 @@ Covered by `src/test/spatial-distance-regression.test.ts` and the existing
   authored table is used as the primary source for that reason.
 - Layout polish at specific viewports was not visually verified in this pass (no
   browser available in the working environment) — see report notes.
+
+## Exploration distance questions (any scene)
+Ordinary spatial/distance questions ("how far to the water?", "how close is the
+boathouse?", "how far away is the drawbridge?") are answered in ANY scene, not
+just combat (`isExplorationDistanceQuestion` / `answerExplorationDistanceQuestion`
+in `mock-dm.ts`, handled before the scene-kind branches):
+- With exploration state → deterministic numeric distance (e.g. SKT drawbridge).
+- Without (e.g. Brindlehook) → honest approximate answer naming the target +
+  known leads; never an invented exact number.
+- Never "No tactical battle map is active" for an ordinary distance question.
+  That engine refusal is also filtered from player narration (page.tsx) and the
+  AI prompt forbids tactical requests outside combat. Regression:
+  `exploration-distance.test.ts`.

@@ -230,10 +230,15 @@ export default function PlayPage() {
           saveClientSnapshot(sessionId, data);
         }
 
+        // Internal engine availability refusals (e.g. an AI tactical request in a
+        // non-combat scene) must not surface as player narration — they are not
+        // an answer to an ordinary question.
+        const isInternalRefusal = (summary: string) =>
+          /no tactical battle map|no exploration area graph|tactical request failed|spatial request failed/i.test(summary);
         const lines = [
           ...(data.sceneStarter ? [`— ${data.sceneStarter}`] : []),
           data.narration,
-          ...(data.engineResults?.map((r) => `• ${r.summary}`) ?? []),
+          ...(data.engineResults?.filter((r) => !isInternalRefusal(r.summary)).map((r) => `• ${r.summary}`) ?? []),
           `Turn ${data.recap.turnNumber} saved.`,
           data.nextHook,
         ];
