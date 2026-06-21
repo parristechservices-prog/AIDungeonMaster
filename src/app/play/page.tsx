@@ -16,6 +16,8 @@ import { AmbientAudio } from '@/components/play/AmbientAudio';
 import { ManualRollModal } from '@/components/play/ManualRollModal';
 import { FailedCheckRecovery } from '@/components/play/FailedCheckRecovery';
 import { CampaignMemory } from '@/components/play/CampaignMemory';
+import { DevPanelToggle } from '@/components/play/DevPanelToggle';
+import { useDevPanelSettings } from '@/lib/play/dev-panel';
 import { isFeatureEnabled } from '@/lib/config/features';
 import { DEFAULT_ADVENTURE_ID, getAdventure, getFirstPlayableSceneId, getSceneGoal } from '@/lib/game/adventures';
 import type { TurnResponse } from '@/lib/play/types';
@@ -47,6 +49,7 @@ export default function PlayPage() {
   const [physicalDice, setPhysicalDice] = useState(false);
   const [manualRollContext, setManualRollContext] = useState<TurnResponse['manualRollContext'] | null>(null);
   const [showMobileCharacterSheet, setShowMobileCharacterSheet] = useState(false);
+  const { settings: devPanel, setSetting: setDevPanel } = useDevPanelSettings();
 
   async function hydrateSession(nextSessionId: string) {
     const res = await fetch(`/api/session?sessionId=${encodeURIComponent(nextSessionId)}`);
@@ -280,6 +283,7 @@ export default function PlayPage() {
               >
                 Export Recap
               </button>
+              <DevPanelToggle settings={devPanel} setSetting={setDevPanel} />
             </div>
           </header>
 
