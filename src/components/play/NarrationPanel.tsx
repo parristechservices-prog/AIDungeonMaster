@@ -1,12 +1,20 @@
+import { useEffect, useRef } from 'react';
+
 type Props = {
   lines: string[];
   busy: boolean;
 };
 
 export function NarrationPanel({ lines, busy }: Props) {
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [lines, busy]);
+
   return (
     <section
-      className="mt-4 h-[380px] overflow-y-auto rounded border border-zinc-200 bg-zinc-50 p-3 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+      className="flex-1 min-h-0 overflow-y-auto rounded border border-zinc-200 bg-zinc-50 p-3 text-sm dark:border-zinc-700 dark:bg-zinc-950"
       aria-live="polite"
       aria-busy={busy}
       aria-label="Adventure narration"
@@ -18,6 +26,7 @@ export function NarrationPanel({ lines, busy }: Props) {
         </p>
       ))}
       {busy && <p className="text-zinc-500 italic">The DM considers your action…</p>}
+      <div ref={bottomRef} />
     </section>
   );
 }

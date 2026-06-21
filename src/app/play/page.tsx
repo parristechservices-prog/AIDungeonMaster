@@ -259,153 +259,177 @@ export default function PlayPage() {
 
   return (
     <>
-      <main className="mx-auto grid max-w-6xl grid-cols-1 gap-6 p-6 md:grid-cols-[2fr_1fr]">
-        <section className="rounded-lg border border-zinc-300 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 flex flex-col h-[calc(100vh-48px)]">
-          <header className="flex justify-between items-start">
-            <div>
-              <h1 className="text-2xl font-bold">{adventureTitle}</h1>
-              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                Scene: <b>{sceneId}</b> · {sceneGoal}
-              </p>
-              <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
-                <span className="rounded-full border border-zinc-300 px-2 py-1 font-semibold dark:border-zinc-700">
-                  {mode === 'ai_director' ? 'AI Director' : 'Table Rules'}
-                </span>
-                <span>
-                  Active: {state?.party?.find((member) => member.id === state.activeCharacterId)?.name ?? 'Not set'}
-                </span>
-                {turnCount > 0 ? <span>Turn {turnCount}</span> : null}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowMobileCharacterSheet(true)}
-                className="md:hidden rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-              >
-                Character
-              </button>
-              <button
-                onClick={handleExportRecap}
-                className="rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-              >
-                Export Recap
-              </button>
-              <DevPanelToggle settings={devPanel} setSetting={setDevPanel} />
-            </div>
-          </header>
+      {/* Full-viewport app shell — no page scroll */}
+      <div className="h-[100dvh] overflow-hidden flex flex-col bg-zinc-100 dark:bg-zinc-950">
+        <div className="flex flex-1 min-h-0 gap-0 md:gap-4 md:p-3 overflow-hidden">
 
-          <div className="flex-1 overflow-y-auto">
-            {showOnboarding && turnCount === 0 && (
-              <div className="mt-4">
-                <OnboardingBanner
-                  sceneId={sceneId}
-                  adventureId={adventureId}
-                  sceneGoal={sceneGoal}
-                  choices={choices}
-                  onDismiss={() => setShowOnboarding(false)}
-                />
+          {/* ── LEFT: Main game panel ── */}
+          <section className="flex flex-col flex-1 min-h-0 rounded-none md:rounded-lg border-0 md:border border-zinc-300 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900 overflow-hidden">
+
+            {/* Panel header */}
+            <header className="shrink-0 flex items-start justify-between gap-2 px-4 pt-4 pb-3 border-b border-zinc-200 dark:border-zinc-700">
+              <div className="min-w-0">
+                <h1 className="text-xl font-bold truncate">{adventureTitle}</h1>
+                <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                  Scene: <b>{sceneId}</b> · {sceneGoal}
+                </p>
+                <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-zinc-500">
+                  <span className="rounded-full border border-zinc-300 px-2 py-0.5 font-semibold dark:border-zinc-700">
+                    {mode === 'ai_director' ? 'AI Director' : 'Table Rules'}
+                  </span>
+                  <span>
+                    Active: {state?.party?.find((m) => m.id === state.activeCharacterId)?.name ?? 'Not set'}
+                  </span>
+                  {turnCount > 0 ? <span>Turn {turnCount}</span> : null}
+                </p>
               </div>
-            )}
-
-            <NarrationPanel lines={history} busy={busy} />
-            <DiceResults rolls={recentRolls} />
-            <FailedCheckRecovery
-              failedResult={lastEngineResults.find((result) => result.kind === 'skill_check' && !result.ok)}
-              choices={choices}
-            />
-            <CombatHUD
-              combat={state?.combat ?? { active: false, initiative: [], turnIndex: 0 }}
-              party={state?.party ?? []}
-              monsters={state?.monsters ?? []}
-              showTerrainOverlay={devPanel.showTerrainOverlay}
-            />
-          </div>
-
-          <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700">
-            <InputBox
-              value={input}
-              busy={busy}
-              onChange={setInput}
-              onSubmit={() => sendTurn(input)}
-              placeholder="Describe what you do…"
-            />
-            {isFeatureEnabled('appealTheDm') && (
-              <AppealButton
-                busy={busy}
-                lastEngineResults={lastEngineResults}
-                recentRolls={recentRolls}
-                state={state}
-                onAppeal={(detail) => sendTurn(`[APPEAL] ${detail}`)}
-              />
-            )}
-
-            {isFeatureEnabled('physicalDice') && (
-              <div className="mt-4 flex items-center gap-2 text-xs">
-                <input
-                  type="checkbox"
-                  id="physical-dice"
-                  checked={physicalDice}
-                  onChange={(e) => setPhysicalDice(e.target.checked)}
-                  className="rounded border-zinc-300 dark:border-zinc-700"
-                />
-                <label
-                  htmlFor="physical-dice"
-                  className="cursor-pointer text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+              <div className="shrink-0 flex items-center gap-2">
+                <button
+                  onClick={() => setShowMobileCharacterSheet(true)}
+                  className="md:hidden rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
                 >
-                  Use physical dice for rolls
-                </label>
+                  Character
+                </button>
+                <button
+                  onClick={handleExportRecap}
+                  className="rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                >
+                  Export
+                </button>
+                <DevPanelToggle settings={devPanel} setSetting={setDevPanel} />
+                <Link
+                  href="/start"
+                  className="rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                >
+                  ← Back
+                </Link>
               </div>
-            )}
-            <ChoiceButtons choices={choices} busy={busy} onPick={(c) => sendTurn(c)} />
-          </div>
-        </section>
+            </header>
 
-        <aside className="rounded-lg border border-zinc-300 bg-white p-4 text-sm shadow-sm dark:border-zinc-700 dark:bg-zinc-900 hidden md:block">
-          <h2 className="font-semibold">Character</h2>
-          <CharacterSheet state={state} />
-          <CampaignMemory state={state} sceneGoal={sceneGoal} choices={choices} />
-          {process.env.NODE_ENV !== 'production' && warnings.length > 0 && (
-            <p className="mt-3 text-xs text-amber-700 dark:text-amber-300" title={warnings.join(' ')}>
-              Narration checked against engine state.
-            </p>
-          )}
-          <DmPanels settings={devPanel} state={state} engineLog={engineLog} warnings={warnings} showAny={showDmPanels} />
-        </aside>
+            {/* Scrollable story area */}
+            <div className="flex flex-col flex-1 min-h-0 px-4 py-3 gap-2 overflow-hidden">
+              {showOnboarding && turnCount === 0 && (
+                <div className="shrink-0">
+                  <OnboardingBanner
+                    sceneId={sceneId}
+                    adventureId={adventureId}
+                    sceneGoal={sceneGoal}
+                    choices={choices}
+                    onDismiss={() => setShowOnboarding(false)}
+                  />
+                </div>
+              )}
 
-        <AmbientAudio type={ambient} />
+              {/* NarrationPanel is flex-1 min-h-0 — it owns the scroll */}
+              <NarrationPanel lines={history} busy={busy} />
 
-      {manualRollContext && (
-        <ManualRollModal 
-          context={manualRollContext} 
-          onSubmit={(roll) => sendTurn('', roll)} 
-        />
-      )}
-    </main>
+              <div className="shrink-0">
+                <DiceResults rolls={recentRolls} />
+                <FailedCheckRecovery
+                  failedResult={lastEngineResults.find((r) => r.kind === 'skill_check' && !r.ok)}
+                  choices={choices}
+                />
+                <CombatHUD
+                  combat={state?.combat ?? { active: false, initiative: [], turnIndex: 0 }}
+                  party={state?.party ?? []}
+                  monsters={state?.monsters ?? []}
+                  showTerrainOverlay={devPanel.showTerrainOverlay}
+                />
+              </div>
+            </div>
 
-    {/* Mobile character sheet drawer */}
-    {showMobileCharacterSheet && (
-      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 md:hidden">
-        <div className="w-full max-w-lg rounded-t-3xl bg-white p-6 dark:bg-zinc-900">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Character</h2>
-            <button
-              onClick={() => setShowMobileCharacterSheet(false)}
-              className="rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-            >
-              Close
-            </button>
-          </div>
-          <CharacterSheet state={state} />
-          <CampaignMemory state={state} sceneGoal={sceneGoal} choices={choices} />
-          {process.env.NODE_ENV !== 'production' && warnings.length > 0 && (
-            <p className="mt-3 text-xs text-amber-700 dark:text-amber-300" title={warnings.join(' ')}>
-              Narration checked against engine state.
-            </p>
-          )}
-          <DmPanels settings={devPanel} state={state} engineLog={engineLog} warnings={warnings} showAny={showDmPanels} />
+            {/* Composer — always pinned at the bottom of the panel */}
+            <div className="shrink-0 px-4 pb-4 pt-3 border-t border-zinc-200 dark:border-zinc-700 space-y-2">
+              <InputBox
+                value={input}
+                busy={busy}
+                onChange={setInput}
+                onSubmit={() => sendTurn(input)}
+                placeholder="Describe what you do…"
+              />
+              {isFeatureEnabled('appealTheDm') && (
+                <AppealButton
+                  busy={busy}
+                  lastEngineResults={lastEngineResults}
+                  recentRolls={recentRolls}
+                  state={state}
+                  onAppeal={(detail) => sendTurn(`[APPEAL] ${detail}`)}
+                />
+              )}
+              {isFeatureEnabled('physicalDice') && (
+                <div className="flex items-center gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    id="physical-dice"
+                    checked={physicalDice}
+                    onChange={(e) => setPhysicalDice(e.target.checked)}
+                    className="rounded border-zinc-300 dark:border-zinc-700"
+                  />
+                  <label
+                    htmlFor="physical-dice"
+                    className="cursor-pointer text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                  >
+                    Use physical dice
+                  </label>
+                </div>
+              )}
+              <ChoiceButtons choices={choices} busy={busy} onPick={(c) => sendTurn(c)} />
+            </div>
+          </section>
+
+          {/* ── RIGHT: Sidebar ── */}
+          <aside className="hidden md:flex flex-col w-72 lg:w-96 shrink-0 min-h-0 rounded-lg border border-zinc-300 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900 overflow-hidden">
+            <div className="shrink-0 px-4 pt-4 pb-2 border-b border-zinc-200 dark:border-zinc-700">
+              <h2 className="font-semibold text-sm">Character</h2>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 text-sm space-y-4">
+              <CharacterSheet state={state} />
+              <CampaignMemory state={state} sceneGoal={sceneGoal} choices={choices} />
+              {process.env.NODE_ENV !== 'production' && warnings.length > 0 && (
+                <p className="text-xs text-amber-700 dark:text-amber-300" title={warnings.join(' ')}>
+                  Narration checked against engine state.
+                </p>
+              )}
+              <DmPanels settings={devPanel} state={state} engineLog={engineLog} warnings={warnings} showAny={showDmPanels} />
+            </div>
+          </aside>
+
         </div>
       </div>
-    )}
+
+      <AmbientAudio type={ambient} />
+
+      {manualRollContext && (
+        <ManualRollModal
+          context={manualRollContext}
+          onSubmit={(roll) => sendTurn('', roll)}
+        />
+      )}
+
+      {/* Mobile character sheet drawer */}
+      {showMobileCharacterSheet && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 md:hidden">
+          <div className="w-full max-w-lg rounded-t-3xl bg-white p-6 dark:bg-zinc-900 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Character</h2>
+              <button
+                onClick={() => setShowMobileCharacterSheet(false)}
+                className="rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+              >
+                Close
+              </button>
+            </div>
+            <CharacterSheet state={state} />
+            <CampaignMemory state={state} sceneGoal={sceneGoal} choices={choices} />
+            {process.env.NODE_ENV !== 'production' && warnings.length > 0 && (
+              <p className="mt-3 text-xs text-amber-700 dark:text-amber-300" title={warnings.join(' ')}>
+                Narration checked against engine state.
+              </p>
+            )}
+            <DmPanels settings={devPanel} state={state} engineLog={engineLog} warnings={warnings} showAny={showDmPanels} />
+          </div>
+        </div>
+      )}
 
       {sceneId === 'ending' && (
         <EndingScreen

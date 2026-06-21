@@ -8,7 +8,7 @@ type Props = {
 
 export function InputBox({ value, busy, placeholder, onChange, onSubmit }: Props) {
   return (
-    <div className="sticky bottom-0 z-10 mt-3 flex gap-2 border-t border-zinc-200 bg-white/95 py-3 backdrop-blur dark:border-zinc-700 dark:bg-zinc-900/95">
+    <div className="flex gap-2">
       <label htmlFor="player-action" className="sr-only">Describe your action</label>
       <input
         id="player-action"
