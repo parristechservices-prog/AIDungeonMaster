@@ -1,5 +1,5 @@
 import { ActorId, AreaId, ExplorationState } from './types';
-import { actorsInSameArea, findPath, getActorArea, getNeighbors, moveActor } from './area-graph';
+import { actorsInSameArea, findPath, getActorArea, getNeighbors, moveActor, pathDistance } from './area-graph';
 
 export type SpatialEngineRequest =
   | { kind: 'move_area'; actorId: ActorId; targetAreaId: AreaId }
@@ -14,7 +14,7 @@ export type SpatialEngineResult =
   | { kind: 'query_current_area'; areaId: AreaId }
   | { kind: 'query_exits'; exits: { to: AreaId; label?: string; difficulty: string; locked: boolean }[] }
   | { kind: 'query_actors_present'; actorIds: ActorId[] }
-  | { kind: 'query_path_exists'; path: AreaId[] | null };
+  | { kind: 'query_path_exists'; path: AreaId[] | null; distanceFt?: number };
 
 export function resolveSpatialRequest(
   state: ExplorationState,
@@ -44,10 +44,12 @@ export function resolveSpatialRequest(
     }
     case 'query_actors_present':
       return { state, result: { kind: 'query_actors_present', actorIds: actorsInSameArea(state, request.actorId) } };
-    case 'query_path_exists':
+    case 'query_path_exists': {
+      const path = findPath(state, request.fromAreaId, request.toAreaId, satisfiedTags, true);
       return {
         state,
-        result: { kind: 'query_path_exists', path: findPath(state, request.fromAreaId, request.toAreaId, satisfiedTags, true) },
+        result: { kind: 'query_path_exists', path, distanceFt: path ? pathDistance(state, path) : undefined },
       };
+    }
   }
 }

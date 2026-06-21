@@ -3,7 +3,7 @@
 // data, so it can be unit-tested directly and the components stay thin.
 
 import type { RollBreakdown, CoverOutcome, OpportunityAttackOutcome } from '@/lib/engine/types';
-import type { BattleMap, Cell } from '@/lib/engine/spatial/tactical';
+import { remainingMovementFt, type BattleMap, type Cell, type GridCoord } from '@/lib/engine/spatial/tactical';
 import type { TurnResponse } from '@/lib/play/types';
 
 export type EngineResultView = TurnResponse['engineResults'][number];
@@ -70,17 +70,75 @@ export function formatCover(cover: CoverOutcome): string {
   return `${label} cover: AC ${cover.baseAc} + ${cover.bonus} = ${cover.effectiveAc}`;
 }
 
+export function formatCoverDetail(cover: CoverOutcome): string {
+  if (cover.kind === 'total') {
+    return `Total cover / blocked line of sight — base AC ${cover.baseAc}, effective AC ${cover.effectiveAc}`;
+  }
+  if (cover.kind === 'none') {
+    return `no cover — base AC ${cover.baseAc}, effective AC ${cover.effectiveAc}`;
+  }
+  return `${cover.kind.replace('_', '-')} cover — base AC ${cover.baseAc}, bonus +${cover.bonus}, effective AC ${cover.effectiveAc}`;
+}
+
 /** One opportunity-attack outcome as a readable line. */
 export function formatOpportunityAttack(oa: OpportunityAttackOutcome): string {
   if (oa.warning) return oa.warning;
   const outcome = oa.hit ? `hits ${oa.targetName} for ${oa.damage}` : `misses ${oa.targetName}`;
-  return `${oa.attackerName} opportunity attack ${outcome} (reaction used)`;
+  const roll = oa.breakdown ? ` roll ${oa.breakdown.total}` : '';
+  return `${oa.attackerName} opportunity attack ${outcome}${roll} (reaction used)`;
 }
 
-export type TerrainKey = Cell['terrain'];
+export type ActionEconomyRow = {
+  id: string;
+  name: string;
+  faction: 'party' | 'monster' | 'npc';
+  position?: GridCoord;
+  movementSpentFt: number;
+  movementRemainingFt: number;
+  speedFt: number;
+  actionUsed: boolean;
+  bonusActionUsed: boolean;
+  reactionAvailable: boolean;
+  disengaged: boolean;
+  prone: boolean;
+  flying: boolean;
+  unconscious: boolean;
+  active: boolean;
+};
+
+/**
+ * Per-combatant action-economy snapshot for every actor on the battle map.
+ * `nameOf` resolves a display name from party/monster lists; unknown ids fall
+ * back to the raw id.
+ */
+export function actionEconomyRows(
+  map: BattleMap | undefined,
+  nameOf: (id: string) => string,
+  activeActorId?: string,
+  isUnconscious: (id: string) => boolean = () => false,
+): ActionEconomyRow[] {
+  if (!map) return [];
+  return Object.values(map.actors).map((a) => ({
+    id: a.id,
+    name: nameOf(a.id),
+    faction: a.faction,
+    position: map.positions[a.id],
+    movementSpentFt: a.movementSpentFt,
+    movementRemainingFt: remainingMovementFt(a),
+    speedFt: a.speedFt,
+    actionUsed: a.actionUsed,
+    bonusActionUsed: a.bonusActionUsed,
+    reactionAvailable: a.reactionAvailable,
+    disengaged: a.disengaged,
+    prone: a.prone,
+    flying: a.flying,
+    unconscious: isUnconscious(a.id),
+    active: a.id === activeActorId,
+  }));
+}
 
 /** Tailwind classes + label for a terrain type, for the grid overlay + legend. */
-export function terrainStyle(terrain: TerrainKey): { className: string; label: string } {
+export function terrainStyle(terrain: Cell['terrain']): { className: string; label: string } {
   switch (terrain) {
     case 'difficult':
       return { className: 'bg-amber-200/60 dark:bg-amber-900/40', label: 'Difficult' };

@@ -735,7 +735,13 @@ function spatialResultToEngineResult(spatial: SpatialEngineResult): EngineResult
     case 'query_actors_present':
       return { ok: true, summary: `${spatial.actorIds.length} actor(s) present.`, spatial };
     case 'query_path_exists':
-      return { ok: spatial.path !== null, summary: spatial.path ? `Path exists: ${spatial.path.join(' -> ')}.` : 'No path exists.', spatial };
+      return {
+        ok: spatial.path !== null,
+        summary: spatial.path
+          ? `Path exists: ${spatial.path.join(' -> ')}${typeof spatial.distanceFt === 'number' ? ` (${spatial.distanceFt} ft).` : '.'}`
+          : 'No path exists.',
+        spatial,
+      };
   }
 }
 

@@ -1,10 +1,12 @@
 import type { GameState } from '@/lib/game/types';
-import { remainingMovementFt } from '@/lib/engine/spatial/tactical';
+import { getCell, remainingMovementFt } from '@/lib/engine/spatial/tactical';
+import { coverBadge, terrainLegendFor, terrainStyle } from '@/lib/play/dev-panel-format';
 
 type Props = {
   combat: GameState['combat'];
   party: { id: string; name: string }[];
   monsters: { id: string; name: string; hp: number; maxHp: number }[];
+  showTerrainOverlay?: boolean;
 };
 
 function actorLabel(actorId: string, party: Props['party'], monsters: Props['monsters']): string {
@@ -13,7 +15,7 @@ function actorLabel(actorId: string, party: Props['party'], monsters: Props['mon
   return monsters.find((m) => m.id === actorId)?.name ?? actorId;
 }
 
-export function CombatHUD({ combat, party, monsters }: Props) {
+export function CombatHUD({ combat, party, monsters, showTerrainOverlay = false }: Props) {
   if (!combat.active || combat.initiative.length === 0) return null;
 
   const current = combat.initiative[combat.turnIndex];
@@ -45,6 +47,8 @@ export function CombatHUD({ combat, party, monsters }: Props) {
     });
   }
 
+  const terrainLegend = showTerrainOverlay && grid ? terrainLegendFor(grid) : [];
+
   return (
     <div className="mt-3 rounded border border-red-200 bg-red-50 p-3 text-xs dark:border-red-900 dark:bg-red-950/30">
       <p className="font-semibold text-red-900 dark:text-red-200">Combat - initiative</p>
@@ -68,25 +72,38 @@ export function CombatHUD({ combat, party, monsters }: Props) {
               const y = Math.floor(index / grid.width);
               const actor = actorsByCell.get(`${x},${y}`);
               const isCurrent = actor?.id === current?.actorId;
+              const cell = getCell(grid, { x, y, z: 0 });
+              const terrain = showTerrainOverlay ? terrainStyle(cell.terrain) : undefined;
+              const cover = showTerrainOverlay ? coverBadge(cell.cover ?? 'none') : '';
+              const actorClasses = actor?.kind === 'party'
+                ? 'border-sky-300 bg-sky-100 text-sky-900 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-200'
+                : actor?.kind === 'monster'
+                  ? 'border-red-300 bg-red-100 text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-200'
+                  : 'border-zinc-200 bg-white/70 dark:border-zinc-800 dark:bg-zinc-950/40';
+              const cellClasses = terrain?.className || actorClasses;
 
               return (
                 <div
                   key={`${x}-${y}`}
-                  className={`flex aspect-square items-center justify-center rounded border text-[10px] font-bold ${
-                    actor?.kind === 'party'
-                      ? 'border-sky-300 bg-sky-100 text-sky-900 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-200'
-                      : actor?.kind === 'monster'
-                        ? 'border-red-300 bg-red-100 text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-200'
-                        : 'border-zinc-200 bg-white/70 dark:border-zinc-800 dark:bg-zinc-950/40'
-                  } ${isCurrent ? 'ring-2 ring-amber-400' : ''} ${actor?.defeated ? 'opacity-40 line-through' : ''}`}
+                  className={`relative flex aspect-square items-center justify-center rounded border text-[10px] font-bold ${cellClasses} ${isCurrent ? 'ring-2 ring-amber-400' : ''} ${actor?.defeated ? 'opacity-40 line-through' : ''}`}
                   title={actor ? actorLabel(actor.id, party, monsters) : `Space ${x + 1}, ${y + 1}`}
                 >
                   {actor?.label ?? ''}
+                  {cover ? (
+                    <span className="absolute right-1 top-1 text-[9px] text-zinc-700 dark:text-zinc-200">{cover}</span>
+                  ) : null}
                 </div>
               );
             })}
           </div>
           <p className="mt-1 text-[10px] text-zinc-500">Blue is party, red is enemy, gold ring is the active turn.</p>
+          {showTerrainOverlay && terrainLegend.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-zinc-600 dark:text-zinc-400">
+              {terrainLegend.map((entry) => (
+                <span key={entry.label} className={`rounded border px-2 py-1 ${entry.className || 'bg-zinc-100 dark:bg-zinc-800'} text-[10px]`}>{entry.label}</span>
+              ))}
+            </div>
+          ) : null}
         </div>
       )}
 

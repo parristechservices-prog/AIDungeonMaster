@@ -317,6 +317,7 @@ export default function PlayPage() {
               combat={state?.combat ?? { active: false, initiative: [], turnIndex: 0 }}
               party={state?.party ?? []}
               monsters={state?.monsters ?? []}
+              showTerrainOverlay={devPanel.showTerrainOverlay}
             />
           </div>
 

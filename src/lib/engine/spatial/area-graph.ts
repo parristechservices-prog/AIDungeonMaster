@@ -126,3 +126,14 @@ export function findPath(
   }
   return null;
 }
+
+export function pathDistance(state: ExplorationState, path: AreaId[]): number {
+  let distance = 0;
+  for (let i = 0; i < path.length - 1; i += 1) {
+    const area = getArea(state, path[i]);
+    const connection = area.connections.find((c) => c.to === path[i + 1]);
+    if (!connection || typeof connection.distanceFt !== 'number') continue;
+    distance += connection.distanceFt;
+  }
+  return distance;
+}

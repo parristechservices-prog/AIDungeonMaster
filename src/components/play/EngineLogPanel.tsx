@@ -2,7 +2,7 @@
 
 import {
   engineResultDetail,
-  formatCover,
+  formatCoverDetail,
   formatOpportunityAttack,
   formatRollBreakdown,
   type EngineLogEntry,
@@ -10,6 +10,7 @@ import {
 
 type Props = {
   entries: EngineLogEntry[];
+  showEngineLog: boolean;
   showCoverLOS: boolean;
   showOpportunityAttacks: boolean;
 };
@@ -19,10 +20,12 @@ type Props = {
  * Cover and opportunity-attack detail are gated by their own toggles so each can
  * be shown independently of the base engine log.
  */
-export function EngineLogPanel({ entries, showCoverLOS, showOpportunityAttacks }: Props) {
+export function EngineLogPanel({ entries, showEngineLog, showCoverLOS, showOpportunityAttacks }: Props) {
   return (
     <section className="mt-3 rounded border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-700 dark:bg-zinc-900/40">
-      <p className="font-semibold text-zinc-600 dark:text-zinc-300">Engine log</p>
+      <p className="font-semibold text-zinc-600 dark:text-zinc-300">
+        {showEngineLog ? 'Engine log' : 'Engine details'}
+      </p>
       {entries.length === 0 ? (
         <p className="mt-1 italic text-zinc-500">No engine activity yet.</p>
       ) : (
@@ -51,7 +54,7 @@ export function EngineLogPanel({ entries, showCoverLOS, showOpportunityAttacks }
                         <p className="ml-2 font-mono text-[10px] text-zinc-500">{formatRollBreakdown(result.breakdown!)}</p>
                       )}
                       {showCoverLOS && result.cover && (
-                        <p className="ml-2 text-[10px] text-sky-700 dark:text-sky-300">cover: {formatCover(result.cover)}</p>
+                        <p className="ml-2 text-[10px] text-sky-700 dark:text-sky-300">{formatCoverDetail(result.cover)}</p>
                       )}
                       {showOpportunityAttacks && detail.opportunityAttackCount > 0 && (
                         <ul className="ml-2 list-disc pl-3 text-[10px] text-amber-700 dark:text-amber-300">

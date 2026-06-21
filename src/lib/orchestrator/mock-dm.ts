@@ -3,6 +3,8 @@ import { getPlayableScene, getSceneKind } from '@/lib/game/adventures/helpers';
 import { getAdventure } from '@/lib/game/adventures/registry.server';
 import type { Adventure } from '@/lib/game/adventures/types';
 import type { Character, GameState } from '@/lib/game/types';
+import { findPath, getActorArea, pathDistance } from '@/lib/engine/spatial/area-graph';
+import type { AreaId } from '@/lib/engine/spatial/types';
 
 const EXPLORATION_PHRASES = ['inspect', 'track', 'search', 'scout', 'boathouse', 'quay', 'trail'];
 const OBSERVATION_PHRASES = [
@@ -79,6 +81,75 @@ function getCombatStarter(adventure: Adventure): string {
   const combatSceneId = adventure.sceneOrder.find((id) => adventure.scenes[id]?.kind === 'combat');
   if (combatSceneId) return adventure.scenes[combatSceneId].starter;
   return 'Combat begins.';
+}
+
+type DistanceTarget = {
+  areaId: AreaId;
+  target: string;
+  note: string;
+};
+
+function getDistanceTarget(sceneId: string, input: string): DistanceTarget | null {
+  const asksForDrawbridge = input.includes('drawbridge') || input.includes('bridge');
+  const asksForGate = input.includes('gate') || input.includes('palisade');
+  const asksForTower = input.includes('tower') || input.includes('watchtower');
+  const asksForSquare = input.includes('square') || input.includes('village');
+  const asksForBell = input.includes('bell') || input.includes('chapel') || input.includes('temple');
+  const asksForKeep = input.includes('keep');
+  const asksForInn = input.includes('inn');
+  const asksForWindmill = input.includes('windmill');
+  const asksForStable = input.includes('stable');
+  const asksForTradingPost = input.includes('trading post') || input.includes('trading-post') || input.includes('post');
+
+  if (asksForDrawbridge) {
+    return { areaId: 'drawbridge', target: 'the drawbridge', note: 'The drawbridge spans the moat at the village entrance.' };
+  }
+  if (asksForGate) {
+    return { areaId: 'drawbridge', target: 'the palisade gate', note: 'The gate sits by the drawbridge at the village entrance.' };
+  }
+  if (asksForSquare) {
+    const areaId =
+      sceneId === 'village-square' ||
+      sceneId === 'temple-bell' ||
+      sceneId === 'chapel-bell' ||
+      sceneId === 'nightstone-inn' ||
+      sceneId === 'trading-post-and-windmill' ||
+      sceneId === 'nandar-keep'
+        ? 'central_square'
+        : 'south_square';
+    return { areaId, target: 'the village square', note: 'The village square is the central landmark inside the palisade.' };
+  }
+  if (asksForBell || asksForTower) {
+    return { areaId: 'bell_tower', target: 'the bell tower', note: 'The bell tower sits above the temple inside the village.' };
+  }
+  if (asksForKeep) {
+    return { areaId: 'keep_gate', target: 'the keep gate', note: 'The keep gate is the guarded entrance to the damaged keep.' };
+  }
+  if (asksForInn) {
+    return { areaId: 'nightstone_inn', target: 'the inn', note: 'The inn sits near the village edge and is easy to spot from the street.' };
+  }
+  if (asksForWindmill) {
+    return { areaId: 'windmill', target: 'the windmill', note: 'The windmill overlooks the nearby village lanes.' };
+  }
+  if (asksForStable) {
+    return { areaId: 'stable', target: 'the stable', note: 'The stable sits near the square and the inn.' };
+  }
+  if (asksForTradingPost) {
+    return { areaId: 'trading_post', target: 'the trading post', note: 'The trading post is near the village square and main road.' };
+  }
+  return null;
+}
+
+function getSpatialDistanceHint(state: GameState, input: string): DistanceHint | null {
+  if (!state.exploration) return null;
+  const currentAreaId = getActorArea(state.exploration, state.activeCharacterId);
+  if (!currentAreaId) return null;
+  const target = getDistanceTarget(state.sceneId, input);
+  if (!target) return null;
+  const path = findPath(state.exploration, currentAreaId, target.areaId);
+  if (!path) return null;
+  const feet = pathDistance(state.exploration, path);
+  return { ...target, feet, note: target.note };
 }
 
 function includesAny(input: string, phrases: string[]): boolean {
@@ -275,13 +346,19 @@ function getDistanceHint(sceneId: string, input: string): DistanceHint {
   }
 }
 
-function explorationPositionHint(sceneId: string, input: string, activeChar: Character): string {
-  const distance = getDistanceHint(sceneId, input);
-  const distanceText =
-    distance.feet === 0
-      ? `You are already at ${distance.target}.`
-      : `You are about ${distance.feet} feet from ${distance.target}.`;
-  return `${distanceText} ${movementCostText(activeChar, Math.max(distance.feet, 1))} ${distance.note}`;
+const GENERIC_DISTANCE_TARGET = 'the nearest clear landmark';
+
+function explorationPositionHint(state: GameState, input: string, activeChar: Character): string {
+  // Prefer the scene-aware authored distance (it tracks where the party
+  // narratively is). Fall back to the area-graph route distance only when the
+  // scene table has no specific landmark answer, so uncovered landmarks still
+  // get a deterministic engine-backed number instead of vague prose.
+  const sceneHint = getDistanceHint(state.sceneId, input);
+  const distance =
+    sceneHint.target === GENERIC_DISTANCE_TARGET ? getSpatialDistanceHint(state, input) ?? sceneHint : sceneHint;
+  const distanceText = distance.feet === 0 ? `You are already at ${distance.target}.` : `You are about ${distance.feet} feet from ${distance.target}.`;
+  const movementText = distance.feet > 0 ? ` ${movementCostText(activeChar, distance.feet)}` : '';
+  return `${distanceText}${movementText} ${distance.note}`.trim();
 }
 
 function explorationLocationSummary(sceneId: string): string {
@@ -707,7 +784,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
     if (isDistanceQuestion(input)) {
       return {
         engineRequests: [],
-        narration: explorationPositionHint(state.sceneId, input, activeChar),
+        narration: explorationPositionHint(state, input, activeChar),
         needsResultBeforeNarrating: false,
         ambient,
       };
@@ -778,7 +855,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
   if (isDistanceQuestion(input)) {
     return {
       engineRequests: [],
-      narration: explorationPositionHint(state.sceneId, input, activeChar),
+      narration: explorationPositionHint(state, input, activeChar),
       needsResultBeforeNarrating: false,
       ambient: 'combat',
     };
@@ -852,7 +929,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
       engineRequests: [],
       narration:
         living.length > 0 && towardBell
-          ? `${explorationPositionHint(state.sceneId, input, activeChar)} The ${livingNames} are still an active threat in the square, so walking openly toward the bell risks drawing them after you. You can sneak, Disengage toward cover, Dash, attack, or try a distraction.`
+          ? `${explorationPositionHint(state, input, activeChar)} The ${livingNames} are still an active threat in the square, so walking openly toward the bell risks drawing them after you. You can sneak, Disengage toward cover, Dash, attack, or try a distraction.`
           : living.length > 0
             ? `You can move, but the ${livingNames} are close enough to matter. Name the route and pace: sneak, circle to cover, Disengage, Dash, or stand and fight.`
             : 'You move through the square now that nothing is actively blocking you.',
