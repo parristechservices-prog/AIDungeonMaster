@@ -1,4 +1,4 @@
-import type { BattleMap } from '@/lib/engine/spatial/tactical/types';
+import type { BattleMap, CreatureSize } from '@/lib/engine/spatial/tactical/types';
 
 /** Built-in one-shots use social → exploration → combat → ending; modules use custom ids. */
 export type SceneId = string;
@@ -33,14 +33,38 @@ export type Character = {
   conditions: Condition[];
 };
 
+export type MonsterAttackKind = 'melee' | 'ranged';
+
+export type MonsterAttack = {
+  id: string;
+  name: string;
+  kind: MonsterAttackKind;
+  attackBonus: number;
+  damage: string;
+  damageType?: string;
+  /** Melee reach in feet (defaults to 5 when omitted). */
+  reachFt?: number;
+  /** Normal range in feet — required for ranged attacks. */
+  rangeFt?: number;
+  /** Long range in feet (tracked; no disadvantage applied yet). */
+  longRangeFt?: number;
+};
+
 export type Monster = {
   id: string;
   name: string;
   ac: number;
   maxHp: number;
   hp: number;
+  /** Legacy single melee attack — still the fallback when `attacks` is absent. */
   attackBonus: number;
   damage: string;
+  /** Optional richer attack list; melee/ranged with reach/range metadata. */
+  attacks?: MonsterAttack[];
+  /** Default melee reach in feet when using the legacy attack (defaults to 5). */
+  reachFt?: number;
+  /** Tactical footprint size (defaults to medium / single cell). */
+  size?: CreatureSize;
   conditions: Condition[];
 };
 

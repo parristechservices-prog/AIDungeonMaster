@@ -1,6 +1,25 @@
-import { Monster } from './types';
+import { Monster, MonsterAttack } from './types';
 
 export type MonsterTemplate = Omit<Monster, 'id' | 'hp'> & { cr: number };
+
+/**
+ * Normalises a monster into a list of attacks. Monsters with an explicit
+ * `attacks` array use it; legacy monsters fall back to a single melee attack
+ * built from `attackBonus`/`damage` with 5 ft reach (or `reachFt` if set).
+ */
+export function monsterAttacks(monster: Pick<Monster, 'attacks' | 'attackBonus' | 'damage' | 'reachFt'>): MonsterAttack[] {
+  if (monster.attacks && monster.attacks.length > 0) return monster.attacks;
+  return [
+    {
+      id: 'melee',
+      name: 'Attack',
+      kind: 'melee',
+      attackBonus: monster.attackBonus,
+      damage: monster.damage,
+      reachFt: monster.reachFt ?? 5,
+    },
+  ];
+}
 
 export const MONSTER_LIBRARY: Record<string, MonsterTemplate> = {
   goblin: {
@@ -12,6 +31,19 @@ export const MONSTER_LIBRARY: Record<string, MonsterTemplate> = {
     cr: 0.25,
     conditions: [],
   },
+  goblin_archer: {
+    name: 'Goblin Archer',
+    ac: 13,
+    maxHp: 7,
+    attackBonus: 4,
+    damage: '1d6+2',
+    cr: 0.25,
+    conditions: [],
+    attacks: [
+      { id: 'scimitar', name: 'Scimitar', kind: 'melee', attackBonus: 4, damage: '1d6+2', damageType: 'slashing', reachFt: 5 },
+      { id: 'shortbow', name: 'Shortbow', kind: 'ranged', attackBonus: 4, damage: '1d6+2', damageType: 'piercing', rangeFt: 80, longRangeFt: 320 },
+    ],
+  },
   skeleton: {
     name: 'Skeleton',
     ac: 13,
@@ -20,6 +52,11 @@ export const MONSTER_LIBRARY: Record<string, MonsterTemplate> = {
     damage: '1d6+2',
     cr: 0.25,
     conditions: [],
+    // Skeletons in 5e carry shortbows; give them a ranged option too.
+    attacks: [
+      { id: 'shortsword', name: 'Shortsword', kind: 'melee', attackBonus: 4, damage: '1d6+2', damageType: 'piercing', reachFt: 5 },
+      { id: 'shortbow', name: 'Shortbow', kind: 'ranged', attackBonus: 4, damage: '1d6+2', damageType: 'piercing', rangeFt: 80, longRangeFt: 320 },
+    ],
   },
   wolf: {
     name: 'Wolf',
