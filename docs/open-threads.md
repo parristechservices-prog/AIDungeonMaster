@@ -20,7 +20,7 @@ Legend — Impact: 🔴 high · 🟠 medium · ⚪ low. Effort: 🏔️ large ·
 | # | Item | Pillar | Impact | Effort |
 |---|------|--------|--------|--------|
 | 1 | Durable server persistence (Postgres) | 2 | 🔴 | 🏔️ |
-| 2 | Hard spatial-area gating + first-class scenes/NPCs | 3 | 🔴 | 🏔️ |
+| 2 | Hard spatial-area gating + first-class scenes/NPCs (Phase 1 spatial awareness in progress) | 3 | 🔴 | 🏔️ |
 | 3 | Structured scene-completion flags (replace log-keyword heuristics) | 1 | 🔴 | ⛰️ |
 | 4 | Prompt versioning + eval CI (registry, changelog, fixtures) | — | 🔴 | ⛰️ |
 | 5 | Turn legality / action economy (movement, reactions, turn ownership) | 1 | 🔴 | 🏔️ |
@@ -30,6 +30,8 @@ Legend — Impact: 🔴 high · 🟠 medium · ⚪ low. Effort: 🏔️ large ·
 
 > Detailed file-scoped plan for **#1 and #2**:
 > [persistence-and-spatial-plan.md](persistence-and-spatial-plan.md).
+> Active spatial roadmap:
+> [spatial-awareness-roadmap.md](spatial-awareness-roadmap.md).
 
 ~~Claude as primary core brain~~ — **decided against; Groq is the core brain.**
 
@@ -87,6 +89,8 @@ backup keys · rotate Groq keys shared in chat · coordinate concurrent agents o
 ---
 
 ## Recently completed (this session)
+- Durable server persistence through Postgres-backed session and recap storage.
+- Spatial-awareness roadmap created; Phase 1 area-graph exploration movement is in progress.
 - Engine/narrator split + multi-attempt self-healing narration validator.
 - Fixed: LLM never used (schema/prompt contract); AI refusals discarded; weapon &
   monster damage dice; crit on disadvantage-discarded die; combat auto-start.

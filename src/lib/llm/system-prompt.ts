@@ -4,24 +4,14 @@ import { getAdventure } from '@/lib/game/adventures/registry.server';
 import { ENDING_SCENE_ID } from '@/lib/game/adventures/types';
 import { DM_PERSONAS } from '@/lib/game/personas';
 import { GROUNDED_DM_RULES_V0_4 } from '@/lib/llm/prompts/active';
+import { actorsInSameArea, getArea, getNeighbors } from '@/lib/engine/spatial';
 
 export function buildSystemPrompt(state: GameState): string {
   const adventure = getAdventure(state.adventureId);
   const persona = DM_PERSONAS[state.personaId || 'balanced'];
   const sceneMeta =
     state.sceneId !== ENDING_SCENE_ID ? getPlayableScene(adventure, state.sceneId) : undefined;
-  const activeAreaId = state.exploration?.locations[state.activeCharacterId];
-  const activeArea = activeAreaId ? state.exploration?.graph.areas[activeAreaId] : undefined;
-  const adjacentAreas = activeArea
-    ? activeArea.connections
-        .map((connection) => {
-          const area = state.exploration?.graph.areas[connection.to];
-          return area
-            ? `- ${area.id}: ${area.name}${connection.label ? ` via ${connection.label}` : ''} (${connection.difficulty})`
-            : `- ${connection.to}: unknown area (${connection.difficulty})`;
-        })
-        .join('\n')
-    : undefined;
+  const spatialContext = buildSpatialPromptBlock(state);
 
   const partyDescription = state.party.map(p => {
     const featuresList = p.features.map((f) => `${f.name} (${f.usesRemaining}/${f.usesMax})`).join(', ');
@@ -108,14 +98,7 @@ export function buildSystemPrompt(state: GameState): string {
     sceneMeta ? `Allowed exits: ${sceneMeta.allowedExits.join(', ') || 'none'}` : '',
     sceneMeta ? `Forbidden: ${sceneMeta.forbidden.join('; ') || 'none'}` : '',
     sceneMeta ? `Success conditions: ${sceneMeta.successConditions.join('; ') || 'none'}` : '',
-    activeArea ? '' : '',
-    activeArea ? '## SPATIAL STATE' : '',
-    activeArea ? `Current area for active character ${state.activeCharacterId}: ${activeArea.id} - ${activeArea.name}` : '',
-    activeArea?.description ? `Area description: ${activeArea.description}` : '',
-    activeArea ? `Known exits:\n${adjacentAreas || '- none'}` : '',
-    activeArea
-      ? 'Use "move_area" when the party or an actor moves to a directly connected area. Query exits/current area if unsure. Never narrate arrival in an unconnected or blocked area unless the engine result says the move succeeded.'
-      : '',
+    spatialContext,
     '',
     '## THE ADVENTURING PARTY',
     partyDescription,
@@ -157,4 +140,34 @@ export function buildSystemPrompt(state: GameState): string {
     '- Example valid turn:',
     '  { "engineRequests": [ { "kind": "skill_check", "characterId": "PC_ID", "skill": "insight", "dc": 12, "reason": "Reading Mira for honesty" } ], "narration": "You study Mira closely as you ask...", "needsResultBeforeNarrating": true, "ambient": "tavern" }',
   ].join('\n');
+}
+
+function buildSpatialPromptBlock(state: GameState): string {
+  if (!state.exploration) return '';
+  const activeAreaId = state.exploration.locations[state.activeCharacterId];
+  if (!activeAreaId) return '';
+
+  try {
+    const currentArea = getArea(state.exploration, activeAreaId);
+    const exits = getNeighbors(state.exploration, activeAreaId)
+      .map((connection) => {
+        const area = state.exploration?.graph.areas[connection.to];
+        const locked = connection.requires ? `, locked unless ${connection.requires.tag}` : '';
+        const label = connection.label ? ` via ${connection.label}` : '';
+        return `- ${connection.to}: ${area?.name ?? 'Unknown area'}${label}; difficulty ${connection.difficulty}${locked}`;
+      })
+      .join('\n');
+    const present = actorsInSameArea(state.exploration, state.activeCharacterId);
+
+    return [
+      '## SPATIAL STATE',
+      `Current area: ${currentArea.id} - ${currentArea.name}`,
+      currentArea.description ? `Description: ${currentArea.description}` : '',
+      `Exits:\n${exits || '- none'}`,
+      `Other actors present: ${present.join(', ') || 'none'}`,
+      'Never invent movement or arrival. Emit "move_area" for travel and narrate only the engine result. Use query_current_area, query_exits, query_actors_present, or query_path_exists before describing uncertain travel.',
+    ].filter(Boolean).join('\n');
+  } catch {
+    return '';
+  }
 }

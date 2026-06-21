@@ -17,6 +17,7 @@ This directory contains the current documentation set for the AIDungeonMaster pr
 - `docs/audit-2026-06-02.md` — current audit findings from a local play-test and code review.
 - `docs/dm-prompt-design.md` — prompt architecture and intended LLM contract.
 - `docs/rules-engine-spec.md` — deterministic engine contract and data model.
+- `docs/spatial-awareness-roadmap.md` — current spatial-awareness roadmap from area graphs through tactical grids, line of sight, Z-axis, and hex support.
 
 ## Historical/context docs
 

@@ -5,6 +5,7 @@ export type NarrationEngineResult = {
   summary: string;
   ok: boolean;
   breakdown?: { rolls: number[]; total: number };
+  spatial?: import('@/lib/engine/spatial').SpatialEngineResult;
 };
 
 /**
@@ -102,6 +103,15 @@ export function validateNarrationAgainstResults(
     }
   }
 
+  const lastMove = results.findLast((result) => result.spatial?.kind === 'move_area')?.spatial;
+  if (impliesSpatialArrival(narration)) {
+    if (!lastMove) {
+      warnings.push('Spatial: Narration implies movement or arrival, but no move_area request was issued.');
+    } else if (lastMove.kind === 'move_area' && !lastMove.ok) {
+      warnings.push(`Spatial: Narration implies movement or arrival, but move_area failed (${lastMove.reason}).`);
+    }
+  }
+
   const allowedNumbers = new Set(
     results.flatMap((result) => result.breakdown ? [...result.breakdown.rolls, result.breakdown.total] : []),
   );
@@ -113,6 +123,10 @@ export function validateNarrationAgainstResults(
   }
 
   return [...new Set(warnings)];
+}
+
+function impliesSpatialArrival(narration: string): boolean {
+  return /\b(arrive[sd]?|enter(?:s|ed)?|reach(?:es|ed)?|move[sd]? into|walk(?:s|ed)? into|step(?:s|ped)? into|head(?:s|ed)? (?:to|toward|into)|go(?:es|ne)? (?:to|toward|into)|make(?:s| made) (?:your|their|his|her|our) way to|cross(?:es|ed)? into|pass(?:es|ed)? through)\b/i.test(narration);
 }
 
 export function buildEngineSafeNarration(results: NarrationEngineResult[]): string {

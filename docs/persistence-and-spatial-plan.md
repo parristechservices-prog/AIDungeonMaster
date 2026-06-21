@@ -71,6 +71,10 @@ bones are already right. Run `pnpm test` / `pnpm build` after each phase.
 
 ## Gap 1 — Persistence (state tracker, roadmap #2)
 
+**Status: DONE.** Postgres-backed sessions/recaps, `src/lib/db/client.ts`,
+`scripts/db-migrate.ts`, and the `postgres` dependency are already present.
+Keep this section as historical implementation context.
+
 **Reality check.** Retrieval is fine: `src/lib/llm/source-lore/retrieve.ts` does
 TF-IDF over chunked book text with a gazetteer of named entities, heading-boosted.
 For a fixed module (SKT) this *outperforms* a vector DB for named-entity precision
@@ -128,6 +132,10 @@ Call it from `run-turn.ts` right after a turn resolves, before `saveSession`.
 ---
 
 ## Gap 2 — Area graph / spatial tracking (spatial model, roadmap #1)
+
+**Status: moved to the active spatial roadmap.** See
+[`spatial-awareness-roadmap.md`](spatial-awareness-roadmap.md) for the current
+multi-phase plan and Phase 1 status.
 
 **Reality check.** `CombatState.grid` (`game/types.ts`) already has
 `width`/`height`/`positions: Record<actorId,{x,y}>`, but only for one combat. There's
