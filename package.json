@@ -15,7 +15,9 @@
     "db:migrate": "tsx --env-file=.env.local scripts/db-migrate.ts",
     "module:validate": "tsx scripts/validate-module.ts",
     "module:scaffold": "tsx scripts/scaffold-private-module.ts",
-    "module:skt": "python scripts/build-skt-private-module.py"
+    "module:skt": "python scripts/build-skt-private-module.py",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "next": "16.2.6",
@@ -25,6 +27,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

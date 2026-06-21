@@ -120,3 +120,25 @@ Compact mode. Presets: Full / Minimal / Combat / Story, and Reset layout.
 
 Defaults keep everything visible. Settings are pure UI prefs — no engine/API/
 game-state effect. Not browser-verified in this pass (no browser environment).
+
+## Browser QA (Playwright) — added
+Real headless-Chromium tests run against a local production build (`next start`).
+Run with: `pnpm build` then `pnpm test:e2e` (config: `playwright.config.ts`,
+specs in `e2e/`). Projects: **mobile 390×844** and **desktop 1366×768**.
+Screenshots are saved to `test-results/screenshots/` (gitignored).
+
+Browser-verified (12 tests, all passing):
+- `/start` loads, no horizontal overflow, "Begin Quest" → `/play`, no console/page errors.
+- `/play` core layout: no horizontal overflow, narration + input + Send + always-visible **Display** opener.
+- Theme toggle flips the document theme class (mobile + desktop).
+- Display settings drawer opens; toggling a section + Reset works; closes.
+- Map opens (mobile drawer / desktop tab) and the composer stays usable; no overflow.
+- DM View opens, **all toggles default off**, body contains no `sk-`/`api key` strings.
+
+Bug found via browser QA: the theme button's accessible name is its `aria-label`
+("Toggle dark mode"), not its visible text — fixed the test selector (app correct).
+
+Still manual-only / deferred: **Map combat mode** (combat isn't deterministically
+reachable through the UI without a fixture — covered by `battlemap-view.test.ts`),
+manual/physical-dice modal flow, Appeal/Export deep behaviour, and
+persistence/resume across reload. These are honest gaps, not verified here.
