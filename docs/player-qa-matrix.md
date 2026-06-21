@@ -142,3 +142,12 @@ Still manual-only / deferred: **Map combat mode** (combat isn't deterministicall
 reachable through the UI without a fixture — covered by `battlemap-view.test.ts`),
 manual/physical-dice modal flow, Appeal/Export deep behaviour, and
 persistence/resume across reload. These are honest gaps, not verified here.
+
+## Failed-check recovery popup — dismissible (fixed)
+The "That approach didn't work this time" hint (`FailedCheckRecovery`) is now an
+inline, dismissible `role="status"` message: a ✕ close button (aria-label
+"Dismiss message"), Escape to dismiss, and auto-dismiss after ~6s. Dismissal is
+local UI state — it never mutates game state or narration history — and a new
+failed check re-shows it. Pure visibility rule tested in
+`failed-check-recovery.test.ts`; dismiss gestures are manual/e2e (a failed roll
+isn't deterministic through the UI).
