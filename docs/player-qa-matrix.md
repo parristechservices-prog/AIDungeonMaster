@@ -102,3 +102,21 @@ Fixed (structurally; **not browser-verified — no browser in this environment**
 - Character / Map / DM View open as drawers/sidebar tabs (unchanged behaviour).
 
 Verification: `pnpm test` / `tsc` / `lint` / `pnpm build` pass. Viewports 360×800 / 390×844 / 412×915 and desktop 1366×768 / 1920×1080 are **not** automated (Playwright not added) and need a manual browser pass.
+
+## Display Settings (added)
+A player-facing "Display" button (always visible in the /play header) opens a
+panel to show/hide optional UI: scene meta, mode pill, active character, turn
+number, narration, dice panel, suggested actions, Appeal the DM, physical-dice
+toggle, audio, and the Character/Map/DM View/Export/Theme/Back buttons, plus a
+Compact mode. Presets: Full / Minimal / Combat / Story, and Reset layout.
+
+| Flow | Status | Where |
+|---|---|---|
+| defaults all-visible; merge/parse/reset/presets | ✅ | `display-settings.test.ts` |
+| Display opener can never be hidden | ✅ | not in settings model (`display-settings.test.ts`) |
+| settings persist (localStorage `aidm.playDisplaySettings.v1`) | ✅ | `usePlayDisplaySettings` |
+| toggles apply immediately to /play sections | 👁 | manual (no browser env) |
+| narration hidden shows restore placeholder | ✅ | `page.tsx` |
+
+Defaults keep everything visible. Settings are pure UI prefs — no engine/API/
+game-state effect. Not browser-verified in this pass (no browser environment).

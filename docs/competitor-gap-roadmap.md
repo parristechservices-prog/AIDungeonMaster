@@ -22,7 +22,7 @@ Status legend: ✅ implemented · 🟡 partial/scaffold · ⬜ not started
 | 12 | Live AI consistency evals | 🟡 → ✅ harness | guardrails vs hallucination | contract tests through real schema+validators | M | High | ✅ `ai-consistency-harness.test.ts` | — | ✅ strengthened this pass |
 | 13 | Discord/share/invite | ⬜ | share links | invite-code scaffold + docs | M | Low | ⬜ | — | ⬜ deferred |
 | 14 | Onboarding/tutorial | 🟡 OnboardingBanner + tutorial adv | guided start | start-page polish | S | Med | partial (`new-game.test.ts`) | yes | ⬜ deferred |
-| 15 | Accessibility settings | 🟡 dark mode, focus states | font size, reduced motion | settings store + classes | S | Med | ⬜ | yes | ⬜ deferred |
+| 15 | Accessibility settings | 🟡 dark mode, focus states, **Display Settings (show/hide UI, compact mode, presets)** | font size, reduced motion | display-settings store + toggles shipped; font-size/reduced-motion still deferred | S | Med | ✅ `display-settings.test.ts` | yes | 🟡 display toggles + compact mode shipped; font/motion deferred |
 | 16 | DM View polish | ✅ toggles + panels | inspector | already shipped (prev passes) | — | — | ✅ `dev-panel-*` | — | ✅ stable |
 
 ## Shipped this pass

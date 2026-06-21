@@ -19,6 +19,8 @@ import { CampaignMemory } from '@/components/play/CampaignMemory';
 import { DevPanelToggle } from '@/components/play/DevPanelToggle';
 import { Battlemap } from '@/components/play/Battlemap';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { DisplaySettingsPanel } from '@/components/play/DisplaySettingsPanel';
+import { usePlayDisplaySettings } from '@/lib/play/display-settings';
 import { DmPanels } from '@/components/play/DmPanels';
 import { useDevPanelSettings, anyDevPanelSectionEnabled } from '@/lib/play/dev-panel';
 import type { EngineLogEntry } from '@/lib/play/dev-panel-format';
@@ -55,6 +57,7 @@ export default function PlayPage() {
   const [showMobileCharacterSheet, setShowMobileCharacterSheet] = useState(false);
   const [showMobileMap, setShowMobileMap] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<'character' | 'map'>('character');
+  const { settings: display, toggle: toggleDisplay, reset: resetDisplay, setPreset: setDisplayPreset } = usePlayDisplaySettings();
   const { settings: devPanel, setSetting: setDevPanel } = useDevPanelSettings();
   const [engineLog, setEngineLog] = useState<EngineLogEntry[]>([]);
   const showDmPanels = anyDevPanelSectionEnabled(devPanel);
@@ -274,51 +277,71 @@ export default function PlayPage() {
             <header className="shrink-0 flex flex-col gap-2 border-b border-zinc-200 px-3 py-2 dark:border-zinc-700 md:flex-row md:items-start md:justify-between md:px-4 md:pt-4 md:pb-3">
               <div className="min-w-0">
                 <h1 className="text-base font-bold leading-tight line-clamp-2 md:text-xl md:truncate">{adventureTitle}</h1>
-                <p className="mt-0.5 truncate text-[11px] text-zinc-500 dark:text-zinc-400 md:text-xs">
-                  Scene: <b>{sceneId}</b> · {sceneGoal}
-                </p>
-                <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-zinc-500 md:text-xs">
-                  <span className="rounded-full border border-zinc-300 px-2 py-0.5 font-semibold dark:border-zinc-700">
-                    {mode === 'ai_director' ? 'AI Director' : 'Table Rules'}
-                  </span>
-                  <span>
-                    Active: {state?.party?.find((m) => m.id === state.activeCharacterId)?.name ?? 'Not set'}
-                  </span>
-                  {turnCount > 0 ? <span>Turn {turnCount}</span> : null}
-                </p>
+                {display.showSceneMeta && (
+                  <p className="mt-0.5 truncate text-[11px] text-zinc-500 dark:text-zinc-400 md:text-xs">
+                    Scene: <b>{sceneId}</b> · {sceneGoal}
+                  </p>
+                )}
+                {(display.showModePill || display.showActiveCharacter || (display.showTurnNumber && turnCount > 0)) && (
+                  <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-zinc-500 md:text-xs">
+                    {display.showModePill && (
+                      <span className="rounded-full border border-zinc-300 px-2 py-0.5 font-semibold dark:border-zinc-700">
+                        {mode === 'ai_director' ? 'AI Director' : 'Table Rules'}
+                      </span>
+                    )}
+                    {display.showActiveCharacter && (
+                      <span>
+                        Active: {state?.party?.find((m) => m.id === state.activeCharacterId)?.name ?? 'Not set'}
+                      </span>
+                    )}
+                    {display.showTurnNumber && turnCount > 0 ? <span>Turn {turnCount}</span> : null}
+                  </p>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-1.5 md:shrink-0 md:justify-end">
-                <button
-                  onClick={() => setShowMobileCharacterSheet(true)}
-                  className="md:hidden rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                >
-                  Character
-                </button>
-                <button
-                  onClick={() => setShowMobileMap(true)}
-                  className="md:hidden rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                >
-                  {state?.combat?.active ? 'Map ⚔' : 'Map'}
-                </button>
-                <DevPanelToggle settings={devPanel} setSetting={setDevPanel} />
-                <button
-                  onClick={handleExportRecap}
-                  className="rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                >
-                  Export
-                </button>
-                <ThemeToggle floating={false} className="rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800" />
-                <Link
-                  href="/start"
-                  className="rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                >
-                  ← Back
-                </Link>
+                {display.showCharacterButton && (
+                  <button
+                    onClick={() => setShowMobileCharacterSheet(true)}
+                    className="md:hidden rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                  >
+                    Character
+                  </button>
+                )}
+                {display.showMapButton && (
+                  <button
+                    onClick={() => setShowMobileMap(true)}
+                    className="md:hidden rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                  >
+                    {state?.combat?.active ? 'Map ⚔' : 'Map'}
+                  </button>
+                )}
+                {display.showDmViewButton && <DevPanelToggle settings={devPanel} setSetting={setDevPanel} />}
+                {display.showExportButton && (
+                  <button
+                    onClick={handleExportRecap}
+                    className="rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                  >
+                    Export
+                  </button>
+                )}
+                {display.showThemeButton && (
+                  <ThemeToggle floating={false} className="rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800" />
+                )}
+                {/* Always visible so the player can never hide their way out. */}
+                <DisplaySettingsPanel settings={display} toggle={toggleDisplay} reset={resetDisplay} setPreset={setDisplayPreset} />
+                {display.showBackButton && (
+                  <Link
+                    href="/start"
+                    className="rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                  >
+                    ← Back
+                  </Link>
+                )}
               </div>
             </header>
 
             {/* Scrollable story area */}
-            <div className="flex flex-col flex-1 min-h-0 px-4 py-3 gap-2 overflow-hidden">
+            <div className={`flex flex-col flex-1 min-h-0 px-4 overflow-hidden gap-2 ${display.compactMode ? 'py-1.5' : 'py-3'}`}>
               {showOnboarding && turnCount === 0 && (
                 <div className="shrink-0">
                   <OnboardingBanner
@@ -332,10 +355,16 @@ export default function PlayPage() {
               )}
 
               {/* NarrationPanel is flex-1 min-h-0 — it owns the scroll */}
-              <NarrationPanel lines={history} busy={busy} />
+              {display.showNarration ? (
+                <NarrationPanel lines={history} busy={busy} />
+              ) : (
+                <div className="flex-1 min-h-0 rounded border border-dashed border-zinc-300 p-3 text-xs text-zinc-500 dark:border-zinc-700">
+                  Narration hidden — open Display settings to restore.
+                </div>
+              )}
 
               <div className="shrink-0">
-                <DiceResults rolls={recentRolls} />
+                {display.showDicePanel && <DiceResults rolls={recentRolls} />}
                 <FailedCheckRecovery
                   failedResult={lastEngineResults.find((r) => r.kind === 'skill_check' && !r.ok)}
                   choices={choices}
@@ -355,7 +384,7 @@ export default function PlayPage() {
               style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
             >
               {/* Docked ambient audio bar — in flow, never overlays input/suggestions */}
-              <AmbientAudio type={ambient} />
+              {display.showAudio && <AmbientAudio type={ambient} />}
               <InputBox
                 value={input}
                 busy={busy}
@@ -363,7 +392,7 @@ export default function PlayPage() {
                 onSubmit={() => sendTurn(input)}
                 placeholder="Describe what you do…"
               />
-              {isFeatureEnabled('appealTheDm') && (
+              {display.showAppealDm && isFeatureEnabled('appealTheDm') && (
                 <AppealButton
                   busy={busy}
                   lastEngineResults={lastEngineResults}
@@ -372,7 +401,7 @@ export default function PlayPage() {
                   onAppeal={(detail) => sendTurn(`[APPEAL] ${detail}`)}
                 />
               )}
-              {isFeatureEnabled('physicalDice') && (
+              {display.showPhysicalDiceToggle && isFeatureEnabled('physicalDice') && (
                 <div className="flex items-center gap-2 text-xs">
                   <input
                     type="checkbox"
@@ -389,7 +418,7 @@ export default function PlayPage() {
                   </label>
                 </div>
               )}
-              <ChoiceButtons choices={choices} busy={busy} onPick={(c) => sendTurn(c)} />
+              {display.showSuggestedActions && <ChoiceButtons choices={choices} busy={busy} onPick={(c) => sendTurn(c)} />}
             </div>
           </section>
 
