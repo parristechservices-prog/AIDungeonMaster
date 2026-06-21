@@ -207,6 +207,16 @@ function isHelpQuestion(input: string): boolean {
   return /\b(help|what can i do|options|suggestions?)\b/.test(input);
 }
 
+// Late-campaign Storm King's Thunder secrets a starting character should not
+// simply "know". Asking about them must not leak the plot, and must not be
+// mistaken for a search action.
+const SKT_SECRET_TERMS = ['iymrith', 'hekaton', 'serissa', 'mirran', 'nym', 'neri', 'kraken society', 'kraken'];
+
+function isLoreSecretQuestion(input: string): boolean {
+  const interrogative = input.includes('?') || /\b(who|what|where|why|is|are|tell me|do you know|explain)\b/.test(input);
+  return interrogative && SKT_SECRET_TERMS.some((term) => input.includes(term));
+}
+
 function isReadyWeaponIntent(input: string): boolean {
   return /\b(draw|ready|unsheathe|prepare)\b.*\b(sword|weapon|blade|bow|axe|staff)\b/.test(input);
 }
@@ -585,6 +595,18 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
     return {
       engineRequests: [],
       narration: `You can look around, talk to someone nearby, inspect something specific, move to a visible place, use an item or feature, or try one of these approaches: ${choices.join('; ')}.`,
+      needsResultBeforeNarrating: false,
+      ambient,
+    };
+  }
+
+  // Answer lore questions about deep campaign secrets honestly without leaking
+  // the plot or rolling a search. The engine owns what the character knows.
+  if (isLoreSecretQuestion(input)) {
+    return {
+      engineRequests: [],
+      narration:
+        'That goes beyond what your character currently knows. Names and secrets like that would have to be uncovered through play — what you actually know here comes from the people, places, and clues in front of you.',
       needsResultBeforeNarrating: false,
       ambient,
     };
