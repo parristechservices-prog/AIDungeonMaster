@@ -1,4 +1,5 @@
 import { buildBalancedEncounter } from '@/lib/engine/balancer';
+import { getMonster } from '@/lib/game/monsters';
 import type { Scenario } from './types';
 
 export const cryptOfWhispers: Scenario = {
@@ -53,7 +54,7 @@ export const cryptOfWhispers: Scenario = {
       ],
       guidance: 'Undead combat: skeleton ids. Cleric features especially appropriate.',
       allowedNpcs: [],
-      allowedMonsters: ['skeleton'],
+      allowedMonsters: ['skeleton', 'ogre'],
       allowedExits: ['ending'],
       forbidden: ['Do not end combat while a skeleton remains active.'],
       successConditions: ['Defeat all active monsters.'],
@@ -90,7 +91,9 @@ export const cryptOfWhispers: Scenario = {
       ],
     },
   ],
-  buildMonsters: () => buildBalancedEncounter(3, 1, 'medium', ['skeleton']),
+  // A Large ogre crypt-guardian alongside the skeletons exercises 2x2 footprint
+  // movement/occupancy/reach on the authored, pillared battle map.
+  buildMonsters: () => [...buildBalancedEncounter(3, 1, 'medium', ['skeleton']), { ...getMonster('ogre'), id: 'ogre-guardian' }],
   mock: {
     socialNpcId: 'npc-elara',
     socialNpcName: 'Sister Elara',

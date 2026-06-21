@@ -2,8 +2,34 @@
 // Distances include elevation (z, in feet) so flying/heights affect range too.
 
 import { adapterFor } from './movement';
-import { getCell } from './grid';
+import { actorFootprint, getCell, sizeSpan } from './grid';
 import type { BattleMap, CoverKind, GridCoord } from './types';
+
+/** Footprint-aware distance in feet between two actors (nearest occupied cells). */
+export function actorDistanceFt(map: BattleMap, aId: string, bId: string): number | undefined {
+  const aCells = actorFootprint(map, aId);
+  const bCells = actorFootprint(map, bId);
+  if (aCells.length === 0 || bCells.length === 0) return undefined;
+  let min = Infinity;
+  for (const a of aCells) for (const b of bCells) min = Math.min(min, distanceFt(map, a, b));
+  return min;
+}
+
+/**
+ * Cells that block sight because a multi-cell (Large) creature stands there.
+ * `excludeIds` skips the attacker/target so a creature never blocks sight to or
+ * from itself.
+ */
+export function creatureSightBlockers(map: BattleMap, excludeIds: Iterable<string> = []): Set<string> {
+  const exclude = new Set(excludeIds);
+  const blockers = new Set<string>();
+  for (const id of Object.keys(map.positions)) {
+    if (exclude.has(id)) continue;
+    if (sizeSpan(map.actors[id]?.size) <= 1) continue; // only Large+ footprints block
+    for (const c of actorFootprint(map, id)) blockers.add(`${c.x},${c.y}`);
+  }
+  return blockers;
+}
 
 /**
  * 5e cube/Chebyshev distance in feet, including vertical separation. The
@@ -18,10 +44,7 @@ export function distanceFt(map: BattleMap, a: GridCoord, b: GridCoord): number {
 }
 
 export function distanceBetweenActors(map: BattleMap, aId: string, bId: string): number | undefined {
-  const a = map.positions[aId];
-  const b = map.positions[bId];
-  if (!a || !b) return undefined;
-  return distanceFt(map, a, b);
+  return actorDistanceFt(map, aId, bId);
 }
 
 export interface SightResult {
@@ -36,7 +59,7 @@ export interface SightResult {
  *   three-quarters (2+) cover.
  * - The target cell's own static `cover` is also applied (max wins).
  */
-export function lineOfSight(map: BattleMap, from: GridCoord, to: GridCoord): SightResult {
+export function lineOfSight(map: BattleMap, from: GridCoord, to: GridCoord, blockers?: Set<string>): SightResult {
   const adapter = adapterFor(map);
   const cells = adapter.line(from, to);
   let partialBlockers = 0;
@@ -44,6 +67,8 @@ export function lineOfSight(map: BattleMap, from: GridCoord, to: GridCoord): Sig
   for (let i = 1; i < cells.length - 1; i++) {
     const cell = getCell(map, cells[i]);
     if (cell.blocksSight) return { hasLineOfSight: false, cover: 'total' };
+    // A Large creature standing on the line blocks sight through any of its cells.
+    if (blockers?.has(`${cells[i].x},${cells[i].y}`)) return { hasLineOfSight: false, cover: 'total' };
     if (cell.blocksMovement) partialBlockers++;
   }
   const fromObstacles: CoverKind = partialBlockers >= 2 ? 'three_quarters' : partialBlockers === 1 ? 'half' : 'none';
@@ -90,9 +115,9 @@ export function checkRange(map: BattleMap, attackerId: string, targetId: string,
   const from = map.positions[attackerId];
   const to = map.positions[targetId];
   if (!from || !to) return { ok: false, reason: 'unknown_actor' };
-  const dist = distanceFt(map, from, to);
+  const dist = actorDistanceFt(map, attackerId, targetId) ?? distanceFt(map, from, to);
   if (dist > rangeFt) return { ok: false, reason: 'out_of_range', distanceFt: dist };
-  const sight = lineOfSight(map, from, to);
+  const sight = lineOfSight(map, from, to, creatureSightBlockers(map, [attackerId, targetId]));
   if (!sight.hasLineOfSight || sight.cover === 'total') {
     return { ok: false, reason: 'no_line_of_sight', distanceFt: dist, cover: 'total' };
   }
@@ -115,9 +140,9 @@ export function targetsInRange(map: BattleMap, actorId: string, rangeFt: number)
   const out: TargetInfo[] = [];
   for (const [id, pos] of Object.entries(map.positions)) {
     if (id === actorId) continue;
-    const dist = distanceFt(map, from, pos);
+    const dist = actorDistanceFt(map, actorId, id) ?? distanceFt(map, from, pos);
     if (dist > rangeFt) continue;
-    const sight = lineOfSight(map, from, pos);
+    const sight = lineOfSight(map, from, pos, creatureSightBlockers(map, [actorId, id]));
     out.push({
       id,
       distanceFt: dist,

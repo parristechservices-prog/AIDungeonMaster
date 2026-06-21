@@ -102,7 +102,7 @@ export function buildBattleMap(
   });
   state.monsters.forEach((monster, index) => {
     positions[monster.id] = place(monster.id, width - 2, index);
-    actors[monster.id] = makeSpatialActor(monster.id, 'monster');
+    actors[monster.id] = makeSpatialActor(monster.id, 'monster', monster.size, monster.reachFt);
   });
 
   return {
@@ -134,13 +134,18 @@ function firstFreeCell(
   return { x: preferredX, y: preferredY }; // fully packed: fall back to preferred
 }
 
-function makeSpatialActor(id: string, faction: SpatialActor['faction']): SpatialActor {
+function makeSpatialActor(
+  id: string,
+  faction: SpatialActor['faction'],
+  size: SpatialActor['size'] = 'medium',
+  reachFt: number = DEFAULT_REACH_FT,
+): SpatialActor {
   return {
     id,
     faction,
-    size: 'medium',
+    size,
     speedFt: DEFAULT_SPEED_FT,
-    reachFt: DEFAULT_REACH_FT,
+    reachFt,
     movementSpentFt: 0,
     extraMovementFt: 0,
     actionUsed: false,

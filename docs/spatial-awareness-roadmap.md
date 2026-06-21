@@ -1,9 +1,10 @@
 # Spatial Awareness Roadmap
 
 Status: P1–P7 implemented, plus the combat-integration layer (opportunity
-attacks, cover AC, authored terrain). Square-grid tactical combat is the
-default; the hex adapter exists and is wired behind the same interface but is
-not yet selected by any scenario.
+attacks, cover AC, authored terrain) and tactical symmetry (cover-aware monster
+ranged/melee/reach with deterministic monster movement, and Large 2×2
+footprints). Square-grid tactical combat is the default; the hex adapter exists
+and is wired behind the same interface but is not yet selected by any scenario.
 
 ## Combat integration layer (2026-06-21)
 
@@ -138,14 +139,33 @@ Updated after the combat-integration pass (2026-06-21):
 - **Cover not applied to attacks — RESOLVED.** Cover now modifies effective AC
   and blocks total-cover shots in `player_attack`.
 
+Resolved since:
+
+- **Monster ranged/cover symmetry — RESOLVED (2026-06-21).** Monsters carry
+  `MonsterAttack` metadata (melee/ranged, reach, range). `monster_turn` runs
+  through the tactical engine: nearest-target selection, melee reach, ranged
+  range + line of sight + cover (shared `resolveSpatialCover` with
+  `player_attack`), deterministic move-into-reach via pathfinding, and a clear
+  "no legal action" result. Total cover / blocked LOS refuses the shot.
+- **Large (2×2) creature footprint — RESOLVED (2026-06-21).** `SpatialActor.size`
+  now drives a real footprint: occupancy (`occupantAt`/`footprintBlocked`),
+  movement (a Large creature can't squeeze a 1-wide gap or end overlapping a
+  blocked/occupied cell), reach/OA (measured from the nearest occupied cell),
+  and LOS (a Large body blocks sight through any of its cells). The Ogre is
+  `size: 'large'` and guards the authored Crypt of Whispers encounter.
+
 Still deferred, with reasons:
 
-- **Multi-cell creature size — DEFERRED.** All actors occupy a single cell.
-  Large+ footprints touch `occupantAt`, pathfinding, LOS, reach, and targeting
-  simultaneously, so a correct 2×2+ implementation is its own focused pass.
-  Deferred now because **all current content is Small/Medium**, so single-cell
-  occupancy is exactly right for shipped scenarios; revisit when a Large+ monster
-  is actually authored. (`SpatialActor.size` is tracked, unused in geometry.)
+- **Huge / Gargantuan (3×3+) creatures — DEFERRED.** `sizeSpan` only expands
+  Large to 2×2; Huge+ are treated as single-cell. The N×N generalization re-
+  touches the same surfaces (occupancy, movement gating, reach, LOS) and there
+  is **no Huge+ content yet**, so it's deferred until one exists — the footprint
+  helpers (`footprintAt`/`sizeSpan`) already generalize, so it's a small change.
+- **Creature-as-cover for attacks — PARTIAL.** A Large creature blocks LOS in
+  `checkRange`/`targetsInRange` queries, but `player_attack`/`monster_turn` cover
+  still uses terrain + static cell cover only (not "an ally's body grants cover"),
+  to keep attack-cover semantics stable. Wiring creature blockers into attack
+  resolution is a follow-up.
 - **True corner-to-corner cover — ACCEPTED SIMPLIFICATION.** Cover is derived
   from sight/movement blockers along the Bresenham line plus the target cell's
   static `cover`. For text combat this is deterministic and good enough; exact 5e

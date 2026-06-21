@@ -9,11 +9,14 @@ import { SquareGridAdapter } from './adapter';
 import {
   areHostile,
   blocksMovement,
+  footprintAt,
+  footprintBlocked,
   inBounds,
   isDiagonalStep,
   isDifficult,
   occupantAt,
   remainingMovementFt,
+  sizeSpan,
 } from './grid';
 import type { BattleMap, GridCoord, SpatialActor } from './types';
 
@@ -54,6 +57,15 @@ function enterCostFt(
   return stepCells * mult * map.cellSizeFt;
 }
 
+/** Terrain-only step cost (no occupancy logic); used for multi-cell movers whose
+ * occupancy is gated separately via footprintBlocked. */
+function terrainStepCostFt(map: BattleMap, adapter: SpatialAdapter, from: GridCoord, to: GridCoord, diagCountSoFar: number): number {
+  const isDiag = isDiagonalStep(from, to);
+  const stepCells = isDiag ? adapter.diagonalStepCost(diagCountSoFar) : 1;
+  const mult = isDifficult(map, to) ? 2 : 1;
+  return stepCells * mult * map.cellSizeFt;
+}
+
 interface Reached {
   coord: GridCoord;
   costFt: number;
@@ -86,6 +98,7 @@ function search(
   const bestCost = new Map<string, number>();
   const stateKey = (key: string, diag: number) => `${key}:${diag % 2}`;
 
+  const span = sizeSpan(map.actors[actorId]?.size);
   const startKey = adapter.key(start);
   const startState = stateKey(startKey, 0);
   const queue: SearchNode[] = [{ coord: start, costFt: 0, diagCount: 0, parent: null }];
@@ -101,8 +114,19 @@ function search(
 
     for (const nb of adapter.neighbors(cur.coord)) {
       if (!inBounds(map, nb)) continue;
-      const stepFt = enterCostFt(map, adapter, actorId, cur.coord, nb, cur.diagCount);
-      if (!Number.isFinite(stepFt)) continue;
+      // Multi-cell movers validate their whole footprint and can't pass through
+      // any occupied cell; single-cell movers keep the ally-pass-through rule.
+      let stepFt: number;
+      let canEnd: boolean;
+      if (span > 1) {
+        if (footprintBlocked(map, actorId, nb, span)) continue;
+        stepFt = terrainStepCostFt(map, adapter, cur.coord, nb, cur.diagCount);
+        canEnd = true;
+      } else {
+        stepFt = enterCostFt(map, adapter, actorId, cur.coord, nb, cur.diagCount);
+        if (!Number.isFinite(stepFt)) continue;
+        canEnd = occupantAt(map, nb, actorId) === undefined;
+      }
       const newCost = cur.costFt + stepFt;
       if (newCost > budgetFt) continue;
       const newDiag = cur.diagCount + (isDiagonalStep(cur.coord, nb) ? 1 : 0);
@@ -113,7 +137,7 @@ function search(
       parents.set(sk, curState);
       queue.push({ coord: nb, costFt: newCost, diagCount: newDiag, parent: curState });
 
-      if (occupantAt(map, nb, actorId) === undefined) {
+      if (canEnd) {
         const prev = ends.get(nbKey);
         if (!prev || prev.costFt > newCost) ends.set(nbKey, { coord: nb, costFt: newCost, endState: sk });
       }
@@ -183,10 +207,19 @@ export function resolveMove(
   }
   const adapter = adapterFor(map);
   const remaining = remainingMovementFt(actor);
+  const span = sizeSpan(actor.size);
 
   if (!inBounds(map, target)) return fail(map, actor, remaining, 'out_of_bounds');
-  if (blocksMovement(map, target)) return fail(map, actor, remaining, 'blocked');
-  if (occupantAt(map, target, actorId) !== undefined) return fail(map, actor, remaining, 'occupied');
+  if (span > 1) {
+    // A Large creature must fit its whole 2x2 footprint at the destination.
+    if (footprintBlocked(map, actorId, target, span)) {
+      const anyBlocked = footprintAt(span, target).some((c) => !inBounds(map, c) || blocksMovement(map, c));
+      return fail(map, actor, remaining, anyBlocked ? 'blocked' : 'occupied');
+    }
+  } else {
+    if (blocksMovement(map, target)) return fail(map, actor, remaining, 'blocked');
+    if (occupantAt(map, target, actorId) !== undefined) return fail(map, actor, remaining, 'occupied');
+  }
 
   const targetKey = adapter.key(target);
   const withinBudget = search(map, adapter, actorId, remaining);
@@ -262,10 +295,14 @@ export function detectOpportunityAttacks(
     const hpos = map.positions[id];
     if (!hpos) continue;
     const reachCells = Math.max(1, Math.ceil(other.reachFt / map.cellSizeFt));
-    let wasInReach = adapter.distanceCells(hpos, path[0]) <= reachCells;
+    // Measure reach from the hostile's NEAREST occupied cell (Large creatures
+    // threaten a wider area than their anchor).
+    const hostileCells = footprintAt(sizeSpan(other.size), hpos);
+    const distToHostile = (cell: GridCoord) => Math.min(...hostileCells.map((hc) => adapter.distanceCells(hc, cell)));
+    let wasInReach = distToHostile(path[0]) <= reachCells;
     let left = false;
     for (let i = 1; i < path.length; i++) {
-      const inReach = adapter.distanceCells(hpos, path[i]) <= reachCells;
+      const inReach = distToHostile(path[i]) <= reachCells;
       if (wasInReach && !inReach) left = true;
       wasInReach = inReach;
     }
