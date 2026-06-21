@@ -88,6 +88,23 @@ export type CellInteraction =
   | { kind: 'noop'; reason: string };
 
 /**
+ * Turns an interaction into a human-readable command the player can review and
+ * send (e.g. "Move Seren to (3,0)"). Returns null for select/noop interactions.
+ * `nameOf` resolves an actor id to a display name. Suggestion text only — the
+ * engine still validates the action when the player sends it.
+ */
+export function toDisplayCommand(interaction: CellInteraction, nameOf: (id: string) => string): string | null {
+  switch (interaction.kind) {
+    case 'suggest_move':
+      return `Move ${nameOf(interaction.actorId)} to (${interaction.x}, ${interaction.y})`;
+    case 'suggest_attack':
+      return `${nameOf(interaction.actorId)} attacks ${nameOf(interaction.targetId)}`;
+    default:
+      return null;
+  }
+}
+
+/**
  * Interprets a tap on cell (x,y) given the currently-selected token. Returns a
  * SUGGESTION only — it produces a command string the player can send through the
  * normal turn API; it never changes engine state itself. Clicking an empty cell

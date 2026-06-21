@@ -51,3 +51,10 @@ Each section is independent and defaults to OFF.
 
 The normal player view remains unchanged by default.
 A DM must explicitly enable sections to see additional debug/observability output.
+
+## Battlemap integration
+
+The player-facing battlemap (`docs/battlemap.md`) shares DM View's terrain
+toggle: with `showTerrainOverlay` off the map shows only player-safe tokens and
+reachability; with it on, the map colours terrain and shows cover badges. No
+DM-only data appears on the map by default.

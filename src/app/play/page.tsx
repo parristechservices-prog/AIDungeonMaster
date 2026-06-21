@@ -17,6 +17,7 @@ import { ManualRollModal } from '@/components/play/ManualRollModal';
 import { FailedCheckRecovery } from '@/components/play/FailedCheckRecovery';
 import { CampaignMemory } from '@/components/play/CampaignMemory';
 import { DevPanelToggle } from '@/components/play/DevPanelToggle';
+import { Battlemap } from '@/components/play/Battlemap';
 import { DmPanels } from '@/components/play/DmPanels';
 import { useDevPanelSettings, anyDevPanelSectionEnabled } from '@/lib/play/dev-panel';
 import type { EngineLogEntry } from '@/lib/play/dev-panel-format';
@@ -51,6 +52,8 @@ export default function PlayPage() {
   const [physicalDice, setPhysicalDice] = useState(false);
   const [manualRollContext, setManualRollContext] = useState<TurnResponse['manualRollContext'] | null>(null);
   const [showMobileCharacterSheet, setShowMobileCharacterSheet] = useState(false);
+  const [showMobileMap, setShowMobileMap] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<'character' | 'map'>('character');
   const { settings: devPanel, setSetting: setDevPanel } = useDevPanelSettings();
   const [engineLog, setEngineLog] = useState<EngineLogEntry[]>([]);
   const showDmPanels = anyDevPanelSectionEnabled(devPanel);
@@ -291,6 +294,12 @@ export default function PlayPage() {
                   Character
                 </button>
                 <button
+                  onClick={() => setShowMobileMap(true)}
+                  className="md:hidden rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                >
+                  {state?.combat?.active ? 'Map ⚔' : 'Map'}
+                </button>
+                <button
                   onClick={handleExportRecap}
                   className="rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
                 >
@@ -379,18 +388,36 @@ export default function PlayPage() {
 
           {/* ── RIGHT: Sidebar ── */}
           <aside className="hidden md:flex flex-col w-72 lg:w-96 shrink-0 min-h-0 rounded-lg border border-zinc-300 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900 overflow-hidden">
-            <div className="shrink-0 px-4 pt-4 pb-2 border-b border-zinc-200 dark:border-zinc-700">
-              <h2 className="font-semibold text-sm">Character</h2>
+            <div className="shrink-0 flex gap-1 px-2 pt-2 pb-1 border-b border-zinc-200 dark:border-zinc-700">
+              {(['character', 'map'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setSidebarTab(tab)}
+                  className={`flex-1 rounded px-2 py-1 text-xs font-semibold capitalize ${
+                    sidebarTab === tab
+                      ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900'
+                      : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                  }`}
+                >
+                  {tab === 'map' && state?.combat?.active ? 'Map ⚔' : tab}
+                </button>
+              ))}
             </div>
             <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 text-sm space-y-4">
-              <CharacterSheet state={state} />
-              <CampaignMemory state={state} sceneGoal={sceneGoal} choices={choices} />
-              {process.env.NODE_ENV !== 'production' && warnings.length > 0 && (
-                <p className="text-xs text-amber-700 dark:text-amber-300" title={warnings.join(' ')}>
-                  Narration checked against engine state.
-                </p>
+              {sidebarTab === 'character' ? (
+                <>
+                  <CharacterSheet state={state} />
+                  <CampaignMemory state={state} sceneGoal={sceneGoal} choices={choices} />
+                  {process.env.NODE_ENV !== 'production' && warnings.length > 0 && (
+                    <p className="text-xs text-amber-700 dark:text-amber-300" title={warnings.join(' ')}>
+                      Narration checked against engine state.
+                    </p>
+                  )}
+                  <DmPanels settings={devPanel} state={state} engineLog={engineLog} warnings={warnings} showAny={showDmPanels} />
+                </>
+              ) : (
+                <Battlemap state={state} showTerrainOverlay={devPanel.showTerrainOverlay} onSuggestCommand={setInput} />
               )}
-              <DmPanels settings={devPanel} state={state} engineLog={engineLog} warnings={warnings} showAny={showDmPanels} />
             </div>
           </aside>
 
@@ -427,6 +454,31 @@ export default function PlayPage() {
               </p>
             )}
             <DmPanels settings={devPanel} state={state} engineLog={engineLog} warnings={warnings} showAny={showDmPanels} />
+          </div>
+        </div>
+      )}
+
+      {/* Mobile battle map drawer */}
+      {showMobileMap && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 md:hidden">
+          <div className="w-full max-w-lg rounded-t-3xl bg-white p-6 dark:bg-zinc-900 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Battle map</h2>
+              <button
+                onClick={() => setShowMobileMap(false)}
+                className="rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+              >
+                Close
+              </button>
+            </div>
+            <Battlemap
+              state={state}
+              showTerrainOverlay={devPanel.showTerrainOverlay}
+              onSuggestCommand={(cmd) => {
+                setInput(cmd);
+                setShowMobileMap(false);
+              }}
+            />
           </div>
         </div>
       )}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildBattlemapView, interpretCellTap } from '@/lib/play/battlemap-view';
+import { buildBattlemapView, interpretCellTap, toDisplayCommand } from '@/lib/play/battlemap-view';
 import type { BattleMap, Cell, SpatialActor } from '@/lib/engine/spatial/tactical';
 
 function actor(id: string, faction: SpatialActor['faction'], over: Partial<SpatialActor> = {}): SpatialActor {
@@ -99,5 +99,22 @@ describe('battlemap interaction (suggestions only — never mutates state)', () 
   it('treats out-of-bounds taps as no-ops', () => {
     const map = withActor(makeMap(), actor('hero', 'party'), 0, 0);
     expect(interpretCellTap(map, 'hero', 99, 99).kind).toBe('noop');
+  });
+});
+
+describe('toDisplayCommand — human-readable suggestions', () => {
+  const nameOf = (id: string) => ({ hero: 'Seren', gob: 'Goblin' })[id] ?? id;
+
+  it('formats a move suggestion with the actor name', () => {
+    expect(toDisplayCommand({ kind: 'suggest_move', actorId: 'hero', x: 3, y: 0, command: 'x' }, nameOf)).toBe('Move Seren to (3, 0)');
+  });
+
+  it('formats an attack suggestion with names', () => {
+    expect(toDisplayCommand({ kind: 'suggest_attack', actorId: 'hero', targetId: 'gob', command: 'x' }, nameOf)).toBe('Seren attacks Goblin');
+  });
+
+  it('returns null for select/noop (no command to send)', () => {
+    expect(toDisplayCommand({ kind: 'select_token', actorId: 'hero' }, nameOf)).toBeNull();
+    expect(toDisplayCommand({ kind: 'noop', reason: 'unreachable' }, nameOf)).toBeNull();
   });
 });

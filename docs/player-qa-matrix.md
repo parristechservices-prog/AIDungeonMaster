@@ -83,3 +83,12 @@ Legend: ✅ automated · 🟡 partial · 👁 manual-only · ⬜ not covered
 - Browser layout at the three viewports (no browser in CI env).
 - Live-LLM ("AI Director") narration quality — tests use deterministic table-rules.
 - Character-sheet / campaign-memory visual rendering.
+
+## Battlemap (added)
+| Flow | Status | Where |
+|---|---|---|
+| Map renders tokens/terrain/footprints | ✅ | `battlemap-view.test.ts` |
+| Tap suggests command (no mutation) | ✅ | `battlemap-view.test.ts` |
+| Empty/non-combat fallback | ✅ | `Battlemap.tsx` (no-map state) |
+| Desktop sidebar Map tab / mobile Map drawer | 👁 | manual (no browser env) |
+| Terrain overlay gated by DM View | ✅ | `Battlemap.tsx` + `showTerrainOverlay` |
