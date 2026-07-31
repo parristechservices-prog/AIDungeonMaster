@@ -166,20 +166,23 @@ function ExplorationMap({
     );
   }
 
+  // Scale factor to spread nodes out
+  const SCALE = 3;
+
   // Calculate SVG bounds based on nodes
   let minX = 0;
   let maxX = 0;
   let minY = 0;
   let maxY = 0;
   if (view.nodes.length > 0) {
-    minX = Math.min(...view.nodes.map(n => n.x));
-    maxX = Math.max(...view.nodes.map(n => n.x));
-    minY = Math.min(...view.nodes.map(n => n.y));
-    maxY = Math.max(...view.nodes.map(n => n.y));
+    minX = Math.min(...view.nodes.map(n => n.x * SCALE));
+    maxX = Math.max(...view.nodes.map(n => n.x * SCALE));
+    minY = Math.min(...view.nodes.map(n => n.y * SCALE));
+    maxY = Math.max(...view.nodes.map(n => n.y * SCALE));
   }
   
   // Pad the bounds slightly so nodes aren't cut off
-  const padding = 1.5;
+  const padding = 2;
   const vMinX = minX - padding;
   const vMaxX = maxX + padding;
   const vMinY = minY - padding;
@@ -205,10 +208,10 @@ function ExplorationMap({
             return (
               <line 
                 key={`${edge.from}-${edge.to}`}
-                x1={n1.x} y1={n1.y} x2={n2.x} y2={n2.y} 
+                x1={n1.x * SCALE} y1={n1.y * SCALE} x2={n2.x * SCALE} y2={n2.y * SCALE} 
                 stroke={edge.locked ? 'currentColor' : 'currentColor'}
-                strokeWidth={0.05}
-                strokeDasharray={edge.locked ? '0.1 0.1' : 'none'}
+                strokeWidth={0.08}
+                strokeDasharray={edge.locked ? '0.2 0.2' : 'none'}
                 className={edge.locked ? 'text-zinc-300 dark:text-zinc-700' : 'text-zinc-400 dark:text-zinc-600'}
               />
             );
@@ -218,12 +221,12 @@ function ExplorationMap({
           {view.nodes.map(node => {
             const isKnownExit = view.exits.some(e => e.areaId === node.id);
             const isVisible = node.isCurrent || isKnownExit; // Fade out unknown nodes
-            if (!isVisible) return null; // We could render them faintly, but hiding is better for discovery
+            if (!isVisible) return null;
 
             return (
               <g 
                 key={node.id} 
-                transform={`translate(${node.x}, ${node.y})`}
+                transform={`translate(${node.x * SCALE}, ${node.y * SCALE})`}
                 className={isKnownExit ? 'cursor-pointer' : ''}
                 onClick={() => {
                   if (isKnownExit) {
@@ -233,19 +236,19 @@ function ExplorationMap({
                 }}
               >
                 <circle 
-                  r={0.4} 
+                  r={0.6} 
                   fill="currentColor"
                   className={node.isCurrent ? 'text-sky-500' : 'text-zinc-200 hover:text-zinc-300 dark:text-zinc-800 dark:hover:text-zinc-700'} 
                 />
                 {node.isCurrent && (
-                  <circle r={0.5} fill="none" stroke="currentColor" strokeWidth={0.05} className="text-sky-400 opacity-50" />
+                  <circle r={0.75} fill="none" stroke="currentColor" strokeWidth={0.08} className="text-sky-400 opacity-50" />
                 )}
                 {/* Background for text */}
-                <rect x="-1" y="0.5" width="2" height="0.4" fill="currentColor" className="text-zinc-50/80 dark:text-zinc-950/80" rx="0.1" />
+                <rect x="-1.5" y="0.8" width="3" height="0.6" fill="currentColor" className="text-zinc-50/90 dark:text-zinc-950/90" rx="0.15" />
                 <text 
-                  y={0.75} 
+                  y={1.2} 
                   textAnchor="middle" 
-                  fontSize={0.25} 
+                  fontSize={0.4} 
                   fill="currentColor"
                   className={node.isCurrent ? 'font-bold text-sky-700 dark:text-sky-300' : 'text-zinc-600 dark:text-zinc-400 font-medium'}
                   pointerEvents="none"
