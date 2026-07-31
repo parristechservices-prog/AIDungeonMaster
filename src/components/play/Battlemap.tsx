@@ -166,39 +166,117 @@ function ExplorationMap({
     );
   }
 
+  // Calculate SVG bounds based on nodes
+  let minX = 0;
+  let maxX = 0;
+  let minY = 0;
+  let maxY = 0;
+  if (view.nodes.length > 0) {
+    minX = Math.min(...view.nodes.map(n => n.x));
+    maxX = Math.max(...view.nodes.map(n => n.x));
+    minY = Math.min(...view.nodes.map(n => n.y));
+    maxY = Math.max(...view.nodes.map(n => n.y));
+  }
+  
+  // Pad the bounds slightly so nodes aren't cut off
+  const padding = 1.5;
+  const vMinX = minX - padding;
+  const vMaxX = maxX + padding;
+  const vMinY = minY - padding;
+  const vMaxY = maxY + padding;
+  const width = vMaxX - vMinX;
+  const height = vMaxY - vMinY;
+
   return (
     <section className="text-xs" aria-label="Exploration map">
+      
+      {/* SVG Map Container */}
+      <div className="relative mb-3 aspect-[4/3] w-full rounded border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 overflow-hidden">
+        <svg 
+          viewBox={`${vMinX} ${vMinY} ${width} ${height}`} 
+          className="w-full h-full"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          {/* Edges */}
+          {view.edges.map(edge => {
+            const n1 = view.nodes.find(n => n.id === edge.from);
+            const n2 = view.nodes.find(n => n.id === edge.to);
+            if (!n1 || !n2) return null;
+            return (
+              <line 
+                key={`${edge.from}-${edge.to}`}
+                x1={n1.x} y1={n1.y} x2={n2.x} y2={n2.y} 
+                stroke={edge.locked ? 'currentColor' : 'currentColor'}
+                strokeWidth={0.05}
+                strokeDasharray={edge.locked ? '0.1 0.1' : 'none'}
+                className={edge.locked ? 'text-zinc-300 dark:text-zinc-700' : 'text-zinc-400 dark:text-zinc-600'}
+              />
+            );
+          })}
+
+          {/* Nodes */}
+          {view.nodes.map(node => {
+            const isKnownExit = view.exits.some(e => e.areaId === node.id);
+            const isVisible = node.isCurrent || isKnownExit; // Fade out unknown nodes
+            if (!isVisible) return null; // We could render them faintly, but hiding is better for discovery
+
+            return (
+              <g 
+                key={node.id} 
+                transform={`translate(${node.x}, ${node.y})`}
+                className={isKnownExit ? 'cursor-pointer' : ''}
+                onClick={() => {
+                  if (isKnownExit) {
+                    const exit = view.exits.find(e => e.areaId === node.id);
+                    if (exit && !exit.locked) onSuggestCommand?.(exit.command);
+                  }
+                }}
+              >
+                <circle 
+                  r={0.4} 
+                  fill="currentColor"
+                  className={node.isCurrent ? 'text-sky-500' : 'text-zinc-200 hover:text-zinc-300 dark:text-zinc-800 dark:hover:text-zinc-700'} 
+                />
+                {node.isCurrent && (
+                  <circle r={0.5} fill="none" stroke="currentColor" strokeWidth={0.05} className="text-sky-400 opacity-50" />
+                )}
+                {/* Background for text */}
+                <rect x="-1" y="0.5" width="2" height="0.4" fill="currentColor" className="text-zinc-50/80 dark:text-zinc-950/80" rx="0.1" />
+                <text 
+                  y={0.75} 
+                  textAnchor="middle" 
+                  fontSize={0.25} 
+                  fill="currentColor"
+                  className={node.isCurrent ? 'font-bold text-sky-700 dark:text-sky-300' : 'text-zinc-600 dark:text-zinc-400 font-medium'}
+                  pointerEvents="none"
+                >
+                  {node.name}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+
+        {/* Compass Overlay */}
+        <div className="absolute top-2 right-2 flex flex-col items-center opacity-40 pointer-events-none">
+          <span className="text-[10px] font-bold">N</span>
+          <div className="flex items-center">
+            <span className="text-[10px] font-bold mr-1">W</span>
+            <div className="w-4 h-4 border rounded-full relative">
+              <div className="absolute w-full h-px bg-current top-1/2 left-0 -translate-y-1/2" />
+              <div className="absolute h-full w-px bg-current left-1/2 top-0 -translate-x-1/2" />
+            </div>
+            <span className="text-[10px] font-bold ml-1">E</span>
+          </div>
+          <span className="text-[10px] font-bold">S</span>
+        </div>
+      </div>
+
       <div className="rounded border border-sky-300 bg-sky-50 p-2 dark:border-sky-800 dark:bg-sky-950/30">
         <p className="text-[10px] font-bold uppercase tracking-widest text-sky-700 dark:text-sky-300">You are here</p>
         <p className="font-semibold text-zinc-800 dark:text-zinc-100">{view.currentAreaName}</p>
         {view.currentAreaDescription && <p className="mt-0.5 text-[11px] text-zinc-500">{view.currentAreaDescription}</p>}
       </div>
-
-      <p className="mt-3 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Exits</p>
-      {view.exits.length === 0 ? (
-        <p className="mt-1 italic text-zinc-500">No known exits from here.</p>
-      ) : (
-        <div className="mt-1 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-          {view.exits.map((exit) => (
-            <button
-              key={exit.areaId}
-              onClick={() => !exit.locked && onSuggestCommand?.(exit.command)}
-              disabled={exit.locked}
-              className={`rounded border p-2 text-left ${
-                exit.locked
-                  ? 'cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/40'
-                  : 'border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800'
-              }`}
-              title={exit.locked ? 'Locked — needs a key or condition' : exit.command}
-            >
-              <span className="font-medium text-zinc-800 dark:text-zinc-100">{exit.name}{exit.locked ? ' 🔒' : ''}</span>
-              <span className="block text-[10px] text-zinc-500">
-                {exit.label ? `${exit.label} · ` : ''}{exit.difficulty}{exit.distanceFt ? ` · ${exit.distanceFt} ft` : ''}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
 
       {view.actorsPresent.length > 0 && (
         <>
@@ -228,7 +306,7 @@ function ExplorationMap({
           </button>
         ))}
       </div>
-      <p className="mt-2 text-[10px] text-zinc-400">Taps suggest a command — nothing happens until you send it.</p>
+      <p className="mt-2 text-[10px] text-zinc-400">Tap nodes on the map to suggest movement commands.</p>
     </section>
   );
 }

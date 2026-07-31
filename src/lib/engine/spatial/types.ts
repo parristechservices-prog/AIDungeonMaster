@@ -24,6 +24,8 @@ export interface Area {
   description?: string;
   connections: AreaConnection[];
   tags?: string[];
+  x?: number;
+  y?: number;
 }
 
 export interface AreaGraph {
