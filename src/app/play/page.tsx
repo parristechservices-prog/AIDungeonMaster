@@ -290,6 +290,7 @@ export default function PlayPage() {
           <FailedCheckRecovery
             failedResult={lastEngineResults.find((result) => result.kind === 'skill_check' && !result.ok)}
             choices={choices}
+            onUseSuggestion={(suggestion) => setInput(suggestion)}
           />
           <CombatHUD
             combat={state?.combat ?? { active: false, initiative: [], turnIndex: 0 }}
