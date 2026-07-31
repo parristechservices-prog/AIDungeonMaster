@@ -29,14 +29,14 @@ export const brindlehookInn: Scenario = {
     exploration: {
       goal: 'Track the courier to the old boathouse and uncover the ambush.',
       starter:
-        'The tide is low. Muddy bootprints run from the quay toward a weather-beaten boathouse.',
+        'The village sprawls before you. The tide is low at the quay, and muddy bootprints run from the docks toward a weather-beaten boathouse.',
       choices: [
         'Scout the boathouse approach',
         'Search for hidden tracks',
-        'Call out to lure whoever is hiding',
+        'Ask villagers if they saw the courier',
       ],
       guidance: 'Shore scene: perception or investigation to find tracks. DC 12.',
-      allowedNpcs: [],
+      allowedNpcs: ['npc-elias', 'npc-silas', 'npc-kael'],
       allowedMonsters: [],
       allowedExits: ['boathouse interior'],
       forbidden: ['Do not award the courier satchel before the ambush.'],
@@ -59,7 +59,7 @@ export const brindlehookInn: Scenario = {
       successConditions: ['Defeat all active monsters.'],
     },
   },
-  endingMessage: 'Your tale concludes at Brindlehook Inn.',
+  endingMessage: 'Your tale concludes at Brindlehook Village.',
   npcs: [
     {
       id: 'npc-mira',
@@ -69,6 +69,34 @@ export const brindlehookInn: Scenario = {
       knowledge: [
         'The courier was last seen heading toward the old boathouse.',
         'Two men in dark cloaks were following him.',
+      ],
+    },
+    {
+      id: 'npc-elias',
+      name: 'Elias',
+      description: 'A burly blacksmith with soot on his face.',
+      disposition: 'friendly',
+      knowledge: [
+        'Saw strange lights out by the abandoned house.',
+        'Thinks the smugglers are using the tunnels again.',
+      ],
+    },
+    {
+      id: 'npc-silas',
+      name: 'Old Silas',
+      description: 'A weathered farmer working the fields south of town.',
+      disposition: 'neutral',
+      knowledge: [
+        'The courier ran past here clutching a satchel like his life depended on it.',
+      ],
+    },
+    {
+      id: 'npc-kael',
+      name: 'Brother Kael',
+      description: 'A quiet priest tending the graveyard.',
+      disposition: 'friendly',
+      knowledge: [
+        'Hears unholy noises from beneath the town.',
       ],
     },
   ],
