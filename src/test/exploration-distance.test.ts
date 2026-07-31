@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it } from 'vitest';
 import { createInitialState } from '@/lib/game/state';
 import {
   deriveDmTurnFromInput,
@@ -34,12 +34,64 @@ describe('exploration distance intent detection', () => {
   });
 });
 
-describe('Brindlehook exploration distance (regression for the live bug)', () => {
-  beforeEach(() => resetServerAdventureRegistry());
-  const brindlehook = () => createInitialState('expl-dist', { adventureId: 'brindlehook-inn', characterIds: ['fighter'] });
+import * as registry from '@/lib/game/adventures/registry.server';
+import { vi } from 'vitest';
+import type { Adventure } from '@/lib/game/adventures/types';
+
+describe('Fallback exploration distance (regression for the live bug)', () => {
+  const dummyAdventure: Adventure = {
+    id: 'dummy-no-map',
+    title: 'Dummy No Map Adventure',
+    tagline: 'Test',
+    estimatedMinutes: 10,
+    tone: 'test',
+    recommendedCharacters: [],
+    source: 'builtin',
+    sceneOrder: ['social'],
+    scenes: {
+      social: {
+        kind: 'social',
+        goal: 'Test',
+        starter: 'Test',
+        choices: ['test choice 1', 'test choice 2'],
+        guidance: 'Test',
+        allowedNpcs: [],
+        allowedMonsters: [],
+        allowedExits: [],
+        forbidden: [],
+        successConditions: [],
+      },
+    },
+    endingMessage: 'Test',
+    npcs: [],
+    monsters: [],
+    mock: {
+      socialNpcId: '',
+      socialNpcName: '',
+      socialSuccess: '',
+      socialFailure: '',
+      explorationSuccess: '',
+      explorationFailure: '',
+      socialSkill: 'persuasion',
+      explorationSkill: 'perception',
+      socialDc: 10,
+      explorationDc: 10,
+      canonFactOnSocialSuccess: '',
+    },
+  };
+
+  beforeEach(() => {
+    vi.spyOn(registry, 'getAdventure').mockReturnValue(dummyAdventure);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const dummyNoMap = () => createInitialState('expl-dist', { adventureId: 'dummy-no-map', characterIds: ['fighter'] });
 
   it('"How far from me to the water" gives a useful answer, not "no battle map"', () => {
-    const turn = deriveDmTurnFromInput(brindlehook(), 'how far from me to the water');
+    const turn = deriveDmTurnFromInput(dummyNoMap(), 'how far from me to the water');
     expect(turn.engineRequests).toEqual([]);
     expect(turn.narration).not.toMatch(NO_BATTLE_MAP);
     expect(turn.narration.toLowerCase()).toContain('water');
@@ -47,13 +99,13 @@ describe('Brindlehook exploration distance (regression for the live bug)', () =>
   });
 
   it('"How far away is the old boathouse?" gives an honest located answer', () => {
-    const turn = deriveDmTurnFromInput(brindlehook(), 'how far away is the old boathouse?');
+    const turn = deriveDmTurnFromInput(dummyNoMap(), 'how far away is the old boathouse?');
     expect(turn.narration).not.toMatch(NO_BATTLE_MAP);
     expect(turn.narration.toLowerCase()).toContain('boathouse');
   });
 
   it('an unknown target is not invented; known leads are offered', () => {
-    const turn = deriveDmTurnFromInput(brindlehook(), 'how far am i from the dragon palace?');
+    const turn = deriveDmTurnFromInput(dummyNoMap(), 'how far am i from the dragon palace?');
     expect(turn.narration).not.toMatch(NO_BATTLE_MAP);
     expect(turn.narration.toLowerCase()).toMatch(/don't have an exact|known leads/);
     // does not fabricate the palace as a reached/located place

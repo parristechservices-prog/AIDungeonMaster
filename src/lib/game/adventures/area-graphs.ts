@@ -7,12 +7,26 @@
 
 import { createExplorationState, type AreaGraph, type ExplorationState } from '@/lib/engine/spatial';
 import { nightstoneAreas, nightstoneStartAreaId } from './skt-nightstone/areas';
+import {
+  brindlehookAreas,
+  brindlehookStartAreaId,
+  cryptOfWhispersAreas,
+  cryptOfWhispersStartAreaId,
+  smugglersCoveAreas,
+  smugglersCoveStartAreaId,
+  tutorialAreas,
+  tutorialStartAreaId,
+} from './builtin-areas';
 
 type AreaGraphConfig = { graph: AreaGraph; startAreaId: string };
 
 const AREA_GRAPHS: Record<string, AreaGraphConfig> = {
   'skt-nightstone-starter': { graph: nightstoneAreas, startAreaId: nightstoneStartAreaId },
   'skt-nightstone-chapter1': { graph: nightstoneAreas, startAreaId: nightstoneStartAreaId },
+  'brindlehook-inn': { graph: brindlehookAreas, startAreaId: brindlehookStartAreaId },
+  'crypt-of-whispers': { graph: cryptOfWhispersAreas, startAreaId: cryptOfWhispersStartAreaId },
+  'smugglers-cove': { graph: smugglersCoveAreas, startAreaId: smugglersCoveStartAreaId },
+  'tutorial': { graph: tutorialAreas, startAreaId: tutorialStartAreaId },
 };
 
 /**
