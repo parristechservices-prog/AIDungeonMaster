@@ -29,6 +29,8 @@ const engineRequestSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('cast_spell'), characterId: z.string(), spellName: z.string(), level: z.number().int().min(0).max(9), targetId: z.string().optional() }),
   z.object({ kind: z.literal('short_rest') }),
   z.object({ kind: z.literal('long_rest') }),
+  z.object({ kind: z.literal('end_turn') }),
+  z.object({ kind: z.literal('complete_objective'), objectiveId: z.string() }),
   z.object({ kind: z.literal('advance_scene') }),
   z.object({ kind: z.literal('update_npc'), npcId: z.string(), disposition: z.enum(['friendly', 'neutral', 'hostile']).optional(), knowledge: z.string().optional() }),
   z.object({ kind: z.literal('add_canon_fact'), content: z.string(), importance: z.enum(['low', 'medium', 'high']) }),

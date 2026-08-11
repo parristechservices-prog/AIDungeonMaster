@@ -1045,7 +1045,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
   if (input.includes('attack') || input.includes('strike') || input.includes('hit')) {
     const living = state.monsters.find((m) => m.hp > 0);
     return {
-      engineRequests: living ? [{ kind: 'player_attack', characterId: activeChar.id, targetId: living.id }, { kind: 'monster_turn' }] : [],
+      engineRequests: living ? [{ kind: 'player_attack', characterId: activeChar.id, targetId: living.id }, { kind: 'end_turn' }, { kind: 'monster_turn' }, { kind: 'end_turn' }] : [],
       narration: 'You lunge forward.',
       needsResultBeforeNarrating: true,
       ambient: 'combat',

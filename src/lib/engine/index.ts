@@ -200,6 +200,30 @@ export function resolveEngineRequest(
       const target = state.monsters.find((m) => m.id === request.targetId && m.hp > 0);
       if (!target) return { state, result: { ok: false, summary: 'No valid target.' } };
 
+      const map = state.combat.battleMap;
+      let nextState = state;
+      if (map) {
+        const actor = map.actors[char.id];
+        if (actor) {
+          if (actor.actionUsed) {
+            return { state, result: { ok: false, summary: `${char.name} has already used their action this turn.` } };
+          }
+          nextState = {
+            ...state,
+            combat: {
+              ...state.combat,
+              battleMap: {
+                ...map,
+                actors: {
+                  ...map.actors,
+                  [char.id]: { ...actor, actionUsed: true },
+                },
+              },
+            },
+          };
+        }
+      }
+
       // Spatial cover for ranged/spell attacks: total cover (or a blocked sight
       // line) makes the shot impossible; half/three-quarters raise effective AC.
       // Melee attacks ignore cover (5e), so this only applies when ranged.
@@ -276,8 +300,8 @@ export function resolveEngineRequest(
       }
       // Use the attacker's actual weapon damage; a crit doubles the dice (5e).
       const damage = rollFormula(critical ? critFormula(char.weapon.damage) : char.weapon.damage);
-      const monsters = state.monsters.map((m) => m.id === target.id ? { ...m, hp: Math.max(0, m.hp - damage.total) } : m);
-      let next = { ...state, monsters };
+      const monsters = nextState.monsters.map((m) => m.id === target.id ? { ...m, hp: Math.max(0, m.hp - damage.total) } : m);
+      let next = { ...nextState, monsters };
       const allDown = monsters.every((m) => m.hp <= 0);
       if (allDown) {
         next = advanceScene({ ...next, combat: { ...next.combat, active: false } });
@@ -290,6 +314,40 @@ export function resolveEngineRequest(
         state: appendLog(next, `${char.name} hit ${target.name} for ${damage.total}.`),
         result: { ok: true, summary: `Hit ${target.name} for ${damage.total} damage.${coverOutcome ? ` (${coverOutcome.kind.replace('_', '-')} cover applied, AC ${coverOutcome.effectiveAc})` : ''}`, breakdown: damage, critical, cover: coverOutcome },
       };
+    }
+    case 'end_turn': {
+      if (!state.combat.active) return { state, result: { ok: false, summary: 'Not in combat.' } };
+      const init = state.combat.initiative;
+      if (init.length === 0) return { state, result: { ok: false, summary: 'No initiative order.' } };
+      
+      const nextTurnIndex = (state.combat.turnIndex + 1) % init.length;
+      const nextActorId = init[nextTurnIndex].actorId;
+      
+      let nextState: GameState = {
+        ...state,
+        combat: { ...state.combat, turnIndex: nextTurnIndex },
+        activeCharacterId: nextActorId,
+      };
+
+      if (nextState.combat.battleMap) {
+        const actor = nextState.combat.battleMap.actors[nextActorId];
+        if (actor) {
+          nextState.combat.battleMap = {
+            ...nextState.combat.battleMap,
+            actors: {
+              ...nextState.combat.battleMap.actors,
+              [nextActorId]: {
+                ...actor,
+                actionUsed: false,
+                bonusActionUsed: false,
+                movementSpentFt: 0,
+                reactionAvailable: true,
+              },
+            },
+          };
+        }
+      }
+      return { state: appendLog(nextState, `Turn ended. It is now ${nextActorId}'s turn.`), result: { ok: true, summary: `Ended turn. It is now ${nextActorId}'s turn.` } };
     }
     case 'monster_turn': {
       const attacker = state.monsters.find((m) => m.hp > 0);
@@ -443,7 +501,40 @@ export function resolveEngineRequest(
       const feature = char.features[idx];
       if (feature.usesRemaining <= 0) return { state, result: { ok: false, summary: `No uses of ${feature.name} remaining.` } };
       
-      let next = state;
+      const map = state.combat.battleMap;
+      let nextState = state;
+      const isBonusAction = feature.id === 'second_wind' || feature.id === 'rage'; // heuristic
+      
+      if (map) {
+        const actor = map.actors[char.id];
+        if (actor) {
+          if (isBonusAction && actor.bonusActionUsed) {
+            return { state, result: { ok: false, summary: `${char.name} has already used their bonus action this turn.` } };
+          }
+          if (!isBonusAction && actor.actionUsed) {
+            return { state, result: { ok: false, summary: `${char.name} has already used their action this turn.` } };
+          }
+          nextState = {
+            ...state,
+            combat: {
+              ...state.combat,
+              battleMap: {
+                ...map,
+                actors: {
+                  ...map.actors,
+                  [char.id]: {
+                    ...actor,
+                    actionUsed: isBonusAction ? actor.actionUsed : true,
+                    bonusActionUsed: isBonusAction ? true : actor.bonusActionUsed,
+                  },
+                },
+              },
+            },
+          };
+        }
+      }
+
+      let next = nextState;
       let summary = `${char.name} used ${feature.name}.`;
       let breakdown: RollBreakdown | undefined;
 
@@ -482,7 +573,40 @@ export function resolveEngineRequest(
         }
       }
 
+      const map = state.combat.battleMap;
+      let nextState = state;
       const spellName = request.spellName.toLowerCase();
+      // Heuristic: Healing Word, Misty Step, Spiritual Weapon, Shield of Faith are bonus actions.
+      const isBonusAction = spellName.includes('healing word') || spellName.includes('misty step') || spellName.includes('spiritual weapon') || spellName.includes('shield of faith') || spellName.includes('expeditious retreat');
+      
+      if (map) {
+        const actor = map.actors[char.id];
+        if (actor) {
+          if (isBonusAction && actor.bonusActionUsed) {
+            return { state, result: { ok: false, summary: `${char.name} has already used their bonus action this turn.` } };
+          }
+          if (!isBonusAction && actor.actionUsed) {
+            return { state, result: { ok: false, summary: `${char.name} has already used their action this turn.` } };
+          }
+          nextState = {
+            ...state,
+            combat: {
+              ...state.combat,
+              battleMap: {
+                ...map,
+                actors: {
+                  ...map.actors,
+                  [char.id]: {
+                    ...actor,
+                    actionUsed: isBonusAction ? actor.actionUsed : true,
+                    bonusActionUsed: isBonusAction ? true : actor.bonusActionUsed,
+                  },
+                },
+              },
+            },
+          };
+        }
+      }
       const knownSpells = ['cure wounds', 'healing word', 'magic missile', 'shield', 'bless'];
       if (!knownSpells.some((known) => spellName.includes(known))) {
         return { state, result: { ok: false, summary: `${request.spellName} is not a recognized spell.` } };
@@ -491,12 +615,13 @@ export function resolveEngineRequest(
         return { state, result: { ok: false, summary: `${char.name} does not know ${request.spellName}.` } };
       }
 
-      let next = state;
+      let next = nextState;
       if (level > 0) {
-        next = updateCharacterInParty(state, char.id, (c) => {
-          const spellSlots = { ...c.spellSlots, [level]: { ...slot, remaining: slot.remaining - 1 } };
-          return { ...c, spellSlots };
-        });
+        const slots = next.party.find((p) => p.id === char.id)!.spellSlots;
+        next = updateCharacterInParty(next, char.id, (c) => ({
+          ...c,
+          spellSlots: { ...slots, [level]: { ...slots[level], remaining: slots[level].remaining - 1 } },
+        }));
       }
 
       let summary = `${char.name} cast ${request.spellName} (Level ${level})`;
@@ -574,6 +699,16 @@ export function resolveEngineRequest(
         player: party[0],
       };
       return { state: appendLog(next, 'The party took a long rest. Everyone is restored.'), result: { ok: true, summary: 'Long rest complete.' } };
+    }
+    case 'complete_objective': {
+      if (state.completedObjectives.includes(request.objectiveId)) {
+        return { state, result: { ok: true, summary: 'Objective already completed.' } };
+      }
+      const next = { ...state, completedObjectives: [...state.completedObjectives, request.objectiveId] };
+      return {
+        state: appendLog(next, `Objective completed: ${request.objectiveId}`),
+        result: { ok: true, summary: `Objective completed: ${request.objectiveId}` },
+      };
     }
     case 'advance_scene': {
       const next = advanceScene(state);

@@ -24,6 +24,19 @@ const PLAYER_OWNED_KINDS = new Set([
   'update_inventory',
 ]);
 
+const ACTOR_KINDS = new Set([
+  'move_area',
+  'query_current_area',
+  'query_exits',
+  'query_actors_present',
+  'move_creature',
+  'dash',
+  'disengage',
+  'query_reachable',
+  'query_targets_in_range',
+  'check_line_of_sight',
+]);
+
 const TARGETED_MONSTER_KINDS = new Set(['player_attack']);
 const KNOWN_SPELLS = ['cure wounds', 'healing word', 'magic missile', 'shield', 'bless'];
 const RESOLVED_OUTCOME = /\b(succeed(?:s|ed)?|fail(?:s|ed|ure)?|hits?|miss(?:es|ed)?|kills?|defeats?|deals?\s+\d+|takes?\s+\d+\s+damage|restores?\s+\d+|finds?|discovers?|unlocks?|opens?)\b/i;
@@ -60,6 +73,13 @@ export function validateDmTurn(turn: DmTurn, state: GameState): DmTurnValidation
       const npcId = ('npcId' in request ? request.npcId : undefined) as string | undefined;
       if (npcId && !state.npcs.some((npc) => npc.id === npcId)) {
         addError('invalid_npc_id', 'update_npc must use a valid npcId.', requestIndex);
+      }
+    }
+
+    if (ACTOR_KINDS.has(request.kind)) {
+      const actorId = ('actorId' in request ? request.actorId : undefined) as string | undefined;
+      if (actorId && !targetIds.has(actorId) && !state.npcs.some(n => n.id === actorId)) {
+        addError('invalid_actor_id', `${request.kind} uses an invalid actorId.`, requestIndex);
       }
     }
 
@@ -124,6 +144,13 @@ export function validateDmTurn(turn: DmTurn, state: GameState): DmTurnValidation
     if (RESOLVED_OUTCOME.test(turn.narration)) {
       addError('pre_resolved_narration', 'Narration resolves an outcome before the engine result is available.');
     }
+  } else {
+    const requiresResult = turn.engineRequests.some((r) => 
+      ['move_area', 'move_creature', 'dash', 'disengage', 'skill_check', 'player_attack'].includes(r.kind)
+    );
+    if (requiresResult) {
+      addError('missing_needs_result', 'Engine requests that can fail (like movement or attacks) require needsResultBeforeNarrating to be true.');
+    }
   }
 
   const uniqueErrors = errors.filter(
@@ -149,11 +176,7 @@ function isCurrentObjectiveComplete(state: GameState): boolean {
 
   const successConditions = scene.successConditions ?? [];
   if (successConditions.length === 0) return false;
-  const log = state.log.join(' ').toLowerCase();
-  return successConditions.some((condition) => {
-    const keywords = condition.toLowerCase().match(/[a-z]{5,}/g) ?? [];
-    return keywords.some((keyword) => log.includes(keyword));
-  });
+  return successConditions.some((condition) => state.completedObjectives.includes(condition));
 }
 
 export function buildDmTurnRepairPrompt(playerInput: string, issues: string[], state?: GameState): string {

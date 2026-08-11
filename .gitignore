@@ -68,3 +68,9 @@ docs/**/__*.pdf
 # Playwright
 test-results/
 playwright-report/
+node_modules/
+dist/
+build/
+.env
+.last-run.json
+coverage/
