@@ -65,7 +65,7 @@ Open [http://localhost:3000](http://localhost:3000) → **Create adventure** to 
 | `PARTYQUEST_LLM_PROVIDER` | Provider order, default `groq`; supports comma-separated failover such as `groq,openrouter,openai` |
 | `GROQ_API_KEY` | Primary Groq key (recommended) |
 | `GROQ_API_KEYS` | Comma-separated backup Groq keys for failover |
-| `GROQ_MODEL` | Default `llama-3.3-70b-versatile` |
+| `GROQ_MODEL` | Default `openai/gpt-oss-120b` |
 | `OPENROUTER_API_KEY` | Primary OpenRouter key, used when provider order includes `openrouter` |
 | `OPENROUTER_API_KEYS` | Comma-separated backup OpenRouter keys for failover |
 | `OPENROUTER_MODEL` | Default `meta-llama/llama-3.3-70b-instruct` |
