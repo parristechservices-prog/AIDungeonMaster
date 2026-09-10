@@ -55,6 +55,7 @@ export function createInitialState(sessionId: string, options?: NewGameOptions):
     npcs: structuredClone(adventure.npcs),
     combat: { active: false, initiative: [], turnIndex: 0 },
     exploration: buildExplorationState(adventureId, party.map((p) => p.id)),
+    completedObjectives: [],
   };
 }
 
@@ -168,6 +169,7 @@ export function migrateGameState(state: GameState): GameState {
   const activeCharacterId = state.activeCharacterId ?? player?.id;
   const exploration =
     state.exploration ?? buildExplorationState(adventureId, party.map((p) => p.id));
+  const completedObjectives = state.completedObjectives ?? [];
 
   if (
     state.adventureId === adventureId &&
@@ -178,6 +180,7 @@ export function migrateGameState(state: GameState): GameState {
     state.player === player &&
     state.activeCharacterId === activeCharacterId &&
     state.exploration === exploration &&
+    state.completedObjectives === completedObjectives &&
     (!state.combat?.active || state.combat.battleMap)
   ) {
     return state;
@@ -204,6 +207,7 @@ export function migrateGameState(state: GameState): GameState {
     activeCharacterId,
     combat,
     exploration,
+    completedObjectives,
   };
 }
 

@@ -127,6 +127,7 @@ export type GameState = {
   npcs: NPC[];
   combat: CombatState;
   exploration?: import('@/lib/engine/spatial/types').ExplorationState;
+  completedObjectives: string[];
 };
 
 export type NewGameOptions = {

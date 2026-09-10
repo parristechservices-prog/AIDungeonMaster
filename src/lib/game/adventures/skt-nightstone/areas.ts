@@ -6,6 +6,8 @@ export const nightstoneAreas: AreaGraph = {
   areas: {
     gatehouse: {
       id: 'gatehouse',
+      x: 0,
+      y: 0,
       name: 'Nightstone Gatehouse',
       description: 'The village gatehouse opens onto the road and the damaged drawbridge approach.',
       tags: ['village', 'entry'],
@@ -16,6 +18,8 @@ export const nightstoneAreas: AreaGraph = {
     },
     drawbridge: {
       id: 'drawbridge',
+      x: 0,
+      y: -1,
       name: 'Drawbridge and Moat',
       description: 'A defensive bridge spans the moat between the gatehouse and the village streets.',
       tags: ['village', 'moat'],
@@ -26,6 +30,8 @@ export const nightstoneAreas: AreaGraph = {
     },
     south_square: {
       id: 'south_square',
+      x: 0,
+      y: -2,
       name: 'South Village Square',
       description: 'The southern lane is littered with debris from the attack, but the main routes remain passable.',
       tags: ['village', 'debris'],
@@ -39,6 +45,8 @@ export const nightstoneAreas: AreaGraph = {
     },
     nightstone_inn: {
       id: 'nightstone_inn',
+      x: -1,
+      y: -2,
       name: 'Nightstone Inn',
       description: 'The inn is a likely refuge or ambush point, with common room exits facing the street.',
       tags: ['building', 'social'],
@@ -49,6 +57,8 @@ export const nightstoneAreas: AreaGraph = {
     },
     stable: {
       id: 'stable',
+      x: -1,
+      y: -3,
       name: 'Stable',
       description: 'The stable smells of hay, frightened animals, and broken tack.',
       tags: ['building', 'animals'],
@@ -60,6 +70,8 @@ export const nightstoneAreas: AreaGraph = {
     },
     windmill: {
       id: 'windmill',
+      x: -2,
+      y: -4,
       name: 'Windmill',
       description: 'The windmill stands near the edge of the village, useful as a lookout over nearby lanes.',
       tags: ['building', 'lookout'],
@@ -70,6 +82,8 @@ export const nightstoneAreas: AreaGraph = {
     },
     central_square: {
       id: 'central_square',
+      x: 0,
+      y: -3,
       name: 'Central Village Square',
       description: 'The main village square gives access to the temple, trading shops, and roads toward the keep.',
       tags: ['village', 'crossroads'],
@@ -83,6 +97,8 @@ export const nightstoneAreas: AreaGraph = {
     },
     temple: {
       id: 'temple',
+      x: 1,
+      y: -3,
       name: 'Temple of the Morninglord',
       description: 'The damaged temple and its bell tower overlook the village square.',
       tags: ['building', 'holy', 'bell_tower'],
@@ -93,6 +109,8 @@ export const nightstoneAreas: AreaGraph = {
     },
     bell_tower: {
       id: 'bell_tower',
+      x: 2,
+      y: -3,
       name: 'Temple Bell Tower',
       description: 'A cramped tower chamber with a commanding view and dangerous footing.',
       tags: ['building', 'height', 'hazard'],
@@ -102,6 +120,8 @@ export const nightstoneAreas: AreaGraph = {
     },
     general_store: {
       id: 'general_store',
+      x: 1,
+      y: -2,
       name: 'Lionshield General Store',
       description: 'Shelves, crates, and counters make the store useful for supplies or cover.',
       tags: ['building', 'shop'],
@@ -112,6 +132,8 @@ export const nightstoneAreas: AreaGraph = {
     },
     trading_post: {
       id: 'trading_post',
+      x: 1,
+      y: -4,
       name: 'Trading Post',
       description: 'A mercantile building near the square, with wagon access and storage corners.',
       tags: ['building', 'shop'],
@@ -123,6 +145,8 @@ export const nightstoneAreas: AreaGraph = {
     },
     keep_gate: {
       id: 'keep_gate',
+      x: 0,
+      y: -5,
       name: 'Nandar Keep Gate',
       description: 'The gate before Nandar Keep is defensible and may be locked or barred.',
       tags: ['keep', 'gate'],
@@ -140,6 +164,8 @@ export const nightstoneAreas: AreaGraph = {
     },
     keep_courtyard: {
       id: 'keep_courtyard',
+      x: 0,
+      y: -6,
       name: 'Nandar Keep Courtyard',
       description: 'The inner yard of the keep is exposed to the walls and the great hall entrance.',
       tags: ['keep', 'courtyard'],
@@ -151,6 +177,8 @@ export const nightstoneAreas: AreaGraph = {
     },
     great_hall: {
       id: 'great_hall',
+      x: 0,
+      y: -7,
       name: 'Nandar Keep Great Hall',
       description: 'The great hall is the keep interior where survivors, clues, or threats may be found.',
       tags: ['keep', 'interior'],
@@ -160,6 +188,8 @@ export const nightstoneAreas: AreaGraph = {
     },
     keep_bridge: {
       id: 'keep_bridge',
+      x: 1,
+      y: -6,
       name: 'Broken Keep Bridge',
       description: 'A damaged crossing near the keep; crossing it without repairs is dangerous.',
       tags: ['keep', 'hazard', 'bridge'],

@@ -180,6 +180,16 @@ export default function PlayPage() {
       if (busy || !sessionId) return;
 
       if (manualRoll === undefined) {
+        if (nextInput.toLowerCase() === 'map') {
+          setInput('');
+          if (window.innerWidth < 768) {
+            setShowMobileMap(true);
+          } else {
+            setSidebarTab('map');
+          }
+          return;
+        }
+
         setInput('');
         setHistory((h) => [...h, `> ${nextInput}`]);
       }

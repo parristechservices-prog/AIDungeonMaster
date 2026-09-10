@@ -29,7 +29,8 @@ describe('resolveMapMode', () => {
   });
 
   it('returns empty for an adventure with no exploration graph and no combat', () => {
-    const state = createInitialState('map-empty', { adventureId: 'brindlehook-inn', characterIds: ['fighter'] });
+    // We use a dummy ID that doesn't have an area graph registered
+    const state = createInitialState('map-empty', { adventureId: 'some-adventure-without-map', characterIds: ['fighter'] });
     expect(resolveMapMode(asPlay(state))).toBe('empty');
   });
 });

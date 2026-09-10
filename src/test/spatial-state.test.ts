@@ -12,7 +12,7 @@ describe('exploration state wiring', () => {
   });
 
   it('leaves exploration undefined for adventures without a graph', () => {
-    const state = createInitialState('sess-2', { adventureId: 'brindlehook-inn' });
+    const state = createInitialState('sess-2', { adventureId: 'some-adventure-without-map', characterIds: ['fighter'] });
     expect(state.exploration).toBeUndefined();
   });
 

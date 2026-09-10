@@ -51,7 +51,7 @@ function getProviderModel(provider: string): string {
   }
 
   const useLightMode = (process.env.PARTYQUEST_LLM_MODE ?? '').toLowerCase() === 'light';
-  return process.env.GROQ_MODEL ?? (useLightMode ? 'llama-3.1-8b-instant' : 'llama-3.3-70b-versatile');
+  return process.env.GROQ_MODEL ?? (useLightMode ? 'openai/gpt-oss-20b' : 'openai/gpt-oss-120b');
 }
 
 function getProviderHeaders(provider: string, apiKey: string): Record<string, string> {

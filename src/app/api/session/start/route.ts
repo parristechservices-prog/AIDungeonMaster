@@ -122,6 +122,7 @@ export async function POST(req: Request) {
       npcs: visibleNpcsForScene(state.adventureId, state.sceneId, state.npcs),
       canonLog: state.canonLog,
       combat: state.combat,
+      exploration: state.exploration,
       log: state.log.slice(-10),
     },
   });

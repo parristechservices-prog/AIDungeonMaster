@@ -31,6 +31,20 @@ export type ExplorationActorChip = {
   command: string;
 };
 
+export type ExplorationNode = {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  isCurrent: boolean;
+};
+
+export type ExplorationEdge = {
+  from: string;
+  to: string;
+  locked: boolean;
+};
+
 export type ExplorationMapView = {
   mode: 'exploration';
   currentAreaId: string;
@@ -39,6 +53,8 @@ export type ExplorationMapView = {
   exits: ExplorationExit[];
   actorsPresent: ExplorationActorChip[];
   baseSuggestions: string[];
+  nodes: ExplorationNode[];
+  edges: ExplorationEdge[];
 };
 
 export type EmptyMapView = {
@@ -115,6 +131,31 @@ export function buildExplorationMapView(state: PlayState): ExplorationMapView | 
     actorsPresent.push({ id: npc.id, name: npc.name, kind: 'npc', command: `Talk to ${npc.name}` });
   }
 
+  const nodes: ExplorationNode[] = [];
+  const edges: ExplorationEdge[] = [];
+  const seenEdges = new Set<string>();
+
+  for (const [id, a] of Object.entries(exploration.graph.areas)) {
+    nodes.push({
+      id,
+      name: a.name,
+      x: a.x ?? 0,
+      y: a.y ?? 0,
+      isCurrent: id === areaId,
+    });
+    for (const conn of a.connections) {
+      const edgeKey = [id, conn.to].sort().join('--');
+      if (!seenEdges.has(edgeKey)) {
+        seenEdges.add(edgeKey);
+        edges.push({
+          from: id,
+          to: conn.to,
+          locked: !!conn.requires,
+        });
+      }
+    }
+  }
+
   return {
     mode: 'exploration',
     currentAreaId: areaId,
@@ -123,6 +164,8 @@ export function buildExplorationMapView(state: PlayState): ExplorationMapView | 
     exits,
     actorsPresent,
     baseSuggestions: BASE_SUGGESTIONS,
+    nodes,
+    edges,
   };
 }
 

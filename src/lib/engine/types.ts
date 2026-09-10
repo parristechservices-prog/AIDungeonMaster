@@ -14,12 +14,14 @@ export type EngineRequest =
   | { kind: 'start_combat' }
   | { kind: 'player_attack'; characterId: string; targetId: string; manualRoll?: number; advantage?: boolean; disadvantage?: boolean; ranged?: boolean }
   | { kind: 'monster_turn' }
+  | { kind: 'end_turn' }
   | { kind: 'death_save'; characterId: string; manualRoll?: number }
   | { kind: 'use_feature'; characterId: string; featureId: string }
   | { kind: 'cast_spell'; characterId: string; spellName: string; level: number; targetId?: string }
   | { kind: 'short_rest' }
   | { kind: 'long_rest' }
   | { kind: 'advance_scene' }
+  | { kind: 'complete_objective'; objectiveId: string }
   | { kind: 'update_npc'; npcId: string; disposition?: NPC['disposition']; knowledge?: string }
   | { kind: 'add_canon_fact'; content: string; importance: CanonFact['importance'] }
   | { kind: 'update_inventory'; characterId: string; add?: string[]; remove?: string[]; goldDelta?: number }
