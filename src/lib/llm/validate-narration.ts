@@ -15,6 +15,10 @@ export type NarrationEngineResult = {
  * Scans DM narration for numeric claims that contradict engine state.
  * Does not block turns — returns warnings for logging and optional UI display.
  */
+function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
+
 export function validateNarrationAgainstState(
   narration: string,
   state: GameState,
@@ -49,9 +53,10 @@ export function validateNarrationAgainstState(
       }
     }
 
+    const escapedName = escapeRegExp(name);
     const acMatch =
-      text.match(new RegExp(`\\b${name}.*?\\bac\\s*(?:is|:)\\s*(\\d+)\\b`, 'i')) ??
-      text.match(new RegExp(`\\b${name}.*?\\barmor class\\s*(?:is|:)\\s*(\\d+)\\b`, 'i')) ??
+      text.match(new RegExp(`\\b${escapedName}.*?\\bac\\s*(?:is|:)\\s*(\\d+)\\b`, 'i')) ??
+      text.match(new RegExp(`\\b${escapedName}.*?\\barmor class\\s*(?:is|:)\\s*(\\d+)\\b`, 'i')) ??
       (refersToActiveCharacter
         ? text.match(/\byour\s+ac\s*(?:is|:)?\s*(\d+)\b/i) ??
           text.match(/\byour\s+armor class\s*(?:is|:)?\s*(\d+)\b/i)

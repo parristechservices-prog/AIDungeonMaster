@@ -50,4 +50,20 @@ describe('validateNarrationAgainstState', () => {
     expect(validateNarrationAgainstResults('You dealt 99 damage.', results)).not.toHaveLength(0);
     expect(buildEngineSafeNarration(results)).toBe('Hit Goblin for 7 damage.');
   });
+
+  it('safely handles malicious regex characters in player name without ReDoS or errors', () => {
+    const state = createInitialState('test');
+    // Inject a pathological name with a leading/trailing letter so \b word boundary matches
+    state.party[0].name = 'Bob(.+)+*?^${}()|[]\\Bob';
+    // Validate we don't crash/hang, and normal AC matching still works
+    const warnings = validateNarrationAgainstState('Bob(.+)+*?^${}()|[]\\Bob AC is 10.', state);
+    expect(warnings.some((w) => w.includes('AC'))).toBe(true);
+  });
+
+  it('safely handles long player names', () => {
+    const state = createInitialState('test');
+    state.party[0].name = 'A'.repeat(80);
+    const warnings = validateNarrationAgainstState(`${'a'.repeat(80)} armor class is 99.`, state);
+    expect(warnings.some((w) => w.includes('AC'))).toBe(true);
+  });
 });
