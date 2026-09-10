@@ -323,7 +323,7 @@ export function resolveEngineRequest(
       const nextTurnIndex = (state.combat.turnIndex + 1) % init.length;
       const nextActorId = init[nextTurnIndex].actorId;
       
-      let nextState: GameState = {
+      const nextState: GameState = {
         ...state,
         combat: { ...state.combat, turnIndex: nextTurnIndex },
         activeCharacterId: nextActorId,
@@ -1222,3 +1222,4 @@ function rollFormula(
     keptRoll: count === 1 && sides === 20 ? keptRoll : undefined,
   };
 }
+
