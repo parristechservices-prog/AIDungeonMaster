@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
 
 const path = 'C:/dev/AIDM/src/lib/game/adventures/skt-nightstone/areas.ts';
