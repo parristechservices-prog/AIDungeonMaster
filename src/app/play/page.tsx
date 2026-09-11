@@ -65,7 +65,13 @@ export default function PlayPage() {
   async function hydrateSession(nextSessionId: string) {
     const res = await fetch(`/api/session?sessionId=${encodeURIComponent(nextSessionId)}`);
     const data = await res.json();
-    if (!data.ok || !data.state) return;
+    if (!data.ok || !data.state) {
+      if ([400, 403, 404].includes(res.status)) {
+        localStorage.removeItem('partyquest-session-id');
+        router.replace('/start?reason=session-migration');
+      }
+      return;
+    }
 
     setAdventureId(data.adventureId);
     setAdventureTitle(data.adventureTitle);
@@ -168,7 +174,7 @@ export default function PlayPage() {
     }
     if (!boot.state && boot.sessionId) {
       hydrateSession(boot.sessionId).catch(() => {
-        // Keep local bootstrap fallback if reconnect state is unavailable.
+        // Keep local bootstrap fallback only for transient network errors.
       });
     }
   }, []);
@@ -182,11 +188,8 @@ export default function PlayPage() {
       if (manualRoll === undefined) {
         if (nextInput.toLowerCase() === 'map') {
           setInput('');
-          if (window.innerWidth < 768) {
-            setShowMobileMap(true);
-          } else {
-            setSidebarTab('map');
-          }
+          if (window.innerWidth < 768) setShowMobileMap(true);
+          else setSidebarTab('map');
           return;
         }
 
@@ -194,6 +197,7 @@ export default function PlayPage() {
         setHistory((h) => [...h, `> ${nextInput}`]);
       }
       setBusy(true);
+      const requestId = `turn-${crypto.randomUUID()}`;
 
       try {
         const res = await fetch('/api/turn', {
@@ -204,15 +208,20 @@ export default function PlayPage() {
             adventureId,
             playerInput: nextInput,
             physicalDice,
-            manualRoll
+            manualRoll,
+            requestId,
           }),
         });
         const contentType = res.headers.get('content-type') ?? '';
-        if (!contentType.includes('application/json')) {
-          throw new Error('Non-JSON turn response');
-        }
+        if (!contentType.includes('application/json')) throw new Error('Non-JSON turn response');
         const data = (await res.json()) as TurnResponse;
-        if (!data.ok) throw new Error('Turn failed');
+        if (!data.ok) {
+          if ([400, 403, 404].includes(res.status)) {
+            localStorage.removeItem('partyquest-session-id');
+            router.replace('/start?reason=session-migration');
+          }
+          throw new Error('Turn failed');
+        }
 
         setAdventureId(data.adventureId);
         setAdventureTitle(data.adventureTitle);
@@ -230,19 +239,11 @@ export default function PlayPage() {
         setTurnCount((n) => n + 1);
         if (data.state) setState(data.state);
 
-        if (data.needsManualRoll && data.manualRollContext) {
-          setManualRollContext(data.manualRollContext);
-        } else {
-          setManualRollContext(null);
-        }
+        if (data.needsManualRoll && data.manualRollContext) setManualRollContext(data.manualRollContext);
+        else setManualRollContext(null);
 
-        if (isFeatureEnabled('clientSessionSnapshot')) {
-          saveClientSnapshot(sessionId, data);
-        }
+        if (isFeatureEnabled('clientSessionSnapshot')) saveClientSnapshot(sessionId, data);
 
-        // Internal engine availability refusals (e.g. an AI tactical request in a
-        // non-combat scene) must not surface as player narration — they are not
-        // an answer to an ordinary question.
         const isInternalRefusal = (summary: string) =>
           /no tactical battle map|no exploration area graph|tactical request failed|spatial request failed/i.test(summary);
         const lines = [
@@ -259,7 +260,7 @@ export default function PlayPage() {
         setBusy(false);
       }
     },
-    [adventureId, busy, physicalDice, sessionId],
+    [adventureId, busy, physicalDice, router, sessionId],
   );
 
   function handleNewGame() {
@@ -271,9 +272,7 @@ export default function PlayPage() {
       <main className="mx-auto max-w-3xl p-6">
         <p className="text-zinc-600">Loading session…</p>
         <p className="mt-4 text-sm">
-          <Link href="/start" className="underline">
-            Set up a new character and scenario
-          </Link>
+          <Link href="/start" className="underline">Set up a new character and scenario</Link>
         </p>
       </main>
     );
@@ -281,14 +280,9 @@ export default function PlayPage() {
 
   return (
     <>
-      {/* Full-viewport app shell — no page scroll */}
       <div className="h-[100dvh] overflow-hidden flex flex-col bg-zinc-100 dark:bg-zinc-950">
         <div className="flex flex-1 min-h-0 gap-0 md:gap-4 md:p-3 overflow-hidden">
-
-          {/* ── LEFT: Main game panel ── */}
           <section className="flex flex-col flex-1 min-h-0 rounded-none md:rounded-lg border-0 md:border border-zinc-300 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900 overflow-hidden">
-
-            {/* Panel header — stacks on mobile (title row, then wrapping controls) */}
             <header className="shrink-0 flex flex-col gap-2 border-b border-zinc-200 px-3 py-2 dark:border-zinc-700 md:flex-row md:items-start md:justify-between md:px-4 md:pt-4 md:pb-3">
               <div className="min-w-0">
                 <h1 className="text-base font-bold leading-tight line-clamp-2 md:text-xl md:truncate">{adventureTitle}</h1>
@@ -305,9 +299,7 @@ export default function PlayPage() {
                       </span>
                     )}
                     {display.showActiveCharacter && (
-                      <span>
-                        Active: {state?.party?.find((m) => m.id === state.activeCharacterId)?.name ?? 'Not set'}
-                      </span>
+                      <span>Active: {state?.party?.find((m) => m.id === state.activeCharacterId)?.name ?? 'Not set'}</span>
                     )}
                     {display.showTurnNumber && turnCount > 0 ? <span>Turn {turnCount}</span> : null}
                   </p>
@@ -315,141 +307,65 @@ export default function PlayPage() {
               </div>
               <div className="flex flex-wrap items-center gap-1.5 md:shrink-0 md:justify-end">
                 {display.showCharacterButton && (
-                  <button
-                    onClick={() => setShowMobileCharacterSheet(true)}
-                    className="md:hidden rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                  >
-                    Character
-                  </button>
+                  <button onClick={() => setShowMobileCharacterSheet(true)} className="md:hidden rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">Character</button>
                 )}
                 {display.showMapButton && (
-                  <button
-                    onClick={() => setShowMobileMap(true)}
-                    className="md:hidden rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                  >
-                    {state?.combat?.active ? 'Map ⚔' : 'Map'}
-                  </button>
+                  <button onClick={() => setShowMobileMap(true)} className="md:hidden rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">{state?.combat?.active ? 'Map ⚔' : 'Map'}</button>
                 )}
                 {display.showDmViewButton && <DevPanelToggle settings={devPanel} setSetting={setDevPanel} />}
                 {display.showExportButton && (
-                  <button
-                    onClick={handleExportRecap}
-                    className="rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                  >
-                    Export
-                  </button>
+                  <button onClick={handleExportRecap} className="rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">Export</button>
                 )}
                 {display.showThemeButton && (
                   <ThemeToggle floating={false} className="rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800" />
                 )}
-                {/* Always visible so the player can never hide their way out. */}
                 <DisplaySettingsPanel settings={display} toggle={toggleDisplay} reset={resetDisplay} setPreset={setDisplayPreset} />
                 {display.showBackButton && (
-                  <Link
-                    href="/start"
-                    className="rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                  >
-                    ← Back
-                  </Link>
+                  <Link href="/start" className="rounded border border-zinc-200 px-2 py-1 text-[11px] font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">← Back</Link>
                 )}
               </div>
             </header>
 
-            {/* Scrollable story area */}
             <div className={`flex flex-col flex-1 min-h-0 px-4 overflow-hidden gap-2 ${display.compactMode ? 'py-1.5' : 'py-3'}`}>
               {showOnboarding && turnCount === 0 && (
                 <div className="shrink-0">
-                  <OnboardingBanner
-                    sceneId={sceneId}
-                    adventureId={adventureId}
-                    sceneGoal={sceneGoal}
-                    choices={choices}
-                    onDismiss={() => setShowOnboarding(false)}
-                  />
+                  <OnboardingBanner sceneId={sceneId} adventureId={adventureId} sceneGoal={sceneGoal} choices={choices} onDismiss={() => setShowOnboarding(false)} />
                 </div>
               )}
 
-              {/* NarrationPanel is flex-1 min-h-0 — it owns the scroll */}
               {display.showNarration ? (
                 <NarrationPanel lines={history} busy={busy} />
               ) : (
-                <div className="flex-1 min-h-0 rounded border border-dashed border-zinc-300 p-3 text-xs text-zinc-500 dark:border-zinc-700">
-                  Narration hidden — open Display settings to restore.
-                </div>
+                <div className="flex-1 min-h-0 rounded border border-dashed border-zinc-300 p-3 text-xs text-zinc-500 dark:border-zinc-700">Narration hidden — open Display settings to restore.</div>
               )}
 
               <div className="shrink-0">
                 {display.showDicePanel && <DiceResults rolls={recentRolls} />}
-                <FailedCheckRecovery
-                  failedResult={lastEngineResults.find((r) => r.kind === 'skill_check' && !r.ok)}
-                  choices={choices}
-                />
-                <CombatHUD
-                  combat={state?.combat ?? { active: false, initiative: [], turnIndex: 0 }}
-                  party={state?.party ?? []}
-                  monsters={state?.monsters ?? []}
-                  showTerrainOverlay={devPanel.showTerrainOverlay}
-                />
+                <FailedCheckRecovery failedResult={lastEngineResults.find((r) => r.kind === 'skill_check' && !r.ok)} choices={choices} />
+                <CombatHUD combat={state?.combat ?? { active: false, initiative: [], turnIndex: 0 }} party={state?.party ?? []} monsters={state?.monsters ?? []} showTerrainOverlay={devPanel.showTerrainOverlay} />
               </div>
             </div>
 
-            {/* Composer — always pinned at the bottom of the panel (safe-area aware) */}
-            <div
-              className="shrink-0 px-4 pt-3 border-t border-zinc-200 dark:border-zinc-700 space-y-2"
-              style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
-            >
-              {/* Docked ambient audio bar — in flow, never overlays input/suggestions */}
+            <div className="shrink-0 px-4 pt-3 border-t border-zinc-200 dark:border-zinc-700 space-y-2" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
               {display.showAudio && <AmbientAudio type={ambient} />}
-              <InputBox
-                value={input}
-                busy={busy}
-                onChange={setInput}
-                onSubmit={() => sendTurn(input)}
-                placeholder="Describe what you do…"
-              />
+              <InputBox value={input} busy={busy} onChange={setInput} onSubmit={() => sendTurn(input)} placeholder="Describe what you do…" />
               {display.showAppealDm && isFeatureEnabled('appealTheDm') && (
-                <AppealButton
-                  busy={busy}
-                  lastEngineResults={lastEngineResults}
-                  recentRolls={recentRolls}
-                  state={state}
-                  onAppeal={(detail) => sendTurn(`[APPEAL] ${detail}`)}
-                />
+                <AppealButton busy={busy} lastEngineResults={lastEngineResults} recentRolls={recentRolls} state={state} onAppeal={(detail) => sendTurn(`[APPEAL] ${detail}`)} />
               )}
               {display.showPhysicalDiceToggle && isFeatureEnabled('physicalDice') && (
                 <div className="flex items-center gap-2 text-xs">
-                  <input
-                    type="checkbox"
-                    id="physical-dice"
-                    checked={physicalDice}
-                    onChange={(e) => setPhysicalDice(e.target.checked)}
-                    className="rounded border-zinc-300 dark:border-zinc-700"
-                  />
-                  <label
-                    htmlFor="physical-dice"
-                    className="cursor-pointer text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
-                  >
-                    Use physical dice
-                  </label>
+                  <input type="checkbox" id="physical-dice" checked={physicalDice} onChange={(e) => setPhysicalDice(e.target.checked)} className="rounded border-zinc-300 dark:border-zinc-700" />
+                  <label htmlFor="physical-dice" className="cursor-pointer text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200">Use physical dice</label>
                 </div>
               )}
               {display.showSuggestedActions && <ChoiceButtons choices={choices} busy={busy} onPick={(c) => sendTurn(c)} />}
             </div>
           </section>
 
-          {/* ── RIGHT: Sidebar ── */}
           <aside className="hidden md:flex flex-col w-72 lg:w-96 shrink-0 min-h-0 rounded-lg border border-zinc-300 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900 overflow-hidden">
             <div className="shrink-0 flex gap-1 px-2 pt-2 pb-1 border-b border-zinc-200 dark:border-zinc-700">
               {(['character', 'map'] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setSidebarTab(tab)}
-                  className={`flex-1 rounded px-2 py-1 text-xs font-semibold capitalize ${
-                    sidebarTab === tab
-                      ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900'
-                      : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
-                  }`}
-                >
+                <button key={tab} onClick={() => setSidebarTab(tab)} className={`flex-1 rounded px-2 py-1 text-xs font-semibold capitalize ${sidebarTab === tab ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900' : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'}`}>
                   {tab === 'map' && state?.combat?.active ? 'Map ⚔' : tab}
                 </button>
               ))}
@@ -460,9 +376,7 @@ export default function PlayPage() {
                   <CharacterSheet state={state} />
                   <CampaignMemory state={state} sceneGoal={sceneGoal} choices={choices} />
                   {process.env.NODE_ENV !== 'production' && warnings.length > 0 && (
-                    <p className="text-xs text-amber-700 dark:text-amber-300" title={warnings.join(' ')}>
-                      Narration checked against engine state.
-                    </p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300" title={warnings.join(' ')}>Narration checked against engine state.</p>
                   )}
                   <DmPanels settings={devPanel} state={state} engineLog={engineLog} warnings={warnings} showAny={showDmPanels} />
                 </>
@@ -471,74 +385,42 @@ export default function PlayPage() {
               )}
             </div>
           </aside>
-
         </div>
       </div>
 
-      {manualRollContext && (
-        <ManualRollModal
-          context={manualRollContext}
-          onSubmit={(roll) => sendTurn('', roll)}
-        />
-      )}
+      {manualRollContext && <ManualRollModal context={manualRollContext} onSubmit={(roll) => sendTurn('', roll)} />}
 
-      {/* Mobile character sheet drawer */}
       {showMobileCharacterSheet && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 md:hidden">
           <div className="w-full max-w-lg rounded-t-3xl bg-white p-6 dark:bg-zinc-900 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Character</h2>
-              <button
-                onClick={() => setShowMobileCharacterSheet(false)}
-                className="rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-              >
-                Close
-              </button>
+              <button onClick={() => setShowMobileCharacterSheet(false)} className="rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">Close</button>
             </div>
             <CharacterSheet state={state} />
             <CampaignMemory state={state} sceneGoal={sceneGoal} choices={choices} />
             {process.env.NODE_ENV !== 'production' && warnings.length > 0 && (
-              <p className="mt-3 text-xs text-amber-700 dark:text-amber-300" title={warnings.join(' ')}>
-                Narration checked against engine state.
-              </p>
+              <p className="mt-3 text-xs text-amber-700 dark:text-amber-300" title={warnings.join(' ')}>Narration checked against engine state.</p>
             )}
             <DmPanels settings={devPanel} state={state} engineLog={engineLog} warnings={warnings} showAny={showDmPanels} />
           </div>
         </div>
       )}
 
-      {/* Mobile battle map drawer */}
       {showMobileMap && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 md:hidden">
           <div className="w-full max-w-lg rounded-t-3xl bg-white p-6 dark:bg-zinc-900 max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Battle map</h2>
-              <button
-                onClick={() => setShowMobileMap(false)}
-                className="rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-              >
-                Close
-              </button>
+              <button onClick={() => setShowMobileMap(false)} className="rounded border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">Close</button>
             </div>
-            <Battlemap
-              state={state}
-              showTerrainOverlay={devPanel.showTerrainOverlay}
-              onSuggestCommand={(cmd) => {
-                setInput(cmd);
-                setShowMobileMap(false);
-              }}
-            />
+            <Battlemap state={state} showTerrainOverlay={devPanel.showTerrainOverlay} onSuggestCommand={(cmd) => { setInput(cmd); setShowMobileMap(false); }} />
           </div>
         </div>
       )}
 
       {sceneId === 'ending' && (
-        <EndingScreen
-          sessionId={sessionId}
-          adventureTitle={adventureTitle}
-          playerName={state?.party?.[0]?.name ?? 'Hero'}
-          onNewGame={handleNewGame}
-        />
+        <EndingScreen sessionId={sessionId} adventureTitle={adventureTitle} playerName={state?.party?.[0]?.name ?? 'Hero'} onNewGame={handleNewGame} />
       )}
     </>
   );
