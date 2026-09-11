@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { shouldUseMockFlavorPrefix } from '@/lib/llm/credentials';
 import {
@@ -35,6 +35,7 @@ import { isSessionAuthorized, requiresSessionAccess } from '@/lib/security/sessi
 import type { GameState } from '@/lib/game/types';
 
 const TURN_LOCK_MS = 120_000;
+const LEGACY_RETRY_WINDOW_MS = 15_000;
 
 type PendingEnvelope = { rawTurn: unknown; aiUsed: boolean; fallbackUsed: boolean };
 
@@ -70,23 +71,38 @@ function publicSessionId(value: unknown): string | null {
   return value.slice(0, 128);
 }
 
+function implicitRequestId(body: Record<string, unknown>, sessionId: string): string {
+  const fingerprint = JSON.stringify({
+    sessionId,
+    adventureId: body.adventureId ?? null,
+    playerInput: body.playerInput ?? '',
+    physicalDice: Boolean(body.physicalDice),
+    manualRoll: body.manualRoll ?? null,
+  });
+  return `legacy-${createHash('sha256').update(fingerprint).digest('hex').slice(0, 32)}`;
+}
+
+function canReplayCached(state: GameState, requestId: string, explicitRequestId: boolean): boolean {
+  const cached = state.lastTurnResult;
+  if (!cached || cached.requestId !== requestId) return false;
+  return explicitRequestId || Date.now() - cached.completedAt <= LEGACY_RETRY_WINDOW_MS;
+}
+
 export async function POST(req: Request) {
   if (!sameOrigin(req)) {
     return NextResponse.json({ ok: false, error: 'Play from this website.' }, { status: 403 });
   }
 
-  const body = await req.json().catch(() => ({}));
-  const sessionId = publicSessionId(body?.sessionId);
+  const body = await req.json().catch(() => ({})) as Record<string, unknown>;
+  const sessionId = publicSessionId(body.sessionId);
   if (!sessionId) return NextResponse.json({ ok: false, error: 'Valid sessionId required.' }, { status: 400 });
 
-  const suppliedRequestId = body?.requestId;
+  const suppliedRequestId = body.requestId;
   if (suppliedRequestId !== undefined && !validRequestId(suppliedRequestId)) {
     return NextResponse.json({ ok: false, error: 'Invalid requestId.' }, { status: 400 });
   }
-  if (process.env.NODE_ENV === 'production' && !validRequestId(suppliedRequestId)) {
-    return NextResponse.json({ ok: false, error: 'requestId required.' }, { status: 400 });
-  }
-  const requestId = validRequestId(suppliedRequestId) ? suppliedRequestId : `test-${randomUUID()}`;
+  const explicitRequestId = validRequestId(suppliedRequestId);
+  const requestId = explicitRequestId ? suppliedRequestId : implicitRequestId(body, sessionId);
 
   const retryAfter = Math.max(
     consumeRateLimit(`turn-ip:${clientIp(req)}`, 60),
@@ -100,16 +116,16 @@ export async function POST(req: Request) {
   }
 
   const requestedAdventureId =
-    typeof body?.adventureId === 'string' && isValidAdventureId(body.adventureId)
+    typeof body.adventureId === 'string' && isValidAdventureId(body.adventureId)
       ? body.adventureId
       : undefined;
-  const playerInput = typeof body?.playerInput === 'string' ? body.playerInput.slice(0, 800) : '';
-  const manualRoll = typeof body?.manualRoll === 'number' ? body.manualRoll : undefined;
-  const physicalDice = Boolean(body?.physicalDice);
+  const playerInput = typeof body.playerInput === 'string' ? body.playerInput.slice(0, 800) : '';
+  const manualRoll = typeof body.manualRoll === 'number' ? body.manualRoll : undefined;
+  const physicalDice = Boolean(body.physicalDice);
   if (!playerInput.trim() && manualRoll === undefined) {
     return NextResponse.json({ ok: false, error: 'playerInput required.' }, { status: 400 });
   }
-  if (body?.manualRoll !== undefined) {
+  if (body.manualRoll !== undefined) {
     const manualRollError = validateManualD20Roll(body.manualRoll);
     if (manualRollError) return NextResponse.json({ ok: false, error: manualRollError }, { status: 400 });
   }
@@ -124,8 +140,8 @@ export async function POST(req: Request) {
   if (requiresSessionAccess() && !isSessionAuthorized(req, existing)) {
     return NextResponse.json({ ok: false, error: 'Session access denied.' }, { status: 403 });
   }
-  if (existing.lastTurnResult?.requestId === requestId) {
-    return NextResponse.json(existing.lastTurnResult.response);
+  if (canReplayCached(existing, requestId, explicitRequestId)) {
+    return NextResponse.json(existing.lastTurnResult!.response);
   }
   if (requestedAdventureId && existing.adventureId !== requestedAdventureId) {
     return NextResponse.json({ ok: false, error: 'This session belongs to a different adventure. Start a new game to switch adventures.' }, { status: 409 });
@@ -141,8 +157,8 @@ export async function POST(req: Request) {
   if (!state) {
     return NextResponse.json({ ok: false, sessionId, error: 'A turn is already being resolved for this campaign.' }, { status: 409 });
   }
-  if (state.lastTurnResult?.requestId === requestId) {
-    const cached = state.lastTurnResult.response;
+  if (canReplayCached(state, requestId, explicitRequestId)) {
+    const cached = state.lastTurnResult!.response;
     await releaseSessionRequest(sessionId, requestId);
     return NextResponse.json(cached);
   }
