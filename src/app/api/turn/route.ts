@@ -153,10 +153,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, sessionId, error: `This session has reached its ${maxTurns}-turn limit.` }, { status: 429 });
   }
 
-  let state = await claimSessionRequest(sessionId, requestId, TURN_LOCK_MS);
-  if (!state) {
+  const claimedState = await claimSessionRequest(sessionId, requestId, TURN_LOCK_MS);
+  if (!claimedState) {
     return NextResponse.json({ ok: false, sessionId, error: 'A turn is already being resolved for this campaign.' }, { status: 409 });
   }
+  let state: GameState = claimedState;
   if (canReplayCached(state, requestId, explicitRequestId)) {
     const cached = state.lastTurnResult!.response;
     await releaseSessionRequest(sessionId, requestId);
