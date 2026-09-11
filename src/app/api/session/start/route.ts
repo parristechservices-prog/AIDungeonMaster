@@ -3,18 +3,40 @@ import { getOpeningNarration } from '@/lib/game/state';
 import { getAdventure, isValidAdventureId } from '@/lib/game/adventures/registry.server';
 import { getSceneChoices, getSceneGoal } from '@/lib/game/adventures/helpers';
 import { visibleNpcsForScene } from '@/lib/game/adventures/visibility';
-import { startNewGame } from '@/lib/orchestrator/session-store';
+import { getSession, startNewGame } from '@/lib/orchestrator/session-store';
+import { clientIp, consumeRateLimit, sameOrigin } from '@/lib/http/request-guard';
+import { createSessionId, isSecureSessionId } from '@/lib/security/session-id';
+import {
+  issueSessionAccess,
+  SESSION_ACCESS_COOKIE,
+  sessionAccessCookieOptions,
+} from '@/lib/security/session-access';
 
 const VALID_CHARACTERS = new Set(['fighter', 'wizard', 'rogue', 'cleric', 'paladin', 'ranger']);
 const VALID_BACKGROUNDS = new Set(['soldier', 'scholar', 'criminal', 'acolyte']);
 const VALID_PERSONAS = new Set(['balanced', 'gritty', 'epic', 'whimsical']);
 
 export async function POST(req: Request) {
+  if (!sameOrigin(req)) {
+    return NextResponse.json({ ok: false, error: 'Start the adventure from this website.' }, { status: 403 });
+  }
+  const retryAfter = consumeRateLimit(`session-start:${clientIp(req)}`, 30);
+  if (retryAfter) {
+    return NextResponse.json(
+      { ok: false, error: 'Too many new sessions. Please try again shortly.', retryAfter },
+      { status: 429, headers: { 'Retry-After': String(retryAfter) } },
+    );
+  }
+
   const body = await req.json().catch(() => ({}));
-  const sessionId =
-    typeof body?.sessionId === 'string' && body.sessionId.length > 0
-      ? body.sessionId.slice(0, 64)
-      : `sess-${crypto.randomUUID().slice(0, 8)}`;
+  const suppliedSessionId = typeof body?.sessionId === 'string' ? body.sessionId : '';
+  const sessionId = process.env.NODE_ENV === 'production'
+    ? (isSecureSessionId(suppliedSessionId) ? suppliedSessionId : createSessionId())
+    : (suppliedSessionId.slice(0, 128) || createSessionId());
+
+  if (await getSession(sessionId)) {
+    return NextResponse.json({ ok: false, error: 'That session already exists. Start with a new session id.' }, { status: 409 });
+  }
 
   const adventureId =
     typeof body?.adventureId === 'string' && isValidAdventureId(body.adventureId)
@@ -26,19 +48,12 @@ export async function POST(req: Request) {
       ? body.characterIds.filter((id: unknown): id is string => typeof id === 'string' && VALID_CHARACTERS.has(id))
       : [typeof body?.characterId === 'string' && VALID_CHARACTERS.has(body.characterId) ? body.characterId : 'fighter']
   ).slice(0, 4);
-  if (characterIds.length === 0) {
-    characterIds.push('fighter');
-  }
+  if (characterIds.length === 0) characterIds.push('fighter');
 
-  const rawPlayerNames = Array.isArray(body?.playerNames)
-    ? body.playerNames
-    : [body?.playerName];
+  const rawPlayerNames = Array.isArray(body?.playerNames) ? body.playerNames : [body?.playerName];
   const playerNames = characterIds.map((_characterId: string, i: number) => {
     const rawName = rawPlayerNames[i];
-    if (typeof rawName === 'string' && rawName.trim()) {
-      return rawName.trim().slice(0, 40);
-    }
-    return '';
+    return typeof rawName === 'string' && rawName.trim() ? rawName.trim().slice(0, 40) : '';
   });
 
   const backgroundId =
@@ -58,6 +73,7 @@ export async function POST(req: Request) {
     ? Math.min(maxL, Math.max(minL, Math.round(rawLevel)))
     : undefined;
 
+  const access = issueSessionAccess(sessionId);
   const state = await startNewGame(sessionId, {
     adventureId,
     characterIds,
@@ -65,10 +81,10 @@ export async function POST(req: Request) {
     playerLevel,
     backgroundId,
     personaId,
-  });
+  }, access.hash);
   const adventure = getAdventure(adventureId);
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     ok: true,
     sessionId,
     adventureId,
@@ -126,4 +142,6 @@ export async function POST(req: Request) {
       log: state.log.slice(-10),
     },
   });
+  response.cookies.set(SESSION_ACCESS_COOKIE, access.cookieValue, sessionAccessCookieOptions());
+  return response;
 }

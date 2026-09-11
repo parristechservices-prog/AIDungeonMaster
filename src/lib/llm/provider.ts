@@ -1,8 +1,37 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { dmTurnSchema, type DmTurn } from './contracts';
 import { hasLlmCredentials } from './credentials';
 import { writeDevLog } from '@/lib/logging/dev-log';
 
 type Input = { systemPrompt: string; playerInput: string };
+export type LlmAttemptBudget = { limit: number; used: number };
+const budgetContext = new AsyncLocalStorage<LlmAttemptBudget>();
+
+export function getLlmAttemptLimit(): number {
+  const parsed = Number(process.env.PARTYQUEST_MAX_LLM_ATTEMPTS_PER_TURN ?? 6);
+  return Number.isFinite(parsed) ? Math.max(1, Math.min(8, Math.floor(parsed))) : 6;
+}
+
+export function createLlmAttemptBudget(limit = getLlmAttemptLimit()): LlmAttemptBudget {
+  return { limit: Math.max(1, Math.min(8, Math.floor(limit))), used: 0 };
+}
+
+export function withLlmAttemptBudget<T>(budget: LlmAttemptBudget, task: () => Promise<T>): Promise<T> {
+  return budgetContext.run(budget, task);
+}
+
+function consumeProviderAttempt(): boolean {
+  const budget = budgetContext.getStore();
+  if (!budget) return true;
+  if (budget.used >= budget.limit) return false;
+  budget.used += 1;
+  return true;
+}
+
+function providerTimeoutMs(): number {
+  const parsed = Number(process.env.PARTYQUEST_LLM_TIMEOUT_MS ?? 30_000);
+  return Number.isFinite(parsed) ? Math.max(5_000, Math.min(60_000, Math.floor(parsed))) : 30_000;
+}
 
 function getProviderList(): string[] {
   return (process.env.PARTYQUEST_LLM_PROVIDER ?? 'groq')
@@ -16,23 +45,17 @@ function getProviderApiKeys(provider: string): string[] {
 
   if (provider === 'openai') {
     if (process.env.OPENAI_API_KEY?.trim()) keys.push(process.env.OPENAI_API_KEY.trim());
-    if (process.env.OPENAI_API_KEYS) {
-      keys.push(...process.env.OPENAI_API_KEYS.split(',').map((k) => k.trim()));
-    }
+    if (process.env.OPENAI_API_KEYS) keys.push(...process.env.OPENAI_API_KEYS.split(',').map((k) => k.trim()));
   }
 
   if (provider === 'groq') {
     if (process.env.GROQ_API_KEY?.trim()) keys.push(process.env.GROQ_API_KEY.trim());
-    if (process.env.GROQ_API_KEYS) {
-      keys.push(...process.env.GROQ_API_KEYS.split(',').map((k) => k.trim()));
-    }
+    if (process.env.GROQ_API_KEYS) keys.push(...process.env.GROQ_API_KEYS.split(',').map((k) => k.trim()));
   }
 
   if (provider === 'openrouter') {
     if (process.env.OPENROUTER_API_KEY?.trim()) keys.push(process.env.OPENROUTER_API_KEY.trim());
-    if (process.env.OPENROUTER_API_KEYS) {
-      keys.push(...process.env.OPENROUTER_API_KEYS.split(',').map((k) => k.trim()));
-    }
+    if (process.env.OPENROUTER_API_KEYS) keys.push(...process.env.OPENROUTER_API_KEYS.split(',').map((k) => k.trim()));
   }
 
   return [...new Set(keys.filter(Boolean))];
@@ -46,10 +69,7 @@ function getProviderBaseUrl(provider: string): string {
 
 function getProviderModel(provider: string): string {
   if (provider === 'openai') return process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
-  if (provider === 'openrouter') {
-    return process.env.OPENROUTER_MODEL ?? 'meta-llama/llama-3.3-70b-instruct';
-  }
-
+  if (provider === 'openrouter') return process.env.OPENROUTER_MODEL ?? 'meta-llama/llama-3.3-70b-instruct';
   const useLightMode = (process.env.PARTYQUEST_LLM_MODE ?? '').toLowerCase() === 'light';
   return process.env.GROQ_MODEL ?? (useLightMode ? 'openai/gpt-oss-20b' : 'openai/gpt-oss-120b');
 }
@@ -59,31 +79,32 @@ function getProviderHeaders(provider: string, apiKey: string): Record<string, st
     Authorization: `Bearer ${apiKey}`,
     'Content-Type': 'application/json',
   };
-
   if (provider === 'openrouter') {
     headers['X-Title'] = process.env.OPENROUTER_APP_NAME ?? 'PartyQuest';
-    if (process.env.OPENROUTER_SITE_URL?.trim()) {
-      headers['HTTP-Referer'] = process.env.OPENROUTER_SITE_URL.trim();
-    }
+    if (process.env.OPENROUTER_SITE_URL?.trim()) headers['HTTP-Referer'] = process.env.OPENROUTER_SITE_URL.trim();
   }
-
   return headers;
 }
 
 async function* callLlmCandidates(input: Input, options?: { json?: boolean }): AsyncGenerator<string> {
-  if (!hasLlmCredentials()) return null;
+  if (!hasLlmCredentials()) return;
 
   const providers = getProviderList();
   for (const provider of providers) {
     const apiKeys = getProviderApiKeys(provider);
     if (apiKeys.length === 0) continue;
 
-    for (const apiKey of apiKeys) {
-      const keyIndex = apiKeys.indexOf(apiKey);
+    for (let keyIndex = 0; keyIndex < apiKeys.length; keyIndex += 1) {
+      const apiKey = apiKeys[keyIndex];
+      if (!consumeProviderAttempt()) {
+        writeDevLog({ type: 'llm_budget_exhausted', provider });
+        return;
+      }
       try {
         const r = await fetch(getProviderBaseUrl(provider), {
           method: 'POST',
           headers: getProviderHeaders(provider, apiKey),
+          signal: AbortSignal.timeout(providerTimeoutMs()),
           body: JSON.stringify({
             model: getProviderModel(provider),
             messages: [
@@ -101,7 +122,6 @@ async function* callLlmCandidates(input: Input, options?: { json?: boolean }): A
             provider,
             keyIndex,
             status: r.status,
-            statusText: r.statusText,
             error: 'provider_response_not_ok',
           });
           continue;
@@ -122,20 +142,16 @@ async function* callLlmCandidates(input: Input, options?: { json?: boolean }): A
           type: 'llm_provider_attempt',
           provider,
           keyIndex,
-          error: error instanceof Error ? error.message : 'unknown_error',
           errorClass: error instanceof Error ? error.name : 'UnknownError',
           fallbackToNextKey: true,
         });
-        continue;
       }
     }
   }
 }
 
 export async function callLlm(input: Input, options?: { json?: boolean }): Promise<string | null> {
-  for await (const text of callLlmCandidates(input, options)) {
-    return text;
-  }
+  for await (const text of callLlmCandidates(input, options)) return text;
   return null;
 }
 
@@ -206,12 +222,12 @@ function parseDmTurn(raw: string): DmTurn | null {
     const parsedJson = JSON.parse(raw);
     const parsed = dmTurnSchema.safeParse(parsedJson);
     if (!parsed.success) {
-      console.error('LLM Turn Schema Mismatch:', parsed.error.format());
+      writeDevLog({ type: 'llm_schema_mismatch', issueCount: parsed.error.issues.length });
       return null;
     }
     return parsed.data;
-  } catch (e) {
-    console.error('Failed to parse LLM JSON:', e);
+  } catch (error) {
+    writeDevLog({ type: 'llm_json_parse_failure', errorClass: error instanceof Error ? error.name : 'UnknownError' });
     return null;
   }
 }

@@ -1,5 +1,6 @@
 import { getPlayableScene } from '@/lib/game/adventures/helpers';
 import { getAdventure } from '@/lib/game/adventures/registry.server';
+import { missingInventoryItems } from '@/lib/game/inventory';
 import type { GameState } from '@/lib/game/types';
 import type { DmTurn } from '@/lib/llm/contracts';
 
@@ -39,7 +40,9 @@ const ACTOR_KINDS = new Set([
 
 const TARGETED_MONSTER_KINDS = new Set(['player_attack']);
 const KNOWN_SPELLS = ['cure wounds', 'healing word', 'magic missile', 'shield', 'bless'];
-const RESOLVED_OUTCOME = /\b(succeed(?:s|ed)?|fail(?:s|ed|ure)?|hits?|miss(?:es|ed)?|kills?|defeats?|deals?\s+\d+|takes?\s+\d+\s+damage|restores?\s+\d+|finds?|discovers?|unlocks?|opens?)\b/i;
+const RESOLVED_OUTCOME = /\b(succeed(?:s|ed)?|fail(?:s|ed|ure)?|hits?|miss(?:es|ed)?|kills?|defeats?|deals?\s+\d+|takes?\s+\d+\s+damage|restores?\s+\d+|finds?|discovers?|unlocks?|opens?|bought|purchased|paid|spent|sold|drank|ate|consumed|handed\s+over)\b/i;
+const COMPLETED_TRANSACTION = /(?:\b(?:you|your party)\b[\s\S]{0,100}\b(?:bought|purchased|paid|spent|sold|drank|ate|consumed|handed\s+over)\b|\bcosts?\s+you\b)/i;
+const RELATIONSHIPS = ['wife', 'husband', 'spouse', 'mother', 'father', 'sister', 'brother', 'son', 'daughter'] as const;
 
 export function validateDmTurn(turn: DmTurn, state: GameState): DmTurnValidation {
   const errors: DmTurnValidationError[] = [];
@@ -109,9 +112,9 @@ export function validateDmTurn(turn: DmTurn, state: GameState): DmTurnValidation
     }
 
     if (request.kind === 'update_inventory') {
-      const missing = (request.remove ?? []).filter((item) => character && !character.inventory.includes(item));
+      const missing = character ? missingInventoryItems(character.inventory, request.remove ?? []) : [];
       if (missing.length > 0) {
-        addError('inventory_item_missing', `update_inventory cannot remove missing items: ${missing.join(', ')}.`, requestIndex);
+        addError('inventory_item_missing', `update_inventory cannot remove missing item quantities: ${missing.join(', ')}.`, requestIndex);
       }
       if (character && (character.gold + (request.goldDelta ?? 0)) < 0) {
         addError('negative_gold', 'update_inventory cannot result in negative gold.', requestIndex);
@@ -137,6 +140,17 @@ export function validateDmTurn(turn: DmTurn, state: GameState): DmTurnValidation
     }
   }
 
+  const hasInventoryUpdate = turn.engineRequests.some((request) => request.kind === 'update_inventory');
+  if (COMPLETED_TRANSACTION.test(turn.narration) && !hasInventoryUpdate) {
+    addError(
+      'untracked_transaction',
+      'Narration completes a purchase, payment, sale, or consumption without an update_inventory engine request.',
+    );
+  }
+  for (const claim of unestablishedRelationshipClaims(turn, state)) {
+    addError('unestablished_relationship', claim);
+  }
+
   if (turn.needsResultBeforeNarrating) {
     if (turn.engineRequests.length === 0) {
       addError('missing_engine_request', 'needsResultBeforeNarrating requires at least one engine request.');
@@ -145,11 +159,11 @@ export function validateDmTurn(turn: DmTurn, state: GameState): DmTurnValidation
       addError('pre_resolved_narration', 'Narration resolves an outcome before the engine result is available.');
     }
   } else {
-    const requiresResult = turn.engineRequests.some((r) => 
-      ['move_area', 'move_creature', 'dash', 'disengage', 'skill_check', 'player_attack'].includes(r.kind)
+    const requiresResult = turn.engineRequests.some((r) =>
+      ['move_area', 'move_creature', 'dash', 'disengage', 'skill_check', 'player_attack', 'update_inventory'].includes(r.kind)
     );
     if (requiresResult) {
-      addError('missing_needs_result', 'Engine requests that can fail (like movement or attacks) require needsResultBeforeNarrating to be true.');
+      addError('missing_needs_result', 'Engine requests that can fail (including movement, attacks, and inventory transactions) require needsResultBeforeNarrating to be true.');
     }
   }
 
@@ -179,6 +193,34 @@ function isCurrentObjectiveComplete(state: GameState): boolean {
   return successConditions.some((condition) => state.completedObjectives.includes(condition));
 }
 
+function unestablishedRelationshipClaims(turn: DmTurn, state: GameState): string[] {
+  const issues: string[] = [];
+  const newFacts = turn.engineRequests
+    .filter((request): request is Extract<DmTurn['engineRequests'][number], { kind: 'add_canon_fact' }> => request.kind === 'add_canon_fact')
+    .map((request) => request.content);
+
+  for (const npc of state.npcs) {
+    const escapedName = escapeRegExp(npc.name);
+    for (const relationship of RELATIONSHIPS) {
+      const claim = new RegExp(`\\b(?:your|the\\s+hero(?:'s)?|the\\s+character(?:'s)?)\\s+${relationship}\\s*[,—:-]?\\s*${escapedName}\\b`, 'i');
+      if (!claim.test(turn.narration)) continue;
+      const sources = [npc.description, ...npc.knowledge, ...state.canonLog.map((fact) => fact.content), ...newFacts];
+      const established = sources.some((source) => {
+        const lower = source.toLowerCase();
+        return lower.includes(npc.name.toLowerCase()) && lower.includes(relationship);
+      });
+      if (!established) {
+        issues.push(`Narration invents ${npc.name} as the player's ${relationship}; establish that relationship in canon first or remove the claim.`);
+      }
+    }
+  }
+  return issues;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export function buildDmTurnRepairPrompt(playerInput: string, issues: string[], state?: GameState): string {
   return [
     'Repair your previous DM turn.',
@@ -192,6 +234,6 @@ export function buildDmTurnRepairPrompt(playerInput: string, issues: string[], s
           `Legal NPC IDs: ${state.npcs.map((npc) => npc.id).join(', ') || 'none'}`,
         ]
       : []),
-    'Return only a corrected JSON object. Use only IDs present in CURRENT STATE. Do not narrate unresolved outcomes.',
+    'Return only a corrected JSON object. Use only IDs present in CURRENT STATE. Completed purchases, payments, sales, and item consumption must use update_inventory and wait for its result. Do not invent player relationships or prior arrangements that are absent from canon. Do not narrate unresolved outcomes.',
   ].join('\n');
 }
