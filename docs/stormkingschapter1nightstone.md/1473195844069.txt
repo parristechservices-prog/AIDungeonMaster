@@ -1,0 +1,3667 @@
+. •. '
+
+STORM KING'S THUNDER.
+
+
+ON THE COVER
+Heir to the Wyrmskull Throne, and indeed all of giant-kind, the
+storm giant Serissa stands amidst the clouds, in the shadow of her
+mighty father, King Hekaton. Her contentious elder siblings, Mirran
+and Nym, occupy the forefront of this tempestuous illustration by
+the esteemed Tyler Jacobson.
+
+62008669000001 EN
+ISBN: 978-0-7869-6600-4
+First Printing: September 2016
+9 8 7 6 5 4321
+
+CE:
+
+DUNGEONS & DRAGONS, D&D, Wizards of the Coast, Forgotten Realms, the dragon ampersand, Player's Handbook, Monster Manual, Dungeon Master's Guide, all other Wizards of
+the Coast product names, and their respective logos are trademarks of Wizards of the Coast in the USA and other countries. All characters and their distinctive likenesses are property
+of Wizards of the Coast. This material is protected under the copyright laws of the United States of America. Any reproduction or unauthorized use ofthe material or artwork contained
+herein is prohibited without the express written permission of Wizards of the Coast.
+Printed in the USA. ©2016 Wizards of the Coast LL(, PO Box 707, Renton, WA 98057-0707, USA. Manufactured by Hasbro SA, Rue Emile-Bo�chat 31, 2800 Del�mont, CH.
+Represented by Hasbro Europe 4The Square Stockley Park Uxbridee Middlesex lJBJ1 JEI UK
+
+CONTENTS
+Introduction................................................. 7
+Adventure Background .............................. 7
+The Ordning ............................................. 8
+King Hekaton and His Daughters....... 9
+lymrith ..................................................... 10
+The Giant Lords .................................... 10
+Sidebar: Creating New Giant Lords ..... 12
+Factions in the North ........................... 12
+Running the Adventure ............................ 13
+Sidebar: Tendays and the
+Roll ofYears........................................ 13
+Adventure Synopsis.............................. 16
+Deadly Encounters ............................... 16
+Treasure .................................................. 18
+Ch. 1: A Great Upheaval ......................... 19
+Nightstone ................................................... 20
+Sidebar: Nightstone:
+General Features............................... 20
+Sidebar: The Nandars of Nights tone .... 26
+Dripping Caves........................................... 28
+Sidebar: Dripping Caves:
+General Features............................... 29
+Morak's Quest ............................................ 32
+Tower of Zephyros..................................... 32
+Unfriendly Skies........................................ 34
+Sidebar: Character Advancement.......... 36
+Ch. 2: Rumblings ...................................... 37
+Special NPCs ............................................. 37
+Bryn Shander ............................................. 38
+Goldenfields................................................ 44
+Triboar ......................................................... 53
+Sidebar: Character Advancement.......... 62
+Ch. 3: The Savage Frontier ................... 63
+Peoples of the North ................................. 63
+Civilized Folk ......................................... 64
+Northlanders.......................................... 64
+Reghed Barbarians............................... 64
+Uthgardt Barbarians ............................ 65
+Ores and Half-Ores...............................68
+Shield Dwarves ..................................... 68
+Elves......................................................... 68
+Halflings .................................................. 68
+Random Wilderness Encounters........... 68
+Locations of the North ............................. 72
+Amphail ................................................... 72
+Anauroch................................................. 72
+Ardeep Forest ........................................ 73
+Arn Forest............................................... 73
+Ascore ...................................................... 73
+Aurilssbarg ............................................. 73
+Bargewright Inn .................................... 73
+Beliard ..................................................... 76
+Beorunna's Well.................................... 76
+Black Road.............................................. 77
+Blackford Road ...................................... 77
+Bryn Shander......................................... 77
+Cairn Road ............................................. 77
+Calling Horns......................................... 77
+Carnath Roadhouse ............................. 78
+Citadel Adbar ......................................... 78
+
+Citadel Felbarr....................................... 79
+Coldwood ................................................ 79
+Crags ........................................................ 79
+Daggerford.............................................. 80
+Dawn Pass .............................................. 80
+Deadsnows ............................................. 80
+Deadstone Cleft ..................................... 81
+Delimbiyr Road ..................................... 81
+Delimbiyr Vale ....................................... 81
+Dessarin Hills........................................ 81
+Dessarin Road....................................... 81
+Dessarin Valley...................................... 81
+Druarwood ............................................. 81
+Everlund.................................................. 81
+Evermoor Way ....................................... 83
+Evermoors .............................................. 83
+Eye of the All-Father............................. 83
+Fallen Lands........................................... 83
+Far Forest ............................................... 83
+Fell Pass.................................................. 83
+Fireshear................................................. 83
+Flint Rock ............................................... 84
+Forgotten Forest... ................................. 85
+Fork Road ............................................... 85
+Forlorn Hills........................................... 85
+Frost Hills ............................................... 85
+Gauntlgrym ............................................ 85
+Glimmerwood........................................ 86
+Goldenfields ........................................... 86
+Grandfather Tree .................................. 86
+Graypeak Mountains............................ 87
+Grayvale .................................................. 87
+Grayvale Run ......................................... 88
+Great Worm Cavern ............................. 88
+Griffon's Nest ......................................... 89
+Grudd Haug ............................................ 89
+Gundarlun............................................... 89
+Gundbarg ................................................ 90
+Hawk's Nest ........................................... 90
+Helm's Hold ............................................ 90
+High Forest............................................. 91
+High Moor............................................... 91
+High Road ............................................... 91
+Hundelstone ........................................... 91
+Ice Peak................................................... 92
+Ice Mountains and Ice Spires ............ 92
+Iceshield Lands ..................................... 92
+lcewind Dale .......................................... 92
+Iron Road ................................................ 93
+Iron Trail ................................................. 93
+Iron master .............................................. 93
+Ironslag ................................................... 94
+lymrith's Lair ......................................... 94
+Jalanthar.................................................. 94
+Julkoun..................................................... 94
+Jundar's Pass.......................................... 94
+Kheldell ................................................... 95
+Kheldell Path ......................................... 95
+Klauthen Vale......................................... 95
+Korinn Archipelago .............................. 95
+Kryptgarden Forest .............................. 95
+
+Leilon ....................................................... 96
+Lizard Marsh.......................................... 96
+Llorkh ...................................................... 96
+Lonely Moor ........................................... 96
+Long Road .............................................. 96
+Longsaddle ............................................. 97
+Lost Peaks .............................................. 97
+Loudwater............................................... 97
+Lurkwood................................................ 97
+Luskan..................................................... 97
+Maelstrom............................................... 98
+Mere of Dead Men................................. 98
+Mines of Mirabar................................... 98
+Mirabar.................................................... 98
+Misty Forest ........................................... 98
+Mithra! Hall ............................................ 99
+Moon wood .............................................. 99
+Morgur's Mound.................................... 99
+Mornbryn's Shield ................................ 99
+Nesme .................................................... 100
+Nether Mountains ............................... 100
+Neverwinter.......................................... 101
+Neverwinter Wood.............................. 101
+Newfort.................................................. 101
+Nightstone............................................. 101
+Noanar's Hold ...................................... 101
+Northern Means .................................. 102
+orthfurrow ......................................... 102
+Olostin's Hold....................................... 102
+One Stone ............................................. 102
+Orlbar..................................................... 103
+Parnast .................................................. 104
+Phandalin ............................................. 104
+Port Llast .............................................. 104
+Purple Rocks........................................ 104
+Rassalantar .......................................... 104
+Rauvin Mountains............................... 105
+Rauvin Road......................................... 105
+Raven Rock........................................... 105
+Red Larch ............................................. 106
+Red Rocks ............................................. 106
+Reghed Glacier .................................... 106
+Rivermoot ............................................. 106
+Ruathym ................................................ 106
+Sea of Moving lce................................ 106
+Secomber.............................................. 107
+Shadowtop Cathedral ........................ 107
+Shining Falls........................................ 107
+Shining White...................................... 107
+Silver Marches..................................... 108
+Silverwood............................................ 108
+Silverymoon ......................................... 108
+Silverymoon Pass ............................... 108
+Southwood ........................................... 108
+Spine of the World .............................. 108
+Star Mounts.......................................... 109
+Star metal Hills .................................... 109
+Stone Bridge ........................................ 109
+Stone Stand.......................................... 109
+Stone Trail ............................................ 110
+Sumber Hills........................................ 110
+
+Sundabar............................................... 110
+Surbrin Hills ........................................ 110
+Surbrin Trail ........................................ 110
+Svardborg ............................................. 110
+Sword Mountains................................ 110
+Ten Trail ................................................ 110
+Thornhold ............................................. 111
+Trade Way ............................................. 111
+Triboar ................................................... 111
+Triboar Trail ......................................... 111
+Tuem ...................................................... 111
+Turnstone Pass.................................... 111
+Uluvin..................................................... 111
+Uttersea................................................. 112
+Valley of Khedrun ............................... 112
+Vordrorn Forest................................... 112
+Waterdeep ............................................. 112
+Way Inn.................................................. 113
+Weathercote Forest ............................ 113
+Westbridge............................................ 113
+Westwood ............................................. 114
+Whalebones.......................................... 114
+Womford................................................ 114
+Xantharl's Keep ................................... 114
+Yartar ..................................................... 115
+Zelbross................................................. 115
+Zymorven Hall ..................................... 116
+Featured Encounters .............................. 116
+Old Tower.............................................. 116
+Inner Circles......................................... 117
+Harshnag .............................................. 118
+Ch. 4: The Chosen Path........................ 121
+Journey to the Eye.................................... 121
+Eye of the All-Father ............................... 121
+Sidebar: Eye of the All-Father:
+General Features............................. 122
+Words of the Oracle ................................ 129
+Sidebar: Hekaton's Conchs ................... 131
+Airship of a Cult ....................................... 132
+Encounter with lymrith.......................... 136
+Troubleshooting....................................... 136
+Sidebar: Character Advancement........ 136
+Ch. 5: Den ofthe Hill Giants ............... 137
+Hill Giants ................................................. 137
+Grudd Haug .............................................. 138
+Sidebar: Grudd Haug:
+General Features............................. 138
+Sidebar: Character Advancement. ....... 144
+
+Ch. 8: Forge ofthe Fire Giants ........... 167
+Fire Giants ................................................ 167
+Ironslag ...................................................... 168
+Sidebar: Ironslag: General Features .. 171
+Sidebar: Slaves of the Yakfolk .............. 172
+Special Delivery....................................... 186
+Sidebar: Character Advancement. ....... 186
+
+Figures
+Figure 0.1: Giant Runes............................. 7
+Figure 0.2: Adventure Flowchart .......... 17
+Figure 3.1: Harper
+Teleportation Circles........................... 119
+Figure 4.1: Archway Runes................... 125
+
+Maps
+Ch. 9: Castle ofthe Cloud Giants ...... 187 Map 1.1: Nightstone .................................. 21
+Cloud Giants ............................................. 187 Map 1.2: Dripping Caves ......................... 29
+Lyn Armaal ............................................... 188 Map 1.3: Tower of Zephyros ................... 33
+Sidebar: Lyn Armaal:
+Map 2.1: Brynjhander ............................. 39
+General Features............................. 189 Map 2.2: Goldenfields............................... 45
+Conquering the Castle ........................... 200 Map 2.3: Triboar ........................................ 55
+Sidebar: Character Advancement....... 200 Map 3.1: The North ................................... 74
+Map 3.2: Beorunna's Well ....................... 76
+Ch. 10: Hold ofthe Storm Giants ......201
+Map 3.3: Everlund ..................................... 82
+Storm Giants ............................................ 201
+Map 3.4: F lint Rock................................... 84
+Maelstrom .................................................202
+Map 3.5: Grandfather Tree ...................... 87
+Sidebar: Maelstrom:
+Map 3.6: Great Worm Cavern................. 89
+General Features.............................202
+Map 3.7: Morgur's Mound........................ 99
+Sidebar: Character Advancement... ..... 214
+Map 3.8: One Jtone .................................. 103
+Ch. 11: Caught in the Tentacles ......... 215 Map 3.9: Raven Rock .............................. 105
+The Golden Goose .................................. 215 Map 3.10: Gundarlun and Ruathym .... 106
+The Grand Dame ..................................... 216 Map 3.11: Shining White ....................... 108
+The Hunt for Hekaton............................. 219 Map 3.12: Stone Stand ........................... 110
+The Morkoth ............................................. 221 Map 3.13: Tuern and Purple Rocks..... 111
+The Kraken Cometh ...............................223 Map 3.14: Old Tower ............................... 117
+Back to Maelstrom? ................................224 Map 4.1: Eye of the All-Father .............. 123
+Sidebar: Character Advancement........ 224 Map 4.2: Harshnag's Map...................... 132
+Ch. 12: Doom ofthe Desert ................. 225 Map 4.3: Dragon Cult Airship............... 135
+Finding Iymrith ........................................ 225 Map 5.1: Grudd Haug ............................. 141
+Sidebar: Harshnag Returns!.. ............... 226 Map 6.1: Deadstone Cleft....................... 151
+Iymrith's Lair ............................................ 226 Map 7.1: Svardborg ................................. 160
+Map 7.2: Svardborg Lodges .................. 161
+Sidebar: Iymrith's Lair:
+General Features............................. 227 Map 7.3: The Krigvind ............................ 166
+Adventure Conclusion ............................230 Map 8.1: Ironslag ..................................... 174
+Sidebar: Character Advancement... ..... 230 Map 8.2: Ironslag, Lower Level ........... 182
+Map 9.1: Lyn Armaal, Level 1.. ............. 194
+Appendix A: Linked Adventures ....... 231 Map 9.2: Lyn Armaal, Levels 2-6........ 195
+Lost Mine of Phandelver .......................231 Map 10.1: Maelstrom,
+Hoard of the Dragon Queen.................. 231
+Levels 1 and 2 .......................................205
+Princes of the Apocalypse ..................... 232 Map 10.2: Maelstrom, Level 3 .............. 213
+Sidebar: Using the Elemental Cults.... 232 Map 11.1: The Grand Dame .................. 217
+Out of the Abyss ....................................... 232 Map 11.2: The Morkoth .......................... 222
+Appendix B: Magic Items .................... 233 Map 12.1: Iymrith's Lair.........................228
+Sidebar: Ruling Scepters
+of Shanatar .......................................235
+
+Appendix C: Creatures .........................240
+Crag
+Cat .....................................................240
+Ch. 6: Canyon ofthe Stone Giants .... 145
+Stone Giants ............................................. 145 Hulking Crab ............................................240
+Deadstone Cleft........................................ 146 lymrith the Dragon .................................. 241
+Maegera the Dawn Titan ....................... 241
+Sidebar: Deadstone Cleft:
+General Features............................. 148 Purple Wormling ..................................... 242
+Sidebar: Character Advancement........154 Tressym ..................................................... 242
+Uthgardt Shaman .................................... 243
+Ch. 7: Berg ofthe Frost Giants ........... 155 Sidebar: Uthgardt Shaman
+Frost Giants .............................................. 155
+Tribal Spells .....................................243
+Svardborg .................................................. 156 Yakfolk (Yikaria) ......................................244
+Sidebar: Svardborg:
+New Giant Options..................................245
+General Features............................. 159
+The Krigvind ............................................. 165 Appendix D: Special NPCs .................247
+Sidebar: Character Advancement........ 166
+
+------�- - -------- -------
+
+-
+
+�--
+
+DRAMATIS PERSONAE
+The main members of the adventure's cast of characters are listed here in alphabetical order for easy reference.
+Major NPC
+
+Description
+
+Main Description
+
+Alastrah
+Augrek Brighthelm
+
+Cloud giant infant daughter of Countess Sansuri
+Dwarf sheriff's deputy in Bryn Shander
+
+Chapter 9 ("Lyn Armaal," area 23)
+Chapter 2 ("Bryn Shander," area Bl), stat block in
+appendix D
+
+Beldora
+
+Human spy for the Harpers in Bryn Shander
+
+Braxow
+
+Stone giant thane in Maelstrom
+Fire giant duchess and wife of Duke Zalto
+Adolescent fire giant daughter of Duke Zalto
+Reflusive ancient green dragon in the Kryptgarden
+Forest
+
+Chapter 2 ("Bryn Shander," area B7), stat block in
+appendix D
+Chapter 10 {"Maelstrom," area 14)
+Chapter 8 {"lronslag," area 31)
+Chapter 8 ("lronslag," area 268)
+Chapter 3 ("Kryptgarden Forest")
+
+Brimskarda
+Cinderhild
+Claugiyliamatar
+Cog
+Cressaro
+
+Hill giant guard in Maelstrom
+
+Cryovain
+Darathra Shendrel
+
+Cloud giant castellan of Lyn Armaal
+Adult white dragon chained aboard the Krigvind
+Human lord protector of Triboar
+
+Darz Helgar
+
+Retired human member of a Waterdhavian thieves'
+
+Duvessa Shane
+
+guild
+Human town speaker of Bryn Shander
+
+Eigeron
+Felgolos
+Ghelryn Foehammer
+
+Cloud giant ghost
+Adult bronze dragon imprisoned by Countess
+Sansuri
+Dwarf smith and owner of Foehammer's Forge in
+Tri boar
+
+Guh
+
+Hill giant chief based in Grudd Haug
+
+Harshnag
+
+legendary good-aligned frost giant adventurer
+
+Hekaton
+
+Storm giant king abducted by the Kraken Society
+
+Hellenhild
+lsendraug
+
+Frost giant jarl in Maelstrom
+Adult white dragon confined to Svardborg
+Ancient blue dragon stirring up trouble among the
+
+lymrith
+
+Ka altar
+Kayalithica
+
+Chapter 10 ("Maelstrom," area 15)
+Chapter 9 ("Lyn Armaal," area 14)
+Chapter 7 ("The Krigvind")
+Chapter 2 ("Triboar," area Tl), stat block in
+appendix D
+Chapter 2 ("Triboar," area T2), stat block in
+appendix D
+Chapter 2 ("Bryn Shander," area BS}, stat block in
+appendix D
+Chapter 4 ("Eye of the All-Father," area 11)
+Chapter 9 ("Lyn Armaal," area 8)
+Chapter 2 ("Triboar," area Tl 8), stat block in
+appendix D
+Introduction ("The Giant lords"), chapter 5
+("Grudd Haug," area 2)
+Chapter 3 ("Harshnag")
+Introduction ("King Hekaton and His
+Daughters"), chapter 11 ("The Morkoth," area 3)
+Chapter 10 ("Maelstrom," area 14)
+Chapter 7 ("Svardborg," area 4 E)
+Introduction ("lymrith"), chapter 4 ("Encounter
+
+storm giants
+
+with lymrith"), chapter 10 ("Maelstrom," area
+
+Cloud giant infant son of Countess Sansuri
+
+15), chapter 12 ("lymrith's lair," area 3), stats in
+appendix C
+Chapter 9 ("Lyn Armaal," area 23)
+Introduction ("The Giant lords"), chapter 6
+("Deadstone Cleft," area 14)
+
+Stone giant thane based in Deadstone Cleft
+Zhentarim spy hiding in the Nightstone Inn
+
+Lifferlas
+
+Human noble and member of the Kraken Society
+Meddlesome ancient red dragon in Klauthen Vale
+Awakened tree in Goldenfields
+
+Chapter 1 ("Nightstone," area SF)
+Chapter 11 ("The Grand Damti")
+Chapter 3 ("Klauthen Vale")
+Chapter 2 ("Goldenfields," area G6), stat block in
+
+Markham Southwell
+
+Human sheriff of Bryn Shander
+
+appendix D
+Chapter 2 ("Bryn Shander," area B6), stat block in
+
+Miros Xelbrin
+
+Human proprietor of Northfurrow's End, an inn in
+Goldenfields
+Evil storm giant and eldest daughter of King
+Hekaton
+Upset hill giant
+
+Keila Darkhope
+Khaspere Drylund
+Klauth
+
+Mirran
+Moog
+
+appendix D
+Chapter 2 ("Goldenfields," area GS), stat block in
+appendix D
+Introduction ("King Hekaton and His
+Daughters"), chapter 10 ("Maelstrom," area 14)
+Chapter 3 ("Old Tower")
+
+Major NPC
+
+Description
+
+Main Description
+
+Morak Ur'gray
+Narth Tezrin
+
+Dwarf innkeeper imprisoned in the Dripping Caves
+
+Chapter 1 ("Dripping Caves," area 4)
+
+Human proprietor of the Lion's Share, a store in
+Triboar
+
+Chapter 2 ("Triboar," area T6), stat block in
+appendix D
+
+Naxene Drathkala
+
+Human mage of the Watchful Order of Magists and
+
+Chapter 2 ("Goldenfields," area G8), stat block in
+appendix D
+
+Nimir
+
+Protectors
+Storm giant sent to kill lymrith
+
+Chapter 12 ("Finding lymrith"), stat block in
+appendix D
+
+Evil storm giant and second daughter of King
+Hekaton
+
+Nym
+
+Introduction ("King Hekaton and His
+Daughters"), chapter 10 ("Maelstrom," area 14)
+
+Oren Yogilvy
+
+Halfling musician staying at Northfurrow's End
+
+Chapter 2 ("Goldenfields," area G8), stat block in
+appendix D
+
+Orlekto
+
+Storm giant sent to kill lymrith
+
+Othovir
+
+Human owner of Othovir's Harness Shop in Triboar
+
+Chapter 12 ("Finding lymrith"), stat block in
+appendix D
+Chapter 2 ("Triboar," area Tll), stat block in
+appendix D
+Chapter 11 ("The Grand Dame")
+
+Human mage and head of security aboard the Grand
+
+Pow Ming
+
+Dame
+
+Sansuri
+
+Half-ore assassin and first mate of the Morkoth
+Cloud giant countess based in Lyn Armaal
+
+Serissa
+
+Storm giant and youngest daughter of King Hekaton
+
+Shaldoor
+
+Storm giant sent to kill lymrith
+
+Shalvus Martholio
+
+Human shepherd and Zhentarim spy
+
+Rool
+
+Human knight of the Order of the Gauntlet in Bryn
+
+Sir Barie Nylef
+
+Shander
+
+Chapter 11 ("The Morkoth")
+Introduction ("The Giant Lords"), chapter 9 ("Lyn
+Armaal," area 8)
+Introduction ("King Hekaton and His
+Daughters"), chapter 10 ("Maelstrom," area 15)
+Chapter 12 ("Finding lymrith"), stat block in
+appendix D
+Chapter 2 ("Goldenfields," area GS), stat block in
+appendix D
+Chapter 2 ("Bryn Shander," area B8), stat block in
+appendix D
+
+Sirac of Suzail
+
+Human son of Artus Cimber living in Bryn Shander
+
+Chapter 2 ("Bryn Shander," area B4), stat block in
+appendix D
+
+Slarkrethel
+
+Spellcasting kraken of the Trackless Sea
+
+Storvald
+
+Frost giant jarl based in Svardborg
+
+Introduction ("The Kraken Society"), chapter 11
+("The Kraken Cometh")
+Introduction ("The Giant Lords"), chapter 7 ("The
+
+Tartha
+Tholtz Daggerdark
+Thullen
+
+Fire giant duchess in Maelstrom
+
+Tug
+Urgala Meltimer
+Uthor
+Vaal
+Vaasha
+Xolkin Alassandar
+Zaltember
+Zalto
+Zephyros
+
+--
+
+--
+
+Chapter 10 ("Maelstrom," area 15)
+
+Cloud giant count in Maelstrom
+Storm giant sent to kill lymrith
+
+Chapter 10 ("Maelstrom," area 14)
+Chapter 12 ("Finding lymrith"), stat block in
+appendix D
+
+Half-elf leader of the Seven Snakes mercenary band
+Adolescent fire giant son of Duke Zalto
+Fire giant duke based in lronslag
+
+Chapter 1 ("Seven Snakes")
+Chapter 8 ("lronslag," area 18)
+
+Eccentric cloud giant wizard
+Human acolyte of the Harvesthome Abbey
+
+Zi Liang
+
+--
+
+Human archmage and mad captain of the Morkoth
+Cloud giant count and brother of Countess Sansuri
+Hill giant guard in Maelstrom
+Human proprietor of Northshield House, an inn in
+Triboar
+Storm giant imperator and castellan of Maelstrom
+
+Krigvind")
+Chapter 10 ("Maelstrom," area 14)
+Chapter 11 ("The Morkoth")
+Chapter 9 {"Lyn Armaal," area 28)
+Chapter 10 ("Maelstrom," area 15)
+Chapter 2 {"Triboar," area TlO), stat block in
+appendix D
+
+Introduction ("The Giant Lords"), chapter 8
+("lronslag," area 28)
+Chapter 1 ("Tower ofZephyros")
+Chapter 2 ("Goldenfields," area G7), stat block in
+appendix D
+
+- - -� - -------------
+
+-
+
+-
+
+__
+
+.........
+
+INTRODUCTION
+OU ARE ABOUT TO EMBARK ON A GREAT
+adventure that pits heroes against
+giants bent on reshaping the world.
+Storm King's Thunder is a DUNGEONS &
+DRAGONS adventure for four to six player
+characters. You can start the adventure
+with 1st-level characters or 5th-level
+characters. Either way, the characters
+should reach at least 11th level by the adventure's
+conclusion. Because giants figure prominently in the
+story, at least one character should be able to speak and
+understand the Giant language.
+The adventure takes place in the Forgotten Realms,
+specifically in a region known as the Savage Frontier, in
+the northwest corner of the continent of Faerfin. None­
+theless, you can easily adapt the adventure to your home
+campaign by changing the names of various locations
+and factions.
+We recommend that you read the entire adventure
+before attempting to run it. This introduction begins
+with an "Adventure Background" section that summa­
+rizes the events that set the adventure in motion. The
+"Running the Adventure" section tells you everything
+you need to know to run the adventure smoothly. That
+section also presents guidelines for character level
+advancement, outlines the flow of the adventure, and de­
+scribes its major challenges. Once you've reviewed this
+material and are ready to run the adventure, proceed
+with chapter 1, "A Great Upheaval," if the characters are
+starting at 1st level, or chapter 2, "Rumblings," if they
+are starting at 5th level.
+
+G I
+
+�
+EkoD
+(BLOOD RUNE)
+
+The Savage Frontier (also known as the North) is a cold,
+rugged, sparsely populated land of snow-capped moun­
+tains, rocky hills, sprawling forests, and foggy vales.
+Isolated strongholds, ancient burial mounds, and the
+ruins of many forgotten empires dot this vast landscape.
+Bounded by the Sea of Swords to the west and the des­
+ert of Anauroch to the east, the Savage Frontier extends
+as far north as Icewind Dale and as far south as the
+town of Daggerford. Old roads stretch across this great
+expanse, linking the dwarven strongholds and mines in
+the mountains to the coastal settlements, frontier towns,
+and fortified outposts of humans and other folk. These
+roads are long, lonely, or poorly defended, making them
+dangerous to traverse. In fertile valleys, towns and cities
+have sprung up, separated by dozens if not hundreds of
+miles of untamed wilderness haunted by bandits, bar­
+barians, and monsters.
+Evil dragons stirred into action by their dark queen,
+Tiamat, threatened the settlements of the Savage Fron­
+tier for a time. Ultimately, they were defeated and forced
+to withdraw to their lairs, while Tiamat was banished
+to the Nine Hells. Fear of the dragons' wrath has faded
+quickly with the coming of a new threat: giants. The peo­
+ples of the North are no strangers to giant incursions.
+Frost giants have long claimed the Spine of the World
+as their demesne, and hill giants are known to scrounge
+for food in the untamed hills. But now, in the past cou­
+ple of months, giants of every kind have emerged from
+their strongholds in force to threaten civilization as
+
+GIANT RUNES
+
+•
+
+�
+
+SKVE
+
+DoD
+
+WvRM
+
+(CLOUD RUNE)
+
+(DEATH RUNE)
+
+(DRAGON RUNE)
+
+m @
+UveN
+
+lLD
+
+VENN
+
+(ENEMV RUNE)
+
+(FIRE RUNE)
+
+(FRIEND RUNE)
+
+I ,m ©
+•
+
+61!
+
+•
+
+�
+
+lse
+
+HAUG
+
+(FROST/ice RUNE)
+
+(HILL RUNE)
+
+zj
+
+ADVENTURE BACKGROUND
+
+�
+
+FERD
+
+KONG
+
+STIG
+
+Liv
+
+(JOURNEY RUNE)
+
+(KING RUNE)
+
+(LIGHT RUNE)
+
+(LIFE RUNE)
+
+Q1
+
+FJELL
+
+HELLIG
+
+SKOLD
+
+(MOUNTAIN RUNE)
+
+(SACRED RUNES)
+
+(SHIELD RUNE)
+
+•
+
+�g
+
+�
+•
+
+lif
+KRIG
+
+VIND
+
+(STONE RUNE)
+
+(S TORM RUNE)
+
+(WAR RUNE)
+
+(WIND RUNE)
+
+•
+
+STEIN
+
+UvAR
+
+�
+
+FIGURE 0.1: GIANT RUNES
+
+INTRODUCTION
+
+never before-and not just frost giants and hill giants,
+but also stone giants, fire giants, and cloud giants. All
+of the giants are in an uproar. Reports of giant attacks
+throughout the North have reached the coastal cities of
+Luskan, Neverwinter, and Waterdeep, stoking fears that
+the giants are waging war against humans, dwarves,
+elves, and other small folk.
+
+THE 0RDNING
+Giant society (such as it is) is defined in large part by
+the ordning, a caste system imposed upon the giants
+by their gods, chief among them Annam the All-Father.
+The ordning determines where a giant stands among
+his or her ilk. Traditionally, storm giants have stood at
+the top of the ordning. Tall and powerful, they struggle
+to keep the weaker races of giants from despoiling the
+realms of small folk and sparking conflict. The greatest
+storm giants are powerful seers, skilled at identifying
+and interpreting cosmic signs and divine omens. The
+aloof and aristocratic cloud giants, one step below the
+storm giants, rarely condescend to deal with lesser
+giants or small folk. Extravagance defines their culture
+and their place in the ordning. Below them are the ty­
+rannical, warmongering fire giants and the merciless,
+predatory frost giants. Fire giants rank themselves by
+their forging skill, whereas frost giants rank themselves
+by their martial prowess. Near the bottom of the ord­
+ning are the xenophobic stone giants, who mostly live
+underground and regard the surface world as a realm
+of dreams. How well they sculpt stone determines their
+place among their peers. The lowest and smallest of the
+true giants are the hill giants, as gluttonous as they are
+loathsome. Hill giants are dullards who live in fear of
+their more powerful giant cousins. In hill giant society,
+the biggest rule.
+
+Dragons are the ancient enemies of giants. Thousands
+of years ago, the last great empire of giants-Ostoria­
+fell after a long and brutal conflict with dragons. Little
+of Ostoria remains in what is now called the Savage
+Frontier. The civilizations of small folk have taken over
+the land once ruled by giants. Although evil giants make
+occasional forays into territory settled by small folk,
+their ambitions have long been curtailed by their lack
+of cohesion and the imposition of good-aligned storm
+giants and cloud giants whose memories of ancient, glo­
+rious Ostoria have faded over time.
+The recent efforts by dragons to bring Tiamat into the
+world (as told in the adventures Hoard ofthe Dragon
+Queen and The Rise ofTiamat) and the attempts by
+small folk to thwart them so upset the giant gods that
+Annam the All-Father shattered the ordning between
+the giants to break his "children" out of their compla­
+cency, pitting the six giant types against one another
+while keeping some semblance of order within each
+type. In so doing, Annam has spurred cloud, fire, frost,
+stone, and hill giants to challenge the established hier­
+archy and reforge their destiny. All the giants sensed
+the upheaval instantly, and now the giant types fiercely
+compete against one another, striving to create a new
+ordning through their deeds and accomplishments.
+These giants' calamitous endeavors have not only put
+the settlements of humans and other small folk in jeop­
+ardy but also attracted the attention of the giants' an­
+cient enemies-the dragons-who will not abide the rise
+of another giant empire.
+Small folk can only speculate as to the cause of the
+giants' unrest. It remains to be seen whether the old
+ordning between the giant types will be restored, or
+whether a new hierarchy will replace the old one, knock­
+ing the storm giants from their lofty perch.
+
+FROM LEFT TO RIGHT: K1NG He1<ATON, QUEEN NERI, MIRRAN, NvM, AND SER1ssA
+
+KING HEKATON AND
+Hrs DAUGHTERS
+Prior to the shattering of the ordning, King Hekaton was
+arguably the most powerful of all storm giants. From
+Maelstrom, his citadel deep within the Trackless Sea, he
+presided over a court that included representatives of ev­
+ery race of giant, from mighty storm giants to lowly hill
+giants. He used the power of the Wyrmskull Throne-a
+gift given to him by his wife-to keep the more unruly
+giants in line.
+For as long as Hekaton had reigned, fear of the king's
+wrath and respect for the ordning was enough to keep
+lesser giants from rising up against him. But in recent
+years, King Hekaton had become convinced that the
+age of the giants was past, as evidenced by the growing
+distance between the giants and their gods. Annam
+the All-Father didn't answer prayers, and his divine
+offspring-the lesser giant gods-were out of touch,
+constantly waging war against one another on the Outer
+Planes. Hekaton came to believe that the giants were no
+longer the rightful masters of the world.
+Then, several months ago, Hekaton's fear became
+reality when the ordning was shattered. The king was
+profoundly shaken by the realization that storm giants
+might lose their apex status among giants. In the after­
+math of the upheaval, he did his utmost to hold his court
+together, bullying weaker giants into submission.
+Hekaton's wife, Queen Neri, was particularly fond of
+the small folk. She visited them often in the years before
+the ordning was sundered, rising up out of the sea to
+meet them on the shores of the Sword Coast. Neri con­
+tinually urged her husband to respect the civilizations
+of the small folk and leave them alone, if he could not
+countenance forming alliances with them. Hekaton, in­
+herently distrustful of the small folk, wanted nothing to
+do with them, but he respected his wife's desire to treat
+with them on occasion.
+Neri continued to visit the small folk from time to
+time even after the upheaval-until the day came when
+she failed to return from one of her trips to the Sword
+Coast. Hekaton's younger brother, Imperator Uthor,
+commander of the king's garrison, found Neri's corpse
+shortly thereafter on a small island where she had been
+known to meet with humans. It was clear that she had
+been killed by small folk, and Hekaton wept for days
+before threatening to unleash his vengeance on the un­
+suspecting coastal territories.
+Uthor couldn't calm his brother's rage, so he turned to
+Princess Serissa, the king's youngest daughter, for help.
+Serissa, who shared her mother's affection for small
+folk and who stood next in line to inherit the Wyrmskull
+Throne, urged her father to uncover the truth before
+lashing out at anyone he encountered. Hekaton was
+swayed by his daughter's levelheadedness and wisdom,
+and once his hurricane-like anger ran its course, he set
+out to learn how his wife met her end. Unfortunately for
+the king, he was blind to enemies not only in his court
+but also in his family.
+The seeds of discontent in Hekaton's family were
+sown more than a year before the ordning was shat­
+tered, when the king divined that his two eldest <laugh-
+
+ters, Mirran and Nym, were unfit to rule, and saw signs
+that pointed to Serissa, his youngest daughter, as his
+most worthy successor. Mirran was tempestuous and
+prone to emotional outbursts, while Nym was the oppo­
+site-as cold and unloving as the sea. While Hekaton
+adored them both, he doubted their ability to keep
+the lesser giants in line, so he named Serissa as his
+heir apparent.
+Mirran and Nym abided by his decision, but neverthe­
+less their unhappiness was clear. Secretly, they blamed
+their mother for persuading their father to pass them
+over. Their blame was unfounded, in fact; Queen Neri
+had actually warned her husband against making any
+such pronouncement. Mirran and Nym seethed inside
+but were too terrified of their father to do anything,
+until a recent arrival to Maelstrom named lymrith
+wormed her way into Hekaton's court and goaded them
+into action.
+The elder sisters, acting in accordance with Iymrith's
+counsel, are responsible for both Neri's death and Heka­
+ton's disappearance. Mirran and Nym got their revenge
+against Neri by plotting-with Iymrith's help-to have
+her assassinated. Then they urged their father to hunt
+down the small folk who killed their mother and fed him
+false information on the whereabouts of the assassins,
+to throw the king off track and put him in peril.
+In the wake of Hekaton's disappearance, turmoil en­
+gulfed his court. After nearly a month of waiting for him
+to come back, Serissa reluctantly claimed her father's
+throne at Imperator Uthor's urging.
+
+MIRRAN AND NYM
+
+King Hekaton's eldest daughter, Mirran, is a spoiled
+brat with the forcefulness and unpredictability of a ty­
+phoon. She covets the power of the Wyrmskull Throne
+and believes it rightfully belongs to her. She is angry
+with her parents for placing Serissa next in the line of
+succession, and she has made her feelings plain. Mirran
+believes she is destined to rule and has seen signs that
+reinforce her belief. Once she claims the throne, Mirran
+expects all other giants to kneel before her. She plans to
+use her newfound power to resurrect the ancient empire
+of Ostoria, sweeping away the cities and kingdoms of
+the small folk.
+If Mirran is the blustery gale of an ocean storm, then
+Nym is the undercurrent. King Hekaton's middle child
+is cold and calculating. She has always felt neglected
+by her parents, in part because Mirran was so demand­
+ing and Serissa so young. In truth, King Hekaton and
+Queen Neri loved Nym as much as they adored their
+other daughters, but they found her distant and difficult
+to please. Nym wants Mirran to seize the throne-and
+then, when Mirran makes enemies at every turn and
+proves to everyone that she is unfit to rule, Nym plans to
+supplant her. She has received omens that support her
+bid for power. Unlike her blustery older sister, Nym is
+worried about the consequences of the dissolution of the
+ordning. Nonetheless, Iymrith has convinced her that
+she has an important destiny to fulfill, and that the gods
+will reward her if she brings about the return of Ostoria.
+
+D
+
+FROM LEFT TO RIGHT: lvMRITH, CHIEF GuH, THANE KAVALITHICA
+
+SERISSA
+
+When King Hekaton disappears, Princess Serissa finds
+herself thrust into power. Unable to find her father and
+fearing that he might be dead, Serissa can imagine her
+political influence evaporating quickly. Several giant
+lords previously under her father's thumb have aban­
+doned her court and set out to impress the gods in ways
+that could all but destroy the civilizations of the small
+folk. Serissa fears warfare among the six giant races as
+they strive to outdo one another, perhaps in the process
+reigniting the ancient conflict between giants and drag­
+ons. The princess-regent knows that her older sisters
+envy and despise her, but it has never occurred to her
+that they were involved in their mother's death or their
+father's kidnapping. Other than Iymrith and her Uncle
+Uthor, there are few giants Serissa feels she can trust.
+Hekaton left behind a piece of regalia called the
+Korolnor Scepter, a magic item that allows its owner to
+harness the powers of the Wyrmskull Throne. In accor­
+dance with her father's wishes, Serissa has claimed the
+scepter and the throne. Even with the throne's magic at
+her command, she feels adrift. Serissa wants to reach
+out to the small folk for help in finding her father, be­
+cause she knows that despite their size, they are capable
+of great feats of heroism. But lymrith and Uthor have ad­
+vised Serissa to steer clear of them. Uthor believes (in­
+correctly) that an alliance with the small folk would fur­
+ther anger Annam the All-Father, while Iymrith wants
+the giants and the small folk to annihilate one another.
+Serissa values the counsel of her advisors, but she
+has her own mind. She wants to see her faith-and her
+mother's faith-in the small folk vindicated, so she leaps
+at any opportunity to use small folk to find her father
+who she believes has the power to set things right. She
+is hoping for a cosmic sign to validate her beliefs, but
+time is not on her side.
+
+----
+
+-
+
+- --
+
+- -
+
+- - ---
+
+-
+
+-
+
+lYMRITH
+Iymrith is an ancient blue dragon who can assume the
+form of a storm giant. In this guise, she has infiltrated
+Hekaton's court. While concealing her true nature and
+agenda from the giants, Iymrith offers counsel to Prin­
+cess Serissa and at the same time secretly feeds the an­
+ger and jealousy of Serissa's older siblings, with the ulti­
+mate goal of thrusting the giants into war with the small
+folk. The dragon also wants to wrest the Wyrmskull
+Throne from the storm giants and add it to her trove.
+The disguised dragon put Mirran and Nym in con­
+tact with representatives of Slarkrethel, a legendary
+kraken that haunts the Trackless Sea. These small folk
+belong to a secret yet widespread organization called
+the Kraken Society. Using information given to them by
+the evil storm giant sisters, Kraken Society operatives
+ambushed and killed Queen Neri. Iymrith then planted
+rumors in the storm giant court that the queen had been
+assassinated by the Lords' Alliance, a confederacy of
+cities and settlements populated by small folk and scat­
+tered throughout the North. The Lords' Alliance rep­
+resents one of the greatest threats to dragons in Faerun,
+so Iymrith is keen to bring about its end.
+
+THE GIANT LORDS
+Convinced that King Hekaton is dead or otherwise out
+of the picture, five giant lords have struck out into the
+world to reshape the ordning through their deeds, each
+hoping to be elevated by the gods to the pinnacle of
+giantkind.
+CHIEF GuH
+
+Guh, a gluttonous hill giant chief, has raised an enor­
+mous timber steading in the hills northeast of Golden fields, in the central Dessarin Valley. Comfortably
+housed within her lair, Guh has instructed her husbands
+
+- - -�
+
+-----
+
+------
+
+-
+
+--------
+
+FROM LEFT TO RIGHT: .JARL STORVALD, DUKE ZALTO, COUNTESS SANSURI
+
+to bring her all the food they can carry. Her plan is to
+consume all that is brought before her and grow to im­
+mense size. When she becomes the largest giant in the
+world, Guh believes the gods will reward her and elevate
+hill giants to the top of the ordning. Guh has spent the
+past four months gorging herself, while nearby ranches,
+farmsteads, and orchards have been pillaged. Not con­
+tent with the amount of food hoarded thus far, Guh's
+mates move to attack nearby settlements and plunder
+their fields and storehouses.
+THANE KAYALITHICA
+
+After fleeing Hekaton's court, Kayalithica, an inscruta­
+ble stone giant thane, withdrew to her canyon sanctuary
+of Deadstone Cleft. There, in its hallowed halls, she
+hoped to elevate her people to the top of the ordning by
+first seeking divine inspiration. Deadstone Cleft is hid­
+den within the Graypeak Mountains, east of Delimbiyr
+Vale and the High Forest, and northeast of the mining
+settlement of Llorkh. After weeks of meditation, Kaya­
+lithica concluded that the small folk had corrupted the
+dreams of all giants by building their wretched settle­
+ments on the bones of ancient Ostoria. She intends to
+wipe the land clean of their "filth," thus restoring the
+"dream world" to its rightful state. Kayalithica's stone
+giants strike forth from Deadstone Cleft to destroy the
+works of humans, dwarves, and elves, then return to
+carve the tales of their accomplishments into the walls
+for the gods to see and admire.
+jARL STORVALD
+
+Storvald, a fierce and adventurous frost giant jar!, trav­
+eled to the coldest reaches of the Sea of Moving Ice to
+reclaim Svardborg, the ancestral home of his forebears.
+He found a nest of white dragon eggs within the iceberg
+fortress and successfully enslaved a mated pair of white
+dragons by holding their eggs hostage. Within a mat-
+
+ter of months thereafter, he also freed several gigantic
+longships from the ice and sent his giant raiders out to
+attack smaller ships and plunder their supplies, as well
+as to pillage wood from the mainland to repair the dam­
+aged ships and lodges of Svardborg.
+Storvald has childhood memories of a legend about
+the Ice That Never Melts-a powerful, frost-coated
+golden ring that can freeze the oceans and blanket
+the world in mountains of snow. Small folk know this
+artifact by another name: the Ring of Winter. The ring,
+which grants immortality to its wearer, was last seen
+in the possession of a human adventurer (and former
+Harper) named Artus Cimber. Guided by magical
+runes of tracking, Storvald plans to find the ring and
+bring about the Age of Everlasting Ice, thus ensuring
+his place at the top of the ordning. Storvald procured a
+drop of Cimber's blood from a Zhentarim wizard named
+Nilraun, and used the drop to empower his runes. Un­
+beknown to Storvald, the runes are steering the frost
+giants not to Artus Cimber but to other, closer individ­
+uals who carry the Cimber bloodline-Artus's living
+relatives, most of whom know nothing about the Ring of
+Winter's whereabouts.
+DUKE ZALTO
+
+Zalto, a fire giant duke, believes that he can become the
+ruler of all giants by slaughtering their ancient enemies:
+dragons. Duke Zalto has set his minions to the task of
+finding and unearthing fragments of a dragon-slaying
+colossus called the Vonindod ("titan of death"). Pieces
+of it were lost in battle, while the rest was dismantled
+at the end of the ancient war between giants and drag­
+onkind. Once all the pieces are found, Zalto plans to re­
+forge the Vonindod and unleash it on the world. Beneath
+the Ice Spires lies an ancient fire giant forge called
+Ironslag. Unfortunately for Zalto, Ironslag's forges aren't
+hot enough to repair the colossus. The duke, undaunted,
+
+plans to steal Maegera, the fire primordial trapped in
+the subterranean dwarven fortress-city of Gauntlgrym,
+and trap it within Ironslag's adamantine forge. The
+dwarves rely on Maegera to heat their own forges. Hes­
+itant to storm the dwarven fortress, Zalto has met with
+draw representatives of House Xorlarrin, who know the
+layout of Gauntlgrym well. With their aid, the fire giant
+duke plans to imprison Maegera in an iron flask and
+transport the primordial to Ironslag-a goal easier imag­
+ined than accomplished.
+
+THE HARPERS
+The Harpers are spellcasters and spies who covertly op­
+pose the abuse of power, magical or otherwise. Working
+alone or in small cells, they gather information through­
+out Faerfin, discern the political dynamics within each
+region, and help the weak, the poor, and the oppressed,
+acting openly only as a last resort.
+The Harpers were instrumental in defeating Tiamat
+and ending the tyranny of dragons, and with reports of
+giant attacks on the rise, they see giants as an emergent
+threat to peace in the North. The Harpers don't know
+why the giants are becoming so active all at once, or
+what their ultimate goals are. As yet, no major towns
+or cities have come under attack, although the Harpers
+expect that situation to change. Harpers are eager to re­
+cruit adventurers to help them combat the giant threat.
+
+COUNTESS SANSURI
+Sansuri, a vainglorious cloud giant countess, is one of
+several cloud giant nobles who have retreated to their
+cloud castles and embarked on expeditions to map the
+present-day Sword Coast in search of long-lost Ostorian
+treasures and battlegrounds. Like archaeologists, they
+seek to uncover secrets of the past and retrieve relics
+of their ancient history to impress the gods. Sansuri,
+a powerful wizard, is searching for something more:
+a long-lost trove of dragon magic, hidden away by her
+ancestors. Once cloud giants knock storm giants from
+the pinnacle of the ordning, she plans to use her new­
+found magic to destroy her rivals as well as Hekaton's
+court. But the countess is not happy at present, because
+her search for the lost trove has not been going well.
+Frustrated, Sansuri has used powerful magic and guile
+to capture a bronze dragon named Felgolos. She is tor­
+turing the wyrm for information. The dragon's terrible
+roars can be heard emanating from Sansuri's cloud cas­
+tle for miles in every direction.
+
+THE LORDS' ALLIANCE
+
+Various settlements of the North have banded together
+to form the Lords' Alliance, a shaky coalition that pro­
+actively eliminates threats to their mutual safety and
+prosperity. Alliance leaders are often contentious, while
+their operatives seek honor and glory for themselves
+and their respective lords. Key representatives of the
+Lords' Alliance include the canny Lord Dagult Never­
+ember of Neverwinter, the resplendent Lady Laeral Sil­
+verhand of Waterdeep, the grave Lord Taern Hornblade
+of Silverymoon, and the willful Queen Dagnabbet of
+Mithra! Hall.
+With the aid of adventurers, the Lords' Alliance
+thwarted Tiamat and her dragons. Alliance members
+aren't about to let giants run roughshod over their settle­
+ments and plunder their farmsteads. Alliance members
+call on adventurers of every stripe to attack and kill
+giants on sight, promising rewards of 200 to 500 gold
+pieces for each giant head brought to their gates.
+Rumors that the Lords' Alliance was behind King
+Hekaton's disappearance have not yet reached the alli­
+ance leaders. Were the alliance to learn of these rumors,
+its leaders would quietly investigate the veracity of the
+claims while publicly dismissing them.
+
+FACTIONS IN THE NORTH
+The giants' plots have far-reaching consequences for
+the Savage Frontier and the peoples who live there.
+Giant castles in the clouds have been seen drifting over­
+head, casting ominous shadows on the settlements of
+the North. Caravans and farmsteads have come under
+attack. Frost giant longships have begun terrorizing
+the Sword Coast. Various organizations throughout the
+North are justly concerned, and some have important
+roles to play in events yet to unfold.
+
+THE EMERALD ENCLAVE
+
+The Emerald Enclave is a group of wilderness survival­
+ists who preserve the natural order by rooting out unnat­
+ural threats. They struggle to keep civilization and the
+wilderness from destroying each other, and they help
+others survive the natural perils of the Savage Frontier.
+As sightings of giants become more common, mem­
+bers of the Emerald Enclave begin to realize something
+is afoot. Hill giants laying waste to vast tracts of forest,
+stone giants leveling homesteads, frost giants endanger­
+ing mountain passes, and fire giants rounding up slaves
+and putting grasslands and forests to the torch are
+enough to invoke the enclave's wrath.
+
+CREATING NEW GIANT LORDS
+
+This adventure focuses on the machinations of a few giant
+lords, but they aren't the only evil giants vying for glory
+and their gods' admiration. Other giant lords might be en­
+gaged in foul plots throughout the North. Here are a few
+examples of lords you could create:
+• A cloud giant wizard planning to cast an apocalyptic
+spell using a large obsidian rock called a nightstone (see
+chapter 1) as a material component.
+• A tire giant duchess paying hobgoblin warlords to raze
+northern settlements.
+• A frost giant jar! using an orb of dragonkind to lure drag­
+ons to its iceberg fortress to be slaughtered.
+• A stone giant thane trying to awaken the tarrasque,
+which slumbers in the Underdark.
+• A hill giant chief with a headband of intellect performing
+rituals that can transform people into pigs.
+
+----,
+
+- - --
+
+-
+
+------ -- --
+
+-- -
+
+THE ORDER OF THE GAUNTLET
+
+Members of the Order of the Gauntlet seek to protect
+others from the depredations of evildoers. Placing their
+faith in deities such as Torm, Helm, and Tyr, they bring
+the strength of their faith, their hearts, and their weap­
+ons to bear against villainy.
+
+�
+
+--
+
+- -
+
+- -
+
+---- --- - - �
+
+----
+
+Knights of the order and their loyal squires can be
+found throughout the North, gathering information on
+the giants, searching for their lairs, and aiding in the
+defense of settlements.
+TuE ZHENTARIM
+
+The Zhentarim, also known as the Black Network, is
+an unscrupulous shadow network that seeks to expand
+its influence and power base throughout the North. Its
+members crave wealth and personal power, though
+the public face of the organization appears much more
+benign, offering the best mercenaries money can buy.
+Adventurers allied with the Zhentarim are free to profit
+as they see fit, either by helping or hindering the giants.
+The Black Network has spies and operatives in every
+major northern settlement, and it doesn't wish to see its
+footholds destroyed by rampaging giants. As it strives to
+protect its holdings, the Zhentarim also wants to under­
+stand the giants' motivations. The leaders of the Black
+Network are open to the possibility of establishing trade
+relations with the giants or bribing them, if necessary,
+to ensure their own continued wealth and prosperity.
+At the same time, the Zhentarim profits by selling the
+services of mercenaries to those who can't defend
+themselves.
+TuE KRAKEN SOCIETY
+
+Far from being a benevolent faction, the Kraken Society
+is a group of spies, smugglers, slavers, and assassins.
+Only the society's leaders know that the founder of their
+organization is Slarkrethel, a magic-using kraken that
+lives in the depths of the Trackless Sea.
+Krakens are forsaken creations of the gods, left be­
+hind after a cosmic war that ushered in the dawn of the
+civilized world. Ancient beyond reckoning, Slarkrethel
+longs to rejoin its creators in the heavens. For tens of
+thousands of years, the kraken has been searching
+tirelessly for a long-lost path to divine ascendancy. In
+the meantime, its stretches its tentacles across Faerun,
+laying low powers that might one day threaten it.
+Worship of Slarkrethel began hundreds of years ago
+on the Purple Rocks. The humans who inhabit these
+islands cast their young into the sea as part of a ritual
+to appease Slarkrethel. These sacrificed offspring re­
+surface and return to their villages years later as adults,
+albeit with piscine deformities. When they reach the end
+of their natural life span, they return to the sea and their
+fearsome master. The inhabitants of the Purple Rocks
+otherwise eke out quiet lives, unaware of the kraken's
+vast spy network on the mainland.
+The Kraken Society's widespread organization wasn't
+born at the Purple Rocks, but in the cities of the North.
+The psychic abilities of the kraken are so great that it
+can reach out to creatures on land up and down the
+Sword Coast. Over the years, it has telepathically lured
+exiles, outcasts, and lost souls to its organization with
+the promise of a better life. Its agents are evil and grasp­
+ing. When they are not gathering information for the
+kraken, they lurk in the shadows and indulge in activi­
+ties befitting their evil nature.
+Slarkrethel was old when the giants and dragons
+waged war against each other forty thousand years ago,
+
+TEN DAYS AND THE ROLL OF YEARS
+
+In the Forgotten Realms setting, a week is ten days long
+and is referred to as a tenday. There are three tendays per
+month, and twelve months in a year. For more informa­
+tion on the calendar of the Forgotten Realms, see "The
+Calendar of Harptos" sidebar in chapter 1 of the Dungeon
+
+Master's Guide.
+This adventure isn't set at a specific time but is assumed
+to take place sometime after 1485 DR, the Year of the Iron
+Dwarf's Vengeance, during which a horde of ores waged
+war on the North before being driven back into the moun·
+tains. This conflict is referred to in this adventure as the
+War of the Silver Marches. The years that follow the Year of
+the Iron Dwarf's Vengeance have similarly colorful names:
+1486 DR, the Year of the Nether Mountain Scrolls
+1487 DR, the Year of the Rune Lords Triumphant
+1488 DR, the Year of Dwarvenkind Reborn
+1489 DR, the Year of the Warrior Princess
+1490 DR, the Year of the Star Walker's Return
+1491 DR, the Year of the Scarlet Witch
+1492 DR, the Year of Three Ships Sailing
+1493 DR, the Year of the Purple Dragons
+
+and the kraken aims to rekindle that war and destroy
+the cities of the Sword Coast in the process. When Iym­
+rith reached out to its agents for assistance, Slarkrethel
+instructed its devotees to humor the dragon by cap­
+turing Hekaton, the storm giant king, after slaying his
+queen. Iymrith wants Hekaton kept alive so that he can't
+be resurrected and so that he can be held for ransom if
+her plans are thwarted.
+A seafaring Kraken Society wizard named Tholtz
+Daggerdark has turned his ship, the Morkoth, into a
+floating prison. King Hekaton lies bound and chained
+within, unable to escape without aid. The ship circles
+the islands of the Trackless Sea, far from prying eye
+
+RUNNING THE ADVENTURE
+To run this adventure, you need the fifth edition Player's
+Handbook, Dungeon Master's Guide, and Monster Man­
+ual. Take a few minutes to reread the section on giants
+in the Monster Manual, since it contains important
+information about giants. The Sword Coast Adventur­
+er's Guide, while not required reading, has extensive
+information on the Sword Coast and the North that can
+help you flesh out the adventure's default setting. It also
+presents new character backgrounds that work well for
+this adventure.
+Text that appears in a box like this is meant to be read
+aloud or paraphrased for the players when their charac­
+ters first arrive at a location or under a specific circum­
+stance, as described in the text.
+
+The Monster Manual contains stat blocks for most of
+the monsters and NPCs found in this adventure. When a
+monster's name appears in bold type, that's a visual cue
+pointing you to the creature's stat block in the Monster
+Manual. Descriptions and stat blocks for new monsters
+appear in appendix C. If a stat block is in appendix C,
+
+the adventure's text tells you so. That appendix also
+provides new action and trait options for the giants in
+the Monster Manual-options that you're free to use or
+ignore when running this adventure.
+Spells and nonmagical objects or equipment men­
+tioned in the adventure are described in the Player's
+Handbook. Magic items are described in the Dungeon
+Master's Guide, unless the adventure's text directs you
+to an item's description in appendix B.
+
+ADVENTURE SYNOPSIS
+Figure 0.1 is a flowchart that illustrates the intended
+flow of the adventure. It also shows the level for which
+each chapter is designed.
+The adventure begins with chapter 1. The adventur­
+ers arrive at the fortified village of Nightstone, shortly
+after a cloud giant attack. After securing the settlement,
+the characters locate several missing villagers in a
+monster-infested cave complex north of the village. The
+chapter concludes with the characters rescuing the
+villagers and gaining a quest that leads them to one of
+three locations: Bryn Shander, Goldenfields, or Triboar.
+Zephyros, a friendly cloud giant wizard, offers to trans­
+port them to their destination with the aid of his flying
+tower. En route, the characters fend off a group of evil
+air cultists as well as a Lords' Alliance strike team that
+mistakes Zephyros for a hostile threat. After delivering
+the characters to their intended destination, Zephyros
+bids the party farewell before taking his leave.
+In chapter 2, the characters defend Bryn Shander,
+Goldenfields, or Triboar against a giant attack. Quests
+gained at the end of the battle prompt them to explore
+more of the Savage Frontier. The characters eventually
+cross paths with another friendly giant: a frost giant ad­
+venturer named Harshnag. These events are described
+in chapter 3.
+In chapter 4, Harshnag leads the characters to a tem­
+ple under the Spine of the World, wherein they consult
+a divine oracle. The oracle requires that the adventurers
+retrieve some lost relics buried under Uthgardt ances­
+tral mounds scattered throughout the North. If the ad­
+venturers complete the oracle's quest, it tells them what
+must be done to end the giant threat. As the characters
+leave the temple for the last time, lymrith appears and
+attacks them. Harshnag holds the ancient blue dragon at
+bay while the adventurers escape with or without the aid
+of mysterious dragon c ultists and an airship.
+Chapters 5 through 9 describe the lairs of five giant
+lords threatening the North. Players choose which giant
+lord they wish to confront. This villain has a conch of
+te/eportation that the characters need to reach Mael­
+strom, a storm giant stronghold in the depths of the
+Trackless Sea. Chapter 10 describes the politically
+charged court of the storm giants and the challenges
+faced by its current ruler, Princess Serissa.
+If the characters earn Serissa's trust, she tasks them
+with finding her father, King Hekaton. The search for
+Hekaton is handled in chapter 11. Once freed from cap­
+tivity, he joins forces with the party to slay the dragon
+lymrith in chapter 12. If Hekaton survives this final
+battle, he reclaims his throne. Otherwise, his daughter
+Serissa becomes queen. In either event, the storm gi-
+
+ants forge an alliance with the small folk against the en­
+emies of giantkind: dragons. This act might be enough
+to restore the ordning as it was, or the future of the ord­
+ning might remain an open question in your campaign.
+Once Iymrith is defeated, the storm giants are happy
+to let the characters deal with the remaining evil giant
+lords as they see fit.
+Storm King's Thunder is not a "ticking clock" adven­
+ture, meaning that the characters are under no pressure
+to end the giant threat quickly. The plots of the giant
+lords take months to unfold, giving the characters time
+to explore the North, travel from place to place, and en­
+tertain distractions.
+Some players might feel a sense of urgency and stick
+to the main story line as much as possible, missing out
+on many elements of the adventure. Others might be
+willing to follow loose threads and stray from the main
+story, hoping to take the adventure in interesting new
+directions. The adventure allows for a fair amount of
+wandering. If you begin to think the party has wandered
+too far away from the main plot, you can use Harshnag
+(see chapter 3) to help steer characters back to the main
+story. You can also have the characters meet faction
+members (see the "Factions in the North" section) who
+can provide a sense of growing urgency and point char­
+acters in the right direction.
+STARTING AT 5TH LEVEL
+
+.
+
+You can begin the adventure with 5th-level characters by
+skipping over chapter 1 and starting in one of the three
+locations described in chapter 2. Appendix A suggests
+ways in which you can transition characters from the
+D&D Starter Set adventure or one of several other D&D
+adventures to chapter 2 of Storm King's Thunder.
+CHAR ACTER ADVANCEMENT
+
+Rather than have you track experience points, this
+adventure assumes that the characters gain levels by
+accomplishing certain goals. At the end of each chapter
+is a "Character Advancement" sidebar, which tells you
+the circumstances under which the characters advance
+in level. The adventure flowchart (figure 0.1) shows what
+level the characters are expected to be when they begin
+each chapter. Once they reach 9th level, they don't ad­
+vance to 10th level until they've completed the goals in
+both chapters 10 and 11.
+Of course, you can ignore these milestones and track
+XP as normal.
+
+DEADLY ENCOUNTERS
+Many of the encounters in this adventure are deadly
+by design. They test the players' ability to make smart,
+informed decisions under pressure. A deadly encounter
+might be the only encounter the characters have on a
+given day (and assumes the party is at full strength), or
+it might be so overwhelming that the characters are ex­
+pected to avoid combat at all costs.
+A total-party kill ("TPK") need not herald the end of
+the campaign. Giants and other intelligent creatures are
+fond of taking prisoners. The first time a TPK occurs
+'
+you can have the characters miraculously awaken as
+prisoners with 1 hit point each. Give them every chance
+
+ADVENTURE FLOWCHART
+
+A
+
+OTHER
+PUBLISHED
+ADVENTURE
+
+8
+CHAPTER 5
+
+CHAPTER 6
+
+CHAPTER 7
+
+CHAPTER 8
+
+CHAPTER 9
+
+DEN OF
+THE HILL
+GIANTS
+
+CANYON OF
+THE STONE
+GIANTS
+
+BERG OF
+THE FROST
+GIANTS
+
+FORGE OF
+THE FIRE
+GIANTS
+
+CASTLE OF
+THEC0UD
+GIANTS
+
+Charader1
+racue Hclu1to"
+
+CHAPTER 12
+
+000M
+OF THE
+DESERT
+
+FIGURE o.2: ADVENTURE FLOWCHART
+
+INTRODUCTION
+
+to escape their captors. If necessary, use NPCs such as
+Zephyros, the cloud giant wizard in chapter l, to help
+them get out of tight spots. With luck, the players will
+take the hint and be wary of repeating the experience.
+
+ITEMS IN A GIANT'S BAC
+
+TREASURE
+
+05-06
+
+Storm King's Thunder contains a generous amount of
+
+treasure. This section provides guidance on how to han­
+dle certain kinds of treasure found in this adventure.
+RANDOM COIN AMOUNTS
+
+The number of coins in a creature's hoard is often
+represented as a die expression with a multiplier. For
+example, a giant might have 3d6 x 100 gp in a sack. To
+determine the number of coins in the sack, roll 3d6 and
+multiply the result by 100 to get a number between 300
+and 1,800. Instead of rolling to determine the number of
+coins, you can pick an amount that falls within the spec­
+ified range. If the characters have more loot than they
+known what to do with, take the minimum. If they seem
+light on treasure, take the average (in this case, 1,000
+gp) or the maximum.
+RANDOM MAGIC ITEMS
+
+Sometimes a treasure hoard contains one or more
+magic items determined by rolling on the magic item
+treasure tables in chapter 7 of the Dungeon Master's
+Guide. When determining a random magic item, roll a
+dlOO (or have a player roll for you) and consult the speci­
+fied table in the Dungeon Master's Guide. If your players
+have a "wish list" of magic items, or you think a partic­
+ular item might be useful to the party, you can forgo the
+roll and select an item from the table. For example, if the
+characters find a magic item tied to Magic Item Table B,
+and the party is light on water-breathing magic heading
+into chapter 10, you might decide that the item is a po­
+tion of water breathing or a cloak of the manta ray, both
+of which appear on Magic Item Table B in the Dungeon
+Master's Guide.
+
+GIANT-SIZED TREASURES
+
+Scattered throughout the adventure are art objects
+crafted to giant scale, including giant-sized pieces of
+jewelry, articles of clothing, and room decor. Although
+such art objects are often quite valuable, their size and
+weight make them difficult to transport. Characters
+must decide for themselves whether it's worth the trou­
+ble to carry these items. If the characters get greedy, use
+the variant encumbrance rules in the Player's Handbook
+to track what they can reasonably carry.
+GIANTS' BAGS
+
+In addition to treasure, giants often possess mundane
+items that they carry around in leather sacks or store
+in old chests. As the characters loot corpses and plun­
+der giant hoards, throw in a few items chosen or rolled
+randomly from the Items in a Giant's Bag table. Items
+that are not giant-sized are sized for Small or Medium
+characters.
+
+I8
+
+INTRODUCTION
+
+dlOO
+
+Item
+
+01-02
+03-04
+
+Handaxe blade (used as a hand chopper)
+
+07-08
+09-10
+11-12
+13-14
+15-16
+17-18
+19-20
+21-22
+23-24
+25-26
+27-28
+29-30
+
+31-32
+33-34
+35-36
+37-38
+39-40
+
+41-42
+43-44
+
+45-46
+
+47-48
+
+49-50
+51-52
+53-54
+55-56
+57-58
+59-60
+61-62
+63-64
+65-66
+67-68
+69-70
+71-72
+73-74
+75-76
+77-78
+79-80
+81-82
+
+83-84
+85-86
+87-88
+
+89-90
+91-92
+93-94
+95-96
+97-98
+99-00
+
+Dented metal helm (used as a bowl)
+Moldy and stinky wheel of cheese
+Giant-sized shabby cloak (wool or hide)
+Giant-sized bone comb
+Iron cooking pot
+Giant-sized drinking horn
+Giant-sized skinning knife
+Haunch of meat
+Mangy fur pelt
+Small bag of salt
+Giant-sized pair of old sandals
+Giant-sized waterskin (full)
+Cask of ale (half empty)
+Giant-sized necklace made of bones (hill), stone
+beads (stone), dragon fangs (frost), iron ingots
+(fire), feathers (cloud), or starfish (storm)
+5-foot length of chain
+ld6 humanoid skulls
+Bag of dried mushrooms
+50-foot coil of hempen rope
+3-foot-tall idol depicting Grolantor (hill), Skoraeus
+Stonebones (stone), Thrym (frost), Surtur (fire),
+Memnor (cloud), or Stronmaus (storm)
+ld6 dead trout
+Dented steel shield
+Wooden oar
+Empty wooden barrel
+30-foot-long hempen rope tied to a wooden bucket
+Bundled-up tent
+Riding saddle
+Stuffed animal
+Live animal (chicken, goat, pig, or sheep)
+ld6 moldy loaves of bread
+6-foot-long wooden fence post
+Wooden door with twisted iron hinges
+Empty wooden chest (unlocked)
+Rocking chair
+Painted rocking horse or wooden toboggan
+ld6 dragon scales
+Carved stone statue of a dwarf or human
+Wooden mannequin or target dummy
+Coffin or small casket
+Cauldron or giant-sized kettle
+Giant-sized smoking pipe
+Bronze gong
+Iron bell (with or without its clapper)
+Beehive
+Giant-sized drum
+Carved wooden statue of an elf or halfling
+Uprooted shrub or berry bush
+10-foot-long hempen rope tied to a rowboat anchor
+Wagon wheel
+Tombstone
+
+CHAPTER 1: A GREAT UPHEAVAL
+HIS CHAPTER IS DESIGNED TO ADVANCE A
+
+party of 1st-level characters to 5th level.
+The characters gain levels by accomplish­
+ing various goals, which are summarized
+in the Character Advancement sidebar at
+the end of the chapter. If the characters
+are already 5th level, skip ahead to chapter
+2, "Rumblings," using the information in appendix A if
+the characters are transitioning from another published
+adventure to this one.
+Nightstone is a fortified settlement located a few
+miles south of the Ardeep Forest, in the untamed hills
+between Waterdeep and Daggerford. A lonely wooden
+signpost, standing where the trail to Nightstone meets
+the High Road, points the way to the settlement.
+Nightstone's closest neighbors are the elves of the
+Ardeep Forest. Hunters from Nightstone have incurred
+the elves' wrath on multiple occasions. However, elves
+are the least of the settlement's problems, as fledgling
+heroes who come to Nightstone in search of adventure
+quickly discover.
+The characters are traveling to Nightstone for one or
+more of the following reasons:
+• The characters have heard rumors of goblins terroriz­
+ing the settlement. The High Steward of Nightstone,
+Lady Velrosa Nandar, is a Waterdhavian noble. She
+is reportedly offering a reward to anyone willing and
+able to deal with the goblin threat.
+
+• Nightstone is a popular retreat for wealthy nobles who
+wish to hunt in the Ardeep Forest. Adventurers can
+earn good money by offering their services as guards
+on a hunt.
+• The residents of Nightstone have a longstanding and
+seemingly irreconcilable conflict with their northern
+neighbors, the elves of the Ardeep Forest. Lady Vel­
+rosa Nandar has been searching for skilled mediators
+to help resolve the dispute.
+• The Nightstone Inn is renowned for its food and cozy
+guest rooms. The dwarf innkeeper, Morak Ur'gray, has
+a fondness for adventurers and a nose for lucrative
+adventuring opportunities.
+You can create other adventure hooks using the infor­
+mation presented in this chapter about Nightstone.
+When you and the players are ready to get un­
+derway, read:
+You've been traveling along the High Road for days. As
+evening approaches, you spot a wooden signpost next to
+a trail that heads north into the hills. Nailed to the post
+are three arrow-shaped signs. The two marked "Water­
+deep" and "Daggerford" follow the High Road but point
+in opposite directions. The third, marked "Nightstone,"
+beckons you to follow the trail. If memory serves, Night­
+stone is roughly ten miles up the trail.
+
+CHAPTER I I A GREAT UPHEAVAL
+
+19
+
+NtCHTSTONE: GENERAL FEATURES
+
+NIGHTSTONE
+Read the following boxed text as the characters ap­
+proach Nightstone. You can adjust the boxed text for the
+time of day or night when the party arrives.
+
+•
+
+After following the trail for ten miles, you hear the ringing
+of a bell. The sound grows louder as Nightstone comes
+into view. A river flows around the settlement, forming
+a moat. The village itself is contained within a wooden
+palisade, beyond which you see a windmill, a tall steeple,
+and the high-pitched rooftops of several other buildings.
+Apart from the ringing of the bell, you detect no other ac­
+tivity in the village. The trail ends before a lowered draw­
+bridge that spans the moat. Beyond the drawbridge, two
+stone watchtowers flank an open gap in the palisade.
+South of the village and surrounded by the river moat
+is a cone-shaped, flat-topped hill on which stands a
+stone keep enclosed by a wooden wall. The keep, which
+overlooks the village, has par tially collapsed. A wooden
+bridge that once connected the keep to the village has
+also partially collapsed.
+
+Nightstone got its name from a massive chunk of
+obsidian that once stood in the middle of the village
+square. The obsidian megalith had strange glyphs
+carved into it and radiated magic under the scrutiny
+of detect magic spells, but its properties and purpose
+couldn't be ascertained. The villagers assumed it was a
+relic of some bygone age or kingdom and left it alone.
+Three days ago, a cloud giant castle passed over
+Nightstone and dropped large rocks on the settlement
+and its keep. Unable to defend themselves against the
+bombardment, villagers who weren't killed in the at­
+tack lowered the drawbridge and fled into the nearby
+hills, taking refuge in some caves. Once the village was
+abandoned, four cloud giants descended from the sky,
+uprooted the nightstone, and bore it back to their castle
+for further study, believing it to be an Ostorian artifact.
+The cloud castle then drifted away with its prize.
+The villagers were surprised to find a clan of goblins
+and an allied pair of ogres lurking in the caves. The
+villagers were ambushed, captured, and brought before
+Hark, the goblin boss. Hark interrogated them, learned
+of the giant attack on Nightstone, and sent a band of gob­
+lins to plunder the abandoned village. Characters who
+capture and interrogate these goblins can learn where
+the villagers are located.
+The following warning signs indicate that all is not
+well in Nightstone:
+• The drawbridge (area 1) is lowered, and the perimeter
+watchtowers (area 2) are unguarded.
+• The temple bell (area 5) won't stop ringing .
+• The keep (area 14) and the bridge that connects it to
+the village (area 11) have partially collapsed.
+Goblins are scouring the village for treasure. They
+have unwisely spread themselves thin, providing adven-
+
+llO
+
+ff
+
+1
+
+A GREAT
+
+PH
+
+AL
+
+Nightstone is a motte-and-bailey fortification built on the
+Ardeep River. The settlement's general features are sum­
+marized here.
+Bailey. A 15-foot-high wooden palisade encloses the
+village bailey. The palisade's logs rise to sharpened points,
+and the gaps between the logs are sealed with tar. The
+palisade and its stone watchtowers (see area 2) can't be
+climbed without the aid of climbing gear or magic, such as
+a spider climb spell.
+All the buildings in the village except the watchtowers
+are made of wood and have steep, shingled rooftops.
+Muddy paths connect them.
+Moat. Water from the river fills the moat to a depth of 15
+feet. The moat is 30 feet wide, narrowing to a width of20
+feet under the drawbridge (area 1). The moat is home to
+schools of trout.
+Motte. The keep overlooking the village stands atop a
+constructed, funnel-shaped hill called a motte. The rocky
+slopes of the motte are covered with loose shale, and scal­
+ing these slopes without climbing gear requires a success­
+ful DC20 Strength (Athletics) check.
+Encircling the motte's keep is an 8-foot-high stone par­
+apet with a 15-foot-high outer curtain wall made of thick
+wooden planks perforated with shuttered archer windows.
+The outer walls of the keep are made of smooth, tightly fit­
+ted stone bricks. The keep and the outer curtain wall can't
+be climbed without the aid of climbing gear or magic, such
+as a spider climb spell.
+Rocks. As the characters explore Nightstone, they see
+ample evidence of the giants' attack: rocks embedded
+in the earth, holes punched through rooftops, shattered
+wr eckage, and dead villagers buried under piles of debris.
+The cloud giants' rocks are 3 feet in diameter and weigh
+500 pounds each.
+
+turers with an opportunity to pick them off one or two at
+a time. A goblin that is alone and outnumbered might try
+to flee if it takes damage, at your discretion. If possible,
+the goblin retreats to the temple (area 5). See the "Night­
+stone: General Features" sidebar for information about
+the settlement. Map 1.1 shows its layout. The sections
+that follow describe locations on that map.
+
+1. DRAWBRIDGE
+The drawbridge is lowered when the party first arrives.
+It is 20 feet long, 10 feet wide, and made of sturdy oak
+planks. Iron chains bolted to the drawbridge connect to
+winch mechanisms in the nearby watchtowers (area 2a).
+FOOTPRINTS
+
+Characters who search the area west of the drawbridge
+see several humanoid tracks in the grass and dirt. A
+successful DC 15 Wisdom (Survival) check reveals that
+most of the tracks (made by several dozen fleeing villag­
+ers) lead north. A successful check also reveals smaller
+humanoid tracks (made by roughly a dozen goblins)
+heading from the north toward the drawbridge, as well
+as two sets of unusually large wolf tracks (made by the
+worgs in area 3) heading in the same direction.
+
+2. WATCHTOWERS
+Seven stone watchtowers stand along the village perim­
+eter. Each tower is 20 feet tall, with a roof enclosed by
+
+5
+Temple
+
+t3JmJ
+
+Ground
+� Floor
+
+=-
+
+8
+Nightstone Inn
+
+;
+
+��
+
+Ground
+
+12&14
+Nandar Keep
+
+Second
+Floor
+4D
+•
+4C
+
+eur
+
+MAP 1.1: NtG+•TSTONE
+
+CHAPTER l I A GREAT UPHEAV L
+
+21
+
+crenellated battlements. Inside each tower is a wooden
+ladder that leads to an unlocked trapdoor in the roof.
+2 A. WEST TOWER S
+
+Two watchtowers flank the entrance to the village, form­
+ing a gatehouse of sorts. Each tower contains a winch,
+and both mechanisms must be turned to extend or
+retract the chains that raise and lower the drawbridge.
+If both winches are operated simultaneously, it takes 1
+round to raise or lower the drawbridge by 30 degrees. In
+other words, the fully lowered drawbridge can be fully
+raised in 3 rounds.
+2B. NORTH WEST TOWER
+
+This watchtower stands between the village's two grave­
+yards (areas 6a and 6b). It contains nothing of interest.
+2c. NORTHEAST TOWER
+
+Two pigs are chewing on some grass near the base of
+this tower. The pigs escaped from their pen (area 4c)
+and are harmless. The tower is empty.
+2D. EAST TOWER
+
+The door to this tower is ajar, and a greedy goblin
+named Gwerk lurks within. Gwerk stole a silver locket
+from a nearby residence (area 4e) and is quietly admir­
+ing it. She's afraid the other goblins might try to take
+it from her.
+Treasure. Gwerk's silver locket is shaped like a fish
+and contains a painted portrait of a rosy-cheeked male
+halfling named Larlow. The locket belongs to Larlow's
+widow, Taela Summerhawk, and is worth 25 gp. Taela is
+in the Dripping Caves (see area 4, map 1.2).
+2E. SOUTHEAST TOWER
+
+The door to this tower is ajar. Unless they are drawn to
+area 4g by sounds of combat, two goblins named Larv
+and Snokk are searching the tower for treasure.
+Treasure. Larv carries a sack filled with stolen uten­
+sils (worthless) and three vials of perfume (worth 5 gp
+each). Snokk carries a sack containing a stuffed blood
+hawk (worthless) and a battered copper flagon embla­
+zoned with the grinning visage of a halfling (worth 1 gp).
+2F. SOUTHWEST TOWER
+
+A falling rock punched through the roof of this tower,
+collapsing everything but the outermost wall. A search
+of the debris unearths the broken remains of a ladder
+and a battered wooden door with broken hinges.
+
+3. SQUARE
+
+Two worgs slaughtered a dog and are feasting on its
+remains in the northeast corner of the village square.
+The worgs move to attack any characters who enter the
+square. The worgs fight to the death. If combat erupts
+in the square and the temple bell has been silenced, the
+goblins in areas 4c and 9 hear the noise and investigate.
+They stay on the fringes of the battlefield and shoot ar­
+rows at the characters.
+The square is a muddy open area with a 5-foot-deep
+hole in the middle of it. The nightstone once stood here,
+but the cloud giants took the megalith and left the hole
+behind. North of the hole is a covered well. Other fea-
+
+22
+
+CHAPTER 1 I A GREAT UPHEAVAL
+
+tures of the village square include an empty wooden
+cart and a couple of tethering posts planted firmly in the
+ground. From the square, characters can see signs iden­
+tifying the Nightstone Inn (area 8) and the Lionshield
+Coster trading post (area 9).
+
+4. RESIDENCES
+The village contains eight cottages, each one belonging
+to a different local family. Half of the homes were badly
+damaged during the cloud giants' bombardment.
+A typical cottage has a IO-foot-square front room that
+serves as a kitchen and dining area, and a 10-foot-by-15foot back room where the residents sleep.
+4 A. DELFRYNDEL RESIDENCE
+
+This cottage belongs to the Delfryndels, a human fam­
+ily that owned and operated the windmill (area 10).
+The goblins have already rummaged through the resi­
+dence, taking anything of value and leaving the interior
+in disarray.
+4B. 0SSTR A FARM
+
+A giant rock destroyed the back room of the Osstra resi­
+dence, and two more rocks are embedded in the garden
+where the family grew wheat. Goblins searched the
+home for treasure and dumped everything they didn't
+want onto the floor.
+4c. SOUTHWELL FARM
+
+This residence belonged to a middle-aged human
+woman named Semite Southwell, who raised pigs and
+chickens. Semile was killed when a rock fell on her
+house. Characters searching through the wreckage find
+Semile's crushed body.
+A muddy fenced-in yard next to the Southwell resi­
+dence contains wooden feeding troughs and chicken
+coops. Unless they are drawn to the village square by
+sounds of combat there, two goblins named Pojo and
+Tot are in the yard, chasing after a pair of chickens that
+escaped from one of the coops. The goblins attack char­
+acters on sight. If one is killed, the other flees.
+Treasure. Pojo has a pouch containing a gold ring
+(worth 25 gp), which he pulled from Semile Southwell's
+dead hand. Tot carries a pouch that holds 5 cp and a
+sack containing a live chicken.
+4D. HULVAAR N FARM
+
+The Hulvaarns are human farmers, and their cottage
+backs onto a fenced-in potato and turnip garden. The
+cottage wasn't damaged during the cloud giants' bom­
+bardment, but a rock fell on the garden and killed Nestor
+Hulvaarn, the family patriarch, on impact. His crushed
+corpse is visible underneath the rock.
+The cottage door hangs open. Goblins have already
+searched the interior for treasure, finding nothing of
+value but leaving the place in a shambles.
+4E. SUMMER HAWK RESIDENCE
+
+The Summerhawks, a family of halflings, lived here.
+Taela Summerhawk and her husband, Larlow, were
+apothecaries. They also grew flowers, as evidenced by
+the small flower gardens and many flowerpots around
+their home. When a rock fell on the front room of their
+
+house, Larlow was killed instantly. Taela managed to
+escape with their four children.
+Treasure. Goblins have already searched the cottage,
+but characters who conduct their own search and suc­
+ceed on a DC 15 Wisdom (Perception) check find a hid­
+ey-hole under a loose floorboard containing an herbal­
+ism kit, a vial of antitoxin, and a pouch containing 15 gp.
+4F. AGGANOR RESIDENCE
+
+This cottage belongs to Destiny Agganor, the village's
+tiefling midwife, and her adult son, Grin. The cottage
+has locked shutters over its windows. The door, which
+is also locked, has row upon row of ornate runes burned
+into it. Most villagers assume that the ornate runes are
+purely decorative, but any character who understands
+Infernal can translate the script as follows: "Let all who
+enter this home without the consent of its owner burn
+for ninety-nine years in the depths of Nessus and freeze
+for a thousand more in the icy wastes of Cania."
+The goblins tried to enter the cottage but were
+thwarted by the locks. A character can use thieves' tools
+to pick the lock on the door or open a set of window
+shutters by succeeding on a DC 15 Dexterity check.
+Treasure. A search of the cottage interior yields an
+unlocked wooden chest containing a golden holy symbol
+of Asmodeus (worth 75 gp), a healer's kit, and a potion
+ofhealing.
+4G. NESPER FARM
+
+Two goblins are dancing in the garden behind this
+cottage, which belongs to the Nespers, a human family
+of pumpkin and squash farmers. The goblins, Blik and
+Flik, are wearing eyeless, hollowed-out pumpkins on
+their heads and playing a game of blind tag. While wear­
+ing the pumpkins, the goblins are effectively blinded.
+If combat erupts here, the goblins in area 2e hear the
+disturbance and investigate.
+The goblins have already looted the Nesper cottage,
+the front door to which hangs open. The cottage, though
+undamaged, has been thoroughly ransacked.
+Treasure. Blik carries a pouch that contains 4 cp
+and 3 sp. Lying in the southwest corner of the garden is
+Flik's sack of loot, which contains a tinderbox, a smok­
+ing pipe, a stuffed teddy bear, and boxed set of Three­
+Dragon Ante cards (worth 1 gp).
+4H. XELBRIN RESIDENCE
+
+The Xelbrins were an elderly human couple who moved
+to Nightstone from Waterdeep four years ago at Lady
+Nandar's request. Melantha Xelbrin served as the vil­
+lage's notary and record keeper. She and her husband,
+Lathan, were killed when the roof of their cottage col­
+lapsed. Rillix, their pet tressym (see appendix C), lurks
+amid the wreckage. If the characters take the time to
+explore the cottage, Rillix flies out of the shadows, pos­
+sibly startling one or more of them, before finding some­
+place else to hide.
+Treasure. The goblins haven't yet looted the Xelbrin
+residence. Characters searching the cottage find the
+dead bodies of Lathan and Melantha. A search of Melan­
+tha's desk also reveals evidence of her profession (wax
+seals, jars of ink, blank scrolls, quill pens, land owner-
+
+ship documents, and tax records), along with a money
+pouch containing 32 gp and 17 sp.
+
+5. TEMPLE
+This wooden temple is dedicated to Lathander (god of
+the dawn) and Mielikki (goddess of forests). It has a slen­
+der steeple containing a large bronze bell, and stained
+glass windows depicting images of birth, the dawning
+sun, trees, and unicorns. When the characters first ar­
+rive here, the front door to the temple is wide open and
+the bell is ringing incessantly.
+5A. TEMPLE AND PULPIT
+
+Sunlight or moonlight pours into this high-vaulted
+chamber through four stained-glass windows set into
+the north and south walls. Beneath the windows are
+plain wooden benches for the elderly or infirm to sit on.
+The room is mostly empty otherwise. Standing against
+the back wall is a wooden pulpit with steps leading up to
+it. The floor of the temple is composed of dirt.
+Set into the west wall, north of the pulpit, is a half­
+open door, beyond which lies area Sb.
+5B. BEDRO OM AND STEEPLE
+
+This back room contains a plain wooden bed where
+Hirai Mystrum, the village's acolyte of Lathander, slept.
+The mattress has been torn open and its straw pulled
+out. The floor is strewn with the contents of two wooden
+chests: priestly vestments and worthless personal ef­
+fects. The creatures responsible for the disarray are two
+goblins named Beedo and Vark.
+The goblins are gleefully swinging on a knotted rope
+that hangs from the bell in the steeple. The sound of the
+bell delights the goblins, and they won't stop ringing it
+until they perceive some threat to their well-being. If the
+characters enter the room, the goblins drop from the
+rope, brandish their scimitars, and attack.
+Treasure. Each goblin has a sack lying on the steeple
+floor. Beedo's sack contains three blocks of incense
+(worth 5 gp each), a silver holy symbol of Mielikki
+shaped like a unicorn's head (worth 25 gp), and some
+stolen (and worthless) personal effects. Vark's sack
+holds three empty vials that used to contain holy water
+(Vark drank them) and an unlocked wooden "poor box"
+containing 37 cp and 15 sp.
+
+6. GRAVEYARDS
+Most of the villagers who perished since the founding
+of Nightstone are interred in these two graveyards.
+Almost half of them died when wood elves attacked
+the village five years ago (see "The Nandars of Night­
+stone" sidebar).
+6A. NANDAR CRYPT AND GRAVEYARD
+
+Narrow footpaths meander among the graves, most of
+which are marked with granite headstones. A couple
+of these markers were destroyed when a giant rock
+fell on them.
+In the northeast corner stands an aboveground crypt
+with the name Nandar engraved over its sealed en­
+trance. Cracking the door seal requires a crowbar or
+
+CHAPTER 1 I A GREAT UPHEAVAL
+
+23
+
+similar tool and a successful DC 11 Strength (Athlet­
+ics) check.
+The Nandar crypt contains a stone bier, upon which
+rests a wooden coffin. The coffin can easily be pried
+open and holds the skeletal remains and tattered burial
+shroud of Lord Drezlin Nandar, the village's founder,
+who died one year ago. Neither the coffin nor the crypt
+contains anything of value. If one or more characters
+remove any of Lord Nandar's bones from the crypt,
+a specter forms in the crypt and attacks them. The
+specter can't leave the graveyard and disappears when
+reduced to O hit points or when it has no enemies it
+can attack.
+6B. NORTH GRAVEYAR D
+This graveyard was created when the one next to the
+temple ran out of space. It contains nothing of interest.
+
+7. STABLE HOUSE
+The Nandar family (see "The Nandars of Nightstone"
+sidebar later in the chapter) procured horses for the
+village and kept them in this stable house. The panicked
+villagers left the horses behind after a rock punched
+through the stable house roof. Fortunately, none of the
+horses were harmed.
+7A. BARN
+The barn has a dirt floor. Five draft horses and five rid­
+ing horses are confined to the wooden stalls that line
+the north and south walls. Hanging on the walls are
+bits, bridles, and leather saddles. Two wooden ladders
+allow easy access to the hayloft (area 7b).
+Characters who enter the barn are attacked by the
+goblin hiding in the loft.
+7B. HAYLOFT
+The loft is filled with haystacks and sacks of oats. A gob­
+lin named Derp is searching the loft for treasure. If he
+detects enemies in the barn, Derp takes cover behind a
+haystack and shoots arrows at enemies below, drawing
+his scimitar only when forced into melee combat.
+Treasure. Derp carries a coin pouch that holds 1 cp
+and a sack containing a wooden box engraved with the
+symbol of the Lionshield Coster (see area 9). Derp stole
+the box from the store, and packed inside it are ten sil­
+vered darts.
+
+8. NIGHTSTONE INN
+A shield dwarf named Morak Ur'gray owns this estab­
+lishment. An ornate wrought-iron sign bearing the inn's
+name hangs above the entrance, facing the town square.
+Morak is a natural leader. Realizing that the village
+couldn't defend itself against the cloud giants' bombard­
+ment, he led his fellow villagers to the Dripping Caves.
+In the confusion and panic, Morak left behind his only
+guest at the time: Keila Darkhope, a Zhentarim spy
+posing as a traveling monk. Keila has nefarious plans
+for Nightstone and has no intention of abandoning the
+settlement (see area 8f for details).
+
+CHAPTER 1
+
+A GREAT UPHEAVAL
+
+8A. DINING ROOM
+This room is strewn with wreckage. A giants' rock
+punched through the roof and landed here, destroying
+a dining table and a pair of long benches. The remains
+of a bed and a wardrobe (from the chamber above) lie
+among the shattered dining room furnishings. Two
+smaller round tables and several chairs remain intact,
+and resting atop each table is an unlit oil lamp. Charac­
+ters exploring this room can hear someone rummaging
+through the kitchen (area 8b).
+Lying on the floor in the middle of the room is a dead
+goblin with a crossbow bolt sticking out of its chest.
+The goblin fell prey to Keila Darkhope, who is spying
+on the room through the gaping hole in her bedroom
+floor (see area 8f). A character who inspects the corpse
+and succeeds on a DC 10 Wisdom (Medicine) check can
+determine that the wound is fresh, indicating that the
+goblin has been dead only a few minutes. If the charac­
+ters linger here, Keila tries to eavesdrop on their conver­
+sation and learn more about them without revealing her
+location. Any character who peers up through the hole
+in the ceiling can spot Keila lurking in the shadows with
+a successful Wisdom (Perception) check contested by
+Kella's Dexterity (Stealth) check.
+8B. KITCHEN AND PANTRY
+A goblin named Gum-Gum is searching through the
+rubble of the inn's pantry and stuffing edibles into a
+large sack that's almost too heavy for her to drag, let
+alone carry. The northwest corner of the inn (pantry
+included) was destroyed by a falling rock. Most of the
+kitchen, however, was undamaged. Set into the north
+wall is a stone fireplace, and the floor is covered with
+broken dishware and scattered utensils.
+If one or more characters confront Gum-Gum, she
+tries to flee with her hard-won loot. While dragging the
+heavily laden sack behind her, Gum-Gum suffers a 10foot reduction to her speed.
+Treasure. Gum-Gum's sack contains several muffins,
+a block of cheese, a cooked chicken, a frying pan, an
+iron pot, a bullseye lantern, two flasks of oil, a set of
+cook's utensils, ajar of cloves (worth 1 sp), ajar of saf­
+fron (worth 1 gp), a dented silverjug (worth 20 gp), and a
+cracked hourglass (worth 25 gp if repaired).
+8c. MORAK's BEDROOM
+Most of the furnishings in Morak's room were destroyed
+when a rock flattened the northwest corner of the inn.
+Hanging on the east wall is a tapestry depicting a
+mountain landscape, and tucked under the window in
+the southeast corner is a locked wooden chest. What
+remains of the floor is safe to walk on.
+Treasure. A character can attempt to unlock the iron
+chest using thieves' tools, but the built-in lock is tricky
+and requires a successful DC 20 Dexterity check to
+open. The chest contains a suit of chain mail sized for
+a dwarf, a dwarven helm, a leather bag that holds 45 gp
+and two 100 gp gemstones, and a potion ofheroism.
+8 D. GUEST BEDROOM
+This vacant bedroom contains two beds, an empty
+wardrobe, a desk, and a matching chair. An oil lamp sits
+
+on one corner of the desk, and another rests on a small
+table tucked between the two beds. A bearskin rug lies
+on the floor.
+
+KELLA DARKMOPE
+
+8E. GUEST BEDROOM
+
+This room is similar in all respects to area 8d.
+8F. KELLA'S BEDROOM
+
+Keila Darkhope, a Zhentarim spy (NE female Chon­
+dathan human), lurks in the shadows of this room-or
+what's left of it. A falling rock punched a hole in the roof
+and tore away most of the floor before coming to rest in
+the dining room (area 8a). It destroyed two beds and a
+wardrobe as it passed through the chamber, leaving a
+desk and chair tucked under the window in the north­
+east corner of the room unscathed.
+Keila infiltrated Nightstone in the guise of a traveling
+monk and is waiting for Zhentarim reinforcements to
+arrive (see the "Seven Snakes" section). She had noth­
+ing to do with the cloud giant attack, but she intends to
+take over the village and turn it into a Black Network
+base. Her original plan was to drive away the Lionshield
+Coster and bully Lady Velrosa Nandar into subservi­
+ence, but the cloud giant attack has left the abandoned
+village ripe for conquest while leaving its defenses more
+or less intact.
+Keila isn't alone. The morning after the cloud giants
+attacked, a flying snake carrying a message from her
+Zhent associates arrived. The snake belongs to Xolkin
+Alassandar (see the "Seven Snakes" section), and it now
+coils around Kella's left arm. Its message is scrawled in
+Common on a strip of parchment in Kella's possession.
+The message reads, "On our way."
+Treasure. In addition to her weapons and armor,
+Keila has a pouch containing 8 gp and 5 sp.
+Development. Keila tries to remain hidden until the
+Seven Snakes arrive. If discovered, she pretends to be
+a guest who was knocked unconscious by falling debris
+and left behind after the giant attack. She claims that
+her escape was thwarted by the sudden arrival of the
+goblins, whom she believes have nothing to do with
+the giants. Characters can see through her ruse with a
+successful Wisdom (Insight) check contested by Kella's
+Charisma (Deception) check. Any character who be­
+longs to the Zhentarim recognizes the flying snake as a
+symbol of that faction. Keila claims it is merely her pet.
+
+9. TRADING POST
+Mounted above this building's entrance is a circular
+blue shield emblazoned with a stylized golden lion: the
+symbol of the Lionshield Coster, a trading company. The
+door to the trading post hangs open, and characters can
+hear a ruckus within.
+The trading post consists of a 20-foot-square store
+and a 10-foot-by-20-foot side room containing storage
+shelves and a cot. The store's proprietor was a Tethyrian
+human named Darthag Ulgar. He escaped the giant at­
+tack but didn't survive long as a prisoner of the goblins
+(see the "Dripping Caves" section for details).
+A goblin named Jilk is rummaging through the store's
+contents and stuffing choice items into a backpack. He
+fights to the death if cornered here.
+
+Treasure. During their initial search, the goblins
+pulled almost everything off the shelves and broke many
+of the store's for-sale items, including bottles, lamps,
+ink jars, spice jars, and crockery. Nevertheless, many
+items remain intact. Characters who search the trading
+post can find anything on the Adventuring Gear table in
+chapter 5 of the Player's Handbook that is worth 10 gp
+or less. Roll a d4 to determine how many of each avail­
+able item can be found.
+
+10. WINDMILL
+Nightstone's windmill stands atop a 10-foot-high grassy
+hill. Two sets of goblin tracks are clearly visible in the
+muddy path that leads up the hill to an open doorway in
+the northwest side of the windmill.
+The windmill's interior is dark, gloomy, and filled with
+wooden gears and cogs that help turn the millstone.
+Two goblins named Longo and Yek are climbing among
+the rafters near the roof, roughly 25 feet above the
+floor. They heckle intruders and shoot arrows at them
+while enjoying half cover against ranged attacks made
+from below.
+Treasure. Longo and Yek are more interested in hav­
+ing fun than searching for treasure. They each carry a
+pouch that holds ld6 cp.
+
+11. BRIDGE
+A 70-foot-long, 10-foot-wide sloped bridge used to con­
+nect the village bailey to the motte. However, a falling
+rock struck the bridge and destroyed a 15-foot-long sec­
+tion of it, cutting off Nandar Keep from the village.
+A creature with a Strength score of 15 or higher can
+leap across the broken section of the bridge if it moves
+at least 10 feet before the jump. The jump is made more
+difficult by the fact that the bridge is sloped:
+CHAPTER 1
+
+A GREAT UPHEAVAL
+
+• A creature jumping from the lower part of the bridge
+to the higher part must succeed on a DC 10 Strength
+(Athletics) check to land on its feet. On a failed
+check, the creature falls prone at the broken edge
+of the bridge and takes 2 (ld4) bludgeoning damage
+from the fall.
+• A creature jumping from the higher part of the bridge
+to the lower part must succeed on a DC 10 Dexter­
+ity (Acrobatics) check to land on its feet. On a failed
+check, the creature tumbles to the bottom of the
+bridge, landing prone and taking 5 (2d4) bludgeoning
+damage from the fall.
+
+12. GATE TO THE KEEP
+Set into the motte's curtain wall are two windowless
+stone gatehouses with wood-shingled, high-pitched roof­
+tops. Between them stands a set of oak doors with iron
+hinges. The doors can be barred shut from within, but
+they aren't barred when the characters first arrive. Char­
+acters can push open the doors to gain access to Nandar
+Keep and its bailey.
+GATEHOUSES
+The gatehouses are set aside as guard barracks. The
+east building contains six bunk beds (twelve beds in all)
+and a dozen footlockers containing worthless personal
+effects. The west building was similarly furnished, but
+a falling rock destroyed half the building's contents.
+Characters searching the damaged gatehouse find the
+bodies of three human guards who died when the roof
+fell on them.
+
+13. INNER BAILEY
+The cloud giants heavily bombarded the keep, and the
+inner bailey is strewn with rocks. Ramps lead up to the
+8-foot-high stone parapet that encircles the yard. No
+guards are currently standing watch on the walls.
+THE NANDARS OF NICHTSTONE
+
+The beauty of Ardeep Forest and the mystique of its elven
+ruins have long attracted nobles from Waterdeep. The
+nobles of House Nandar had a hunting lodge in the forest
+two centuries ago, but elves forced them to abandon it.
+Ten years ago, members of House Nandar-Lord Drezlin
+Nandar and Lady Velrosa Nandar--decided it was time
+to return. They built a new motte-and-bailey settlement
+south of the Ardeep Forest and began making forays into
+the woods with friends to hunt and explore. Unknown to
+the Nandars, wood elves from Evermeet then settled in
+the forest, determined to protect the remnants of old elf
+empires from plunder and desecration. As in the past, the
+interests of the elves and Nandars were at cross purposes.
+A year ago, the conflict came to a head, and the elves
+attacked Nightstone. Drezlin was among the many slain­
+shot and killed by elf arrows while standing on the roof of
+his keep. His widow, Lady Velrosa Nandar, made peace
+with the elves and promised to make no further incursions
+into the Ardeep Forest-a promise she kept for the rest
+of her life. Velrosa was mortally wounded when the cloud
+giants bombarded Nightstone, leaving the village without
+a lord or lady to govern it.
+
+HAPTER l J A GREAT UPHEAVAL
+
+A search of the bailey yields the corpses of two dead
+human guards, both of whom were struck and killed by
+falling rocks.
+Characters can enter the keep through the front
+door, or they can climb over rubble and enter the keep
+through one of its shattered walls. Treat rubble-filled
+areas as difficult terrain.
+
+14. NANDAR KEEP
+The cloud giant attack left Nandar Keep in a sorry state
+and also claimed the life of Lady Velrosa Nandar, the
+High Steward of Nightstone. She was buried under rub­
+ble and died from her wounds before the castle guards
+could reach her. The few guards who remain are demor­
+alized, in shock, and at each other's throats.
+14A. GREAT HALL
+Half of the great hall lies buried under rubble. Four
+guards (NG male and female Illuskan humans) have
+placed the body of Lady Velrosa Nandar atop the shat­
+tered remains of an oak dining table and are arguing
+about next steps. The guards' names are Sydiri Haunlar,
+Torem Breck, Alara Winterspell, and Kaelen Zam. No
+strong leader stands among them, so they turn to the
+characters for guidance and leadership. If the characters
+question the guards about what happened, they share
+the following information:
+• Nightstone was bombarded by rocks dropped from a
+giant castle in the sky. The keep was cut off from the
+village when a rock tore away part of the bridge.
+• With nowhere to hide, the people in the village low­
+ered the drawbridge and fled north. In the event of
+an attack, the villagers are supposed to retreat to
+the keep; with the bridge out, that was no longer
+an option.
+• North of Nightstone, about a mile away, are some bat
+caves. The villagers probably hid there.
+• Several guards stationed in the village fled north with
+the villagers.
+• Once the villagers had fled, four pale-skinned giants
+descended from the sky, uprooted the nightstone in
+the village square, and took it back to their castle. The
+cloud castle left soon thereafter, drifting eastward.
+• Lady Nandar was in the great hall when the roof
+collapsed. She was buried under the rubble and died
+before anyone could reach her.
+The great hall once served as a throne room and a
+dining room. Doors in the west wall lead to the kitchen
+(area 14b) and den (area 14c). Between these doors
+is a wooden staircase leading up to the second floor
+(area 14d).
+Treasure. Lady Nandar wears a gold wedding ring
+set with tourmalines on the third finger of her left
+hand. The ring is nonmagical and worth 750 gp. The
+keep guards strongly object to anyone attempting to
+take the ring.
+14B. KITCHEN
+
+This room is buried under rubble.
+
+14c. DEN AND LIBRARY
+
+This corner room consists of two levels. The lower level
+is the den. It is decorated with overstuffed chairs and
+bearskin rugs, and the walls are adorned with weapons,
+shields, and the mounted heads of wild animals. A dec­
+orative wooden ladder leads to a 20-foot-high circular
+balcony with a sculpted wooden railing. The upper level
+is a library, and its walls are lined with bookshelves.
+Lord Drezlin Nandar and his hunting companions used
+the den as a place to relax and tell stories, while Lady
+Velrosa Nandar used the library to store her collection
+of books on philosophy, nature, and poetry.
+While the contents of this room held great sentimental
+value to the Nandars, there's nothing particularly valu­
+able to be found here.
+14D. UPSTAIRS HALL
+
+This L-shaped hall is decorated with rich carpets, gilded
+sconces, and framed paintings of places inWaterdeep. A
+door at the north end of the hall leads to a stone balcony
+overlooking the entrance to the keep. Other doors lead
+to bedchambers, two of which have been destroyed.
+A wooden staircase in the west wall descends to the
+main floor. A similar staircase in the south wall climbs
+to the roof.
+14E. MASTER BEDROOM
+
+This room is the only one of three bedchambers to sur­
+vive the cloud giants' attack. Tapestries and oil lamps
+are mounted on the walls, and wolfskin rugs cover the
+wooden floor. The room's centerpiece is a large bed, its
+ornate headboard sculpted with images of roses and
+foxes. Four wardrobes stand against the walls; each
+contains a season's worth of women's clothing, all in the
+latest fashions ofWaterdeep. At the foot of the bed is an
+unlocked wooden chest.
+Mounted above the door is a longsword. This weapon
+is actually a flying sword that attacks anyone who opens
+the chest. (Only Lady Nandar was able to open the chest
+without causing the sword to attack.) The guards in area
+14A try to prevent anyone from looting the contents of
+the chest.
+Treasure. The interior of the wooden chest is divided
+into small compartments. A thorough search yields a
+velvet sack containing 180 sp (money used to pay the
+guards), a silk pouch containing four 100 gp gemstones,
+and a silver jewelry box (worth 25 gp) containing three
+beautiful gold necklaces (worth 250 gp each).
+14F. ROOF
+
+Falling rocks caused sections of the roof to collapse, but
+what remains of the roof is safe to walk on. A flag waves
+in the breeze atop a 30-foot-high wooden flagpole that
+rises from the northeast corner. The flag depicts the
+stylized head of a golden fox with a rose clenched in its
+teeth, on a purple background.
+
+SPECIAL EVENTS IN NIGHTSTONE
+The following special events can occur while the char­
+acters are in Nightstone. Ideally, the characters are 2nd
+level before either event occurs.
+
+SEVEN SNAKES
+
+This event takes place after the characters rid Night­
+stone of its goblin infestation but before they have time
+to finish a long rest.
+Seven Zhentarim mercenaries arrive at the village on
+horseback. If the drawbridge is lowered, they ride to the
+square and call out for Keila Darkhope. If the characters
+raised the drawbridge, the Zhents call out for someone
+to lower it. If she's still alive, Keila tries to let them in.
+The leader of the new arrivals is Xolkin Alassandar
+(LE male half-elf bandit captain), a charming, ruthless
+man in his mid-thirties. He and his six subordinates (LE
+male and female human bandits of various ethnicities)
+are mounted on seven riding horses. Known as the
+Seven Snakes, Xolkin's band does "dirty work" for the
+Snail, a Zhent leader based in Daggerford (see the "Dag­
+gerford" section in chapter 3). Their current mission is
+to help Keila Darkhope turn Nightstone into a base for
+the Black Network. The settlement's defensibility and its
+proximity toWaterdeep make it ideal for Zhentarim op­
+erations. The Seven Snakes had planned to infiltrate the
+village posing as bounty hunters in search of a wanted
+criminal (Keila), but they drop the ruse once it becomes
+apparent that the village is mostly abandoned.
+Xolkin is in love with Keila and would do just about
+anything for her, even though he knows that she doesn't
+feel the same way about him. If Keila is a prisoner,
+Xolkin tries to buy her freedom (see "Treasure"). Failing
+that, he tries to liberate her by force. If Keila wormed
+her way into the characters' good graces, she reveals her
+allegiance to the Zhentarim once the Seven Snakes are
+close enough to protect her. If the party includes one or
+more characters with strong ties to the Black Network,
+Keila tries to convince them to help secure the village as
+a Zhentarim base.
+CHAPTER 1 I A GREAT UPHEAVAL
+
+27
+
+If the characters do nothing to oppose the Zhent mer­
+cenaries, Xolkin orders his men to raise the drawbridge
+while he uses his flying snake to send a message to the
+Snail, letting him know that the village is under the
+Black Network's control. If the characters killed Xolkin's
+flying snake, Xolkin orders one of his meres to ride to
+Daggerford and report the news while the others "hold
+down the fort." If combat erupts, Xolkin drinks his po­
+tion of invulnerability before leaping into the fray.
+The Zhents have no easy way to reach the keep and
+ignore it for the time being. That said, if the Zhents
+learn that some of Lady Nandar's guards are holed up in
+the keep, they urge friendly characters to dispose of the
+guards. Similarly, if the characters are on friendly terms
+with the guards in the keep, the guards ask the charac­
+ters to save the village from Zhentarim occupation.
+The characters are under no obligation to rid Night­
+stone of Ke11a Darkhope and the Seven Snakes. If they
+defeat the Zhents or come to terms with them, allow the
+characters to take a long rest, if they wish, before con­
+tinuing with the "Ear Seekers" event.
+Treasure. Xolkin wears a gold ring (worth 25 gp)
+emblazoned with the symbol of the Zhentarim: a black
+winged serpent. He also carries a pouch that holds 4 pp,
+13 gp, five 100 gp gemstones that he willingly trades for
+Kella's life, and a potion of invulnerability.
+Each of the other mercenaries carries a pouch that
+holds 2d10 gp.
+EAR SEEKERS
+
+The wood elves of the Ardeep Forest are at war with
+a neighboring tribe of ores called the Ear Seekers (so
+named because they wear necklaces made of elf ears).
+Gurrash, the ore war chief, recently led an attack on the
+forest. Unfortunately for the ores, the elves were ready
+for them. More than half of the ore horde perished, and
+the surviving ores were forced to flee. Gurrash and sev­
+eral ores escape out of the forest, make their way south,
+and stumble upon Nightstone. Knowing that the elves
+aren't far behind, Gurrash and his ores try to fight their
+way into the village and make a stand there.
+Gurrash, the ore war chief, is bleeding from wounds
+inflicted by elven arrows and has 60 hit points remain­
+ing. He leads a force consisting of twenty uninjured ores
+and an uninjured ore Eye ofGruumsh named Norgra
+One-Eye. Norgra is Gurrash's lieutenant and assumes
+command if the war chief dies.
+The ores have no gear other than their weapons and
+armor. If the drawbridge is lowered, they rush toward
+it and try to storm the village, killing other creatures in
+their path. If the drawbridge is raised, the ores swim
+across the moat and try to climb the palisade, with no
+success. After being thwarted by the palisade, Gurrash
+sends scouts downriver to find another point of entry.
+It takes these ores 10 minutes to realize that they can
+enter the village through the gap in the palisade where
+the bridge (area 11) leads up to the keep. Once the ores
+enter the village, they fight to the death and don't take
+prisoners. Because the ores don't know what they're
+up against, characters can try to hide in the village and
+pick off a few ores at a time. They can also retreat to the
+keep, which the ores ignore.
+'\PTER l
+
+A GREAT UPHEAVAL
+
+If the ores lose more than half their number without
+gaining a foothold in the village, the survivors flee into
+the surrounding hills. Once the ores are defeated, the
+characters can advance to 3rd level and head to the
+Dripping Caves to locate and retrieve the missing villag­
+ers. If they're not sure where the villagers went, Ke11a
+Darkhope or the guards in the keep can point them in
+the right direction.
+Strange Bedfellows. If the characters came to terms
+with the Black Network in the previous event and the
+Seven Snakes are still around when the ores arrive,
+the Zhents help the party defend Nightstone. Xolkin
+and Kella aren't heroes and don't place themselves in
+unnecessary danger, but they are quick to raise the
+drawbridge or position defenders on the watchtowers as
+needed. Knowing that ores are devastating melee com­
+batants, the Zhents favor ranged attacks and try to keep
+the ores at a distance.
+Elves to the Rescue! If the characters are in danger
+of being overwhelmed by War Chief Gurrash and his
+bloodthirsty ores, eight elves of the Ardeep Forest (CG
+male and female wood elf scouts) arrive from the north
+to assist them. The leader of this band is a daring wood
+elf named Rond Arrowhome. He and his fellow elves
+have no love or respect for the residents of Nightstone,
+but they hate ores more. Once the ores are defeated,
+Rond yells out, "You're welcome!" before leading the
+elves back to the Ardeep Forest. The elves aren't looking
+to pick a fight or mend fences with Nightstone's inhabi­
+tants, and they aren't interested in any kind of reward.
+
+DRIPPING CAVES
+The hills around Nightstone are riddled with caves. The
+villagers hid in the Dripping Caves, located a mile north
+of Nightstone, after the cloud giant attack. Characters
+who follow the villagers' tracks or are given directions
+discover a gaping cave mouth on the south face of a
+rocky hill topped with pine trees. Characters who use
+this entrance arrive in area 1 of the Dripping Caves.
+If the characters take an hour to circle the hill, they
+find two other entrances. At the base of the hill, on the
+west side, is a narrow tunnel into which a stream flows.
+This tunnel is 40 feet long and leads to area 6. On the
+east side of the hill is a dry, 100-foot-long tunnel that
+gently slopes down to area 3a.
+If the characters climb to the top of the hill and look
+around for other possible entrances, they find a natural
+chimney (a 5-foot-diameter shaft) that descends 50 feet
+to area 7. The chimney has abundant handholds and can
+be climbed with a successful DC 10 Strength (Athletics)
+check. No ability check is required if the characters use
+a rope or climbing gear.
+A goblin clan driven from the Ardeep Forest by wood
+elves took refuge in the Dripping Caves a little over a
+month ago. A week later, while scouring the hills for
+food, they befriended a mated pair of ogres and lured
+them to the caves for protection. The goblins and ogres
+captured the Nightstone refugees and have started
+eating the villagers. Prisoners that the goblins haven't
+eaten are doomed to meet a similar fate unless the ad­
+venturers intervene.
+
+MAP 1.2: DRIPPING CAVES
+
+Hark, the goblin boss, isn't an unreasonable creature.
+His instincts for self-preservation outweigh any natu­
+ral animosity he feels toward his enemies or his prey.
+Characters can negotiate with Hark and avoid unneces­
+sary bloodshed (see area 9), or they can kill Hark and
+his followers to win the villagers' freedom-the choice
+is theirs.
+The characters should be 3rd level by the time they
+set foot in the Dripping Caves. Map 1.2 shows the caves'
+layout. The sections that follow describe locations
+on that map.
+DRIPPING CAVES: GENERAL FEATURES
+
+The Dripping Caves are naturally formed and have the fol­
+lowing features in common.
+Darkness. The Dripping Caves contain no light sources.
+The goblins and ogres rely on their darkvision to see.
+Dripping Water. The caves get their name from the water
+that constantly drips from the stalactites in the main cav·
+ern (area 1). The sound of dripping water echoes through­
+out the complex but isn't loud enough to drown out other
+distinctive noises.
+Narrow Tunnels. The tunnels leading away from the
+main cavern (area 1) are 7 to 8 feet high and range in
+width from 2 to 5 feet. Ogres and other Large creatures
+can squeeze through these passages, but they suffer
+the normal penalties for doing so (see the "Squeezing
+into a Smaller Space" section in chapter 9 of the Players
+
+Handbook).
+
+Walls. The walls are damp and slick, but thanks to
+an abundance of handholds and footholds, they can
+be climbed with a successful DC 10 Strength (Athlet·
+ics) check.
+
+1. MAIN CAVERN
+Characters who follow the villagers' tracks arrive at
+a yawning cave mouth, 12 feet wide and 20 feet high.
+Beyond the cave mouth is a vast cavern with a forest of
+stalagmites in its center and 10-foot-high ledges along
+its walls. Water drips from the stalactite-covered ceiling,
+which rises to a height of 30 feet in the middle of the
+cavern. Six naturally formed tunnels lead from this cen­
+tral cavern to other parts of the cave complex. The floor
+is littered with broken spears, broken shields, and drops
+of bat guano.
+Characters who peer into the cave can see a male
+ogre bathing in a pool of mud (see area lb). Those with
+darkvision can also see one or more goblin sentries on
+ledges (see area la). If the characters are carrying light
+sources or making a lot of noise, the creatures in areas
+la, lb, and le detect them and attack.
+IA. LEDGES
+
+Ten-foot-high ledges of rock have formed along the walls
+of the cavern. Climbing up to a ledge or safely descend­
+ing from one requires a successful DC 10 Strength (Ath­
+letics) check.
+Five goblins stand guard on the ledges-one on each
+ledge marked with a "la" tag on the map. Their names
+are Gleek, Lop, Nitch, Pox, and Slibberdabber. When
+they detect intruders, the goblins cry out "Bree-yark!"
+and begin shooting arrows. Their cries of alarm put
+the rest of the cave complex on alert, but no reinforce­
+ments arrive.
+
+CHAPTER 1 I
+
+G l
+
+PH
+
+AL
+
+29
+
+lB. HOT MUD BATH
+
+A male ogre named Nob bathes in a 5-foot-deep pool of
+hot mud near the cave entrance. The pool is heated by
+a natural vent that keeps the temperature of the mud
+around 90 degrees Fahrenheit. Nob doesn't carry any
+javelins but keeps his greatclub in the pool with him.
+The mud pool is considered difficult terrain.
+Nob and his mate (see area le) work for Boss Hark,
+who browbeats them into service with his superior in­
+tellect and nasty disposition. Nob tries to crush enemies
+with his greatclub. If his enemies try to flee, Nob and his
+mate chase after them.
+le. STAL AGMITE FOREST
+
+A cluster of stalagmites has formed in the middle of the
+cavern. The stalagmites range in height from 3 to 15
+feet. In the middle of the stalagmite "forest" is a clear
+space. The ogres have turned this space into a den, and
+a female ogre named Thog is sleeping here when the
+characters first arrive. She awakens to sounds of com­
+bat or cries of alarm, and either hurls javelins or wades
+into battle with her greatclub. A search of the ogres' den
+yields nothing of value.
+lD. POLLUTED POOL
+
+A shallow pool has formed against the northeast wall of
+the cavern, the floor of which is lower here. Runoff from
+the pool trickles eastward into area 4. The water is pol­
+luted with toxic minerals and is unfit for drinking.
+
+2. GOBLIN WARRENS
+A tunnel that the ogres find uncomfortably narrow leads
+to a cramped network of caves where the weakest mem­
+bers of the goblin tribe live. These goblins cower in their
+dens and avoid getting into fights with armed adventur­
+ers. If threatened, they cry and beg for mercy. Each has
+AC 10, 1 hit point, and no effective attacks.
+2 A. SLEEPING CAVES
+
+Six of these caves are marked on the Dripping Caves
+map, and each one contains ld6 goblin noncombatants.
+The floor is each cave is covered with a grass pallet on
+which the goblins sleep. Apart from a few rusty pots,
+odd tools, and goblin toys, the sleeping caves contain
+nothing of value.
+2B. CAVE OF BONES
+
+The goblins discard the bones of the creatures they de­
+vour here. The floor of the cave is littered with the bones
+of small animals (mostly bats) and a few unlucky human­
+oids, including some recently eaten villagers. A search
+of the area yields no treasure.
+
+3. EAST CAVES
+After a few unfortunate run-ins with the monster in area
+3a, the goblins avoid this tunnel. The goblins refer to the
+monster as the Blob.
+3A. THE BLOB
+
+Stalactites and stalagmites crowd this 20-foot-high,
+15-foot-wide cave. Rising up from the middle of the floor
+is a particularly large (10-foot-tall) stalagmite riddled
+f H \I
+
+FR
+
+A GREAT UPHEAVAL
+
+with 4-inch-wide, 12-inch-deep naturally formed holes
+that bore down into a hollow central cavity. Lying near
+the base of the stalagmite are the badly corroded re­
+mains of two goblin scimitars.
+A black pudding has taken residence inside the sta­
+lagmite's hollow core, and the holes in the stalagmite's
+"shell" are wide enough that a character can stick an
+arm, a staff, or a weapon into any one of them. The pud­
+ding makes a free pseudopod attack against anything
+that is inserted into one of the stalagmite's holes.
+The pudding has total cover while inside the stalag­
+mite's core. If left undisturbed, the pudding remains
+inside the stalagmite until the characters make their
+way toward area 3b, whereupon it quietly emerges and
+follows them. Once the characters are trapped in area
+3b, the pudding attacks.
+East Tunnel. This 5-foot-wide, 7-foot-high tunnel
+slopes gently upward as it travels east. After 100 feet, it
+breaks through the east side of the hill.
+3B. WATER SUPPLY
+
+A small waterfall pouring from the 8-foot-high ceiling
+forms a 5-foot-deep pool at the southwest end of the
+cave. The goblins used to come here to drink fresh wa­
+ter, but they stopped visiting the cave when the black
+pudding in area 3a started picking them off.
+Growing near the southeast wall is a patch of twenty
+green mushrooms. A character who inspects the mush­
+rooms and succeeds on a DC 10 Intelligence (Nature)
+check can ascertain that they are poisonous. Any crea­
+ture that ingests a mushroom must succeed on a DC 10
+Constitution saving throw or take 1 poison damage and
+be poisoned for 1 hour. The effects of eating multiple
+mushrooms are cumulative.
+
+4. BATS AND PRISONERS
+A short tunnel leads to a sunken cavern that echoes
+with the sound of flapping wings. The sound emanates
+from a naturally formed pit in the cavern's floor, which is
+covered with bat guano. Ten-foot-high ledges surround
+the pit and form raised alcoves to the north, east, and
+south. Huddled in these alcoves are thirty Nightstone
+villagers. The villagers are prisoners of the goblins and
+ogres, and they are trying to remain as quiet as possible
+for reasons that might not be readily apparent to the
+characters.
+Directly below this cavern is another similarly sized
+cavern filled with thousands of bats. Any loud noise in
+either cavern agitates the bats. When the bats become
+agitated, have the characters roll initiative. On initiative
+count 10, the bats fly up the pit and flutter about the
+upper cave, shrieking loudly. The fluttering bats reduce
+visibility in the upper cavern to 5 feet. A creature takes 1
+piercing damage whenever it enters a 5-foot-square area
+filled with fluttering bats. At the start of each of the bats'
+turns, roll a d6. On a roll of 1-5, the bats remain agi­
+tated. On a roll of 6, the bats return to the lower cavern
+and are no longer agitated.
+The pit descends through 20 feet of solid rock before
+opening into the lower cavern, which is 30 feet deep.
+
+NIGHTSTONE VILLAGERS
+
+Boss Hark stripped the villagers of their weapons be­
+fore herding them into this cavern. The villagers fear
+for their lives but can't escape the Dripping Caves until
+the monsters in area 1 are defeated. Every few hours,
+one of the ogres enters the cave, grabs a prisoner, and
+takes the unfortunate villager away to be eaten (if not by
+the ogres, then by the goblins in area 2 or the giant rats
+in area 9).
+In the absence of a true leader, Morak Ur'gray (LG
+male shield dwarf commoner), the owner and propri­
+etor of the Nightstone Inn, speaks on behalf of the vil­
+lagers. Morak is an optimist, and he's counting on Lady
+Velrosa Nandar coming to the rescue. When he lays
+eyes on the adventurers, he breathes a sigh of relief and
+assumes they were hired by Lady Nandar. (He would be
+dismayed to learn that she didn't survive the attack on
+Nightstone.)
+Other noteworthy prisoners trapped in the cavern
+include Hirai Mystrum (LG male Tethyrian human
+commoner), the village's cowardly priest of Lathander,
+and six unarmed guards (LN male and female guards
+of various ethnicities). The guards were wounded by the
+goblins and ogres in the process of being captured; each
+has only ld6 hit points remaining.
+The other prisoners found here are surviving mem­
+bers of local families. All the adults are unarmed
+commoners, and all the children are noncombatants.
+They let Morak speak on their behalf. The families are
+as follows:
+Agganor Family. Destiny Agganor (age 42) is Night­
+stone's tiefling midwife. Her son, Grin Agganor (age
+27), worked in the village's stable house, feeding
+the horses and cleaning the stalls for Lady Nandar.
+Destiny worships Asmodeus but doesn't impose her
+beliefs on anyone else, including her son.
+Delfryndel Family. The Delfryndels are Tethyrian hu­
+mans. They own and operate Nightstone's windmill.
+The surviving family members are Renarra Delfryndel
+(age 64), her youngest son Zalf (age 40), his wife Elize
+(age 37), and their two adolescent children, Darson
+(age 17) and Hildy (age 14). No family members died
+in the giant attack, but Renarra's eldest son, Olaf, was
+killed and eaten by the goblins.
+Hulvaarn Family. The Hulvaarns are Damaran hu­
+man potato and turnip farmers. The surviving family
+members are Godrick Hulvaam (age 32), his wife
+Prennis (age 30), and their three children: daughter
+Jehanna (age 12) and twin sons Ellis and Ghalt (age 9).
+The children lost their grandfather (Godrick's father,
+Nestor) in the giant attack on Nightstone.
+Nesper Family. The Nespers are Tethyrian human
+pumpkin and squash farmers. None of them were
+killed in the giant attack, but three of them died at the
+hands of the goblins and ogres in the Dripping Caves.
+The remaining family members are Yondra (age 15)
+and her brother Sarvin (age 11). They lost both of their
+parents and an older sister named Sylda.
+Osstra Family. The Osstras are Tethyrian human
+wheat farmers. The surviving family members include
+Thelbin Osstra (age 52) and his husband, Brynn (age
+52), and their good-hearted nephew, Broland (age 23).
+
+Brynn lost his elderly mother and younger sister (Bro­
+land's mother) to the goblins.
+Summerhawk Family. The Summerhawks are strong­
+heart halflings. Taela Summerhawk (age 28), an
+apothecary, comforts her four young children, Barley
+(age 10), Midge (age 8), Nincy (age 6), and Dollop (age
+3). Taela's husband, Larlow, was killed in Nightstone
+when a rock fell on their house.
+
+5. FISSURE
+An 8-foot-wide, 20-foot-deep fissure splits a tunnel lead­
+ing north. The goblins won't cross the fissure and hav­
+en't explored the tunnel. Where the tunnel leads is up to
+you. It might break the surface at some point, or it might
+lead to a monster's lair or the Ardeep Forest. If you don't
+want the characters wandering too far afield, inform the
+players that the tunnel collapsed after a few hundred
+feet, forcing the characters to tum back.
+
+6. UNDERGROUND STREAM
+An ankle-deep stream of water pours through a narrow
+tunnel in the west wall and forms a small pool in this
+otherwise empty cave. The water doesn't taste good
+because of its high mineral content, but the goblins have
+been forced to drink it because their supply of fresh wa­
+ter has been cut off (see area 3).
+If the characters enter the caves undetected and take
+refuge here, there's a 50 percent chance each hour that
+a goblin noncombatant enters the cave, looking for a
+drink of water. The goblin flees at the sight of intruders,
+heading north to area 9. The goblin has AC 10, 1 hit
+point, and no effective attacks.
+
+7. NATURAL CHIMNEY
+A chimney has formed in the 7-foot-high ceiling of this
+small side cave. The chimney is 5 feet wide and has
+abundant handholds and footholds. A creature can
+climb up or down the shaft with a successful DC 10
+Strength (Athletics) check. No ability check is required
+if a rope or climbing gear is used.
+An unscrupulous and ambitious goblin named Snig­
+bat stands guard at the bottom of the shaft. Snigbat's
+job is to watch for intruders and report what she sees
+to Boss Hark. Snigbat considers this duty a form of
+punishment. If she sees one or more well-armed adven­
+turers, Snigbat offers to lead them to Boss Hark if they
+promise to kill Hark and help Snigbat become the new
+boss. Snigbat knows where Hark keeps his treasure
+(area 8) but doesn't share this information with the char­
+acters in the hopes that she might get it.
+DEVELOPMENT
+
+If the characters form an alliance with Snigbat and
+dispose of Hark, Snigbat asks them to slay the ogres
+in the main cavern (area 1), since she has no influence
+over them. With Hark and the ogres dead, Snigbat can
+seize the title of boss without being challenged. Once
+she becomes the new boss, she allows the characters
+and the villagers of Nightstone to leave the Dripping
+Caves unharmed.
+
+CHAPTER 1 I A GREAT UPHEAVAL
+
+3I
+
+8. HARK's HOARD
+A large round rock fills the low, 4-foot-diameter tunnel
+leading to this cave. The boulder fits snugly in the tunnel
+and must be pushed into the cave to clear the passage.
+Moving the boulder out of the way requires a successful
+DC 11 Strength (Athletics) check. The sound of the roll­
+ing boulder is loud enough to be heard by the creatures
+in area 9.
+The cave has an 8-foot-high ceiling and contains a
+grass pallet (Hark's bed), next to which rests a battered
+wooden chest with a rusty lock. The lock is purely for
+show and falls apart if handled roughly.
+TREASURE
+
+The chest contains the treasure that Boss Hark has
+amassed in his short lifetime:
+
+, 12 gp, 55 sp, and 87 cp (loose)
+, A matching pair of silver salt and pepper shakers
+(worth 10 gp apiece or 25 gp for the pair)
+• A bloodstained leather case containing a complete set
+of thieves' tools (worth 25 gp)
+, A holy symbol of Silvanus carved from wood and in­
+laid with gold (worth 25 gp)
+• One magic item, determined randomly by rolling on
+Magic Item Table A in chapter 7 of the Dungeon Mas­
+ter's Guide
+
+9. Boss HARK's CAVE
+This 10-foot-high cave contains Hark, the goblin boss,
+two female goblins (bodyguards) named Ratcha and
+Zukluk, and seven giant rats (Hark's beloved pets).
+When the characters enter the cave for the first time,
+Hark and his bodyguards are gleefully watching the rats
+feed on the corpse of a slain villager (Darthag Ulgar, the
+proprietor of the Lionshield Coster trading post).
+Hark has collected all the weapons and shields be­
+longing to the captured villagers and stashed the equip­
+ment in a western alcove behind rocks. Characters who
+search the cache find nine spears, five clubs, two dag­
+gers, and six wooden shields.
+HARK'S LARDER
+
+At the north end of the cave is a smaller cave where
+Boss Hark keeps prisoners before feeding them to his
+giant rats. Cowering in the back of this 6-foot-high lar­
+der is Lady Velrosa Nandar's terrified lady-in-waiting,
+Daphne Featherstone (LG female Tethyrian human
+commoner). Daphne was in the village when the cloud
+giants attacked. Unable to make it back to Nandar Keep,
+Daphne fled to the Dripping Caves with the other villag­
+ers-a decision she has come to regret. If she learns that
+Lady Nandar is dead, Daphne becomes inconsolable.
+DEALING WITH HARK
+
+Characters can try to negotiate with Hark instead of at­
+tacking him. He agrees to release the remaining villag­
+ers if the characters do one of the following things (and
+leave the goblin lair in peace):
+• Pay a ransom of 1 gold piece per villager. (The total
+amount is 31 gp, minus 1 gp for each villager who has
+died since the characters arrived at the caves.)
+ER 1
+
+A GREAT UPHEAVAL
+
+, Give Hark a working lock. Hark needs the new lock
+for his treasure chest in area 8.
+, Kill the Blob (see area 3). If the characters provide
+Hark with proof of the black pudding's demise, he re­
+leases all the villagers into their custody.
+
+MORAK'S QUEST
+
+Characters who survive the perils of the Dripping Caves
+and return to Nightstone should advance to 4th level.
+Once he is safely back in the village, Morak Ur'gray
+takes stock of the damage, makes arrangements to de­
+liver news of the giants' attack to Waterdeep, and urges
+the characters to undertake one of the following three
+quests. If Morak died in the Dripping Caves, another
+NPC can give the quest in his place. Choose whichever
+quest you like. Your choice will determine whether the
+characters visit Bryn Shander, Goldenfields, or Triboar
+in the next leg of the adventure (see chapter 2).
+Whether or not the characters accept Morak's quest,
+continue with the "Tower of Zephyros" section.
+
+BRYN SHANDER QUEST
+Morak's friend and neighbor, Semile Southwell, was
+killed in the giant attack. Although she had no family
+in Nightstone, Semile spoke often about her brother,
+Markham. Morak knows that Markham is the sheriff of
+Bryn Shander and asks the characters to travel to Ice­
+wind Dale and deliver the sad news of Semile's passing.
+
+GOLDENFIELDS QUEST
+The Xelbrins were killed in their home when the giants
+bombarded the village (see "Nightstone," area 4h).
+Morak recalls that the elderly couple had a son, Miros,
+who lives in Goldenfields. Morak asks the characters
+to visit Goldenfields and let Miros know what has hap­
+pened. If the Xelbrins' tressym is still alive, Morak asks
+the characters to deliver it safely to Miros.
+
+T'RIBOAR QUEST
+Morak's friend and neighbor, Darthag Ulgar, was eaten
+by giant rats. Darthag ran the Lionshield Coster trading
+post in Nightstone, and his ex-wife runs a similar trad­
+ing post in Triboar. Morak asks the characters to travel
+to Triboar and deliver the sad news of Darthag's passing
+to Alaestra Ulgar.
+
+TOWER OF ZEPHYROS
+
+The day after the characters accept Morak's quest, they
+have their first encounter with a giant. Read or para­
+phrase the following boxed text to the players:
+You see an enormous tower floating on a billowy cloud
+a thousand feet overhead. The tower must be hundreds
+of feet tall, and its spire looks strangely like a pointy
+wizard's hat. As the tower drifts closer, stairs made of
+clouds begin to form underneath it and descend to­
+ward you.
+
+Map 1.3 shows the tower. The stairs are made of firm
+cloud stuff and spiral downward, stopping just short
+of the ground. They are sized for humans and safe
+to climb. After climbing the stairs for 1,000 feet, the
+characters stand in front of the tower's entrance, on a
+cloud that feels as firm and safe as solid ground. If the
+characters enter the first floor of the tower, a cloud giant
+wizard named Zephyros descends from the second floor
+(using a levitate spell) to greet them.
+Zephyros is an eccentric cloud giant with windswept
+white hair, a wispy white beard, and a billowy purple
+robe adorned with gold stars. He poses no threat to
+Nightstone or the characters.
+Ever since the ordning shattered, Zephyros has been
+using contact other plane spells to find a way to set
+things right. Failed castings of the spell have driven him
+insane on multiple occasions. He has recovered from
+the madness, yet it has accentuated his eccentricity. His
+magical investigations led him to Nightstone. He had
+nothing to do with the cloud giant attack on the settle­
+ment and is horrified to learn of the damage his fellow
+giants caused.
+Zephyros holds "small folk" in higher regard than
+most giants. If the characters introduce themselves to
+him, a wide smile settles on the cloud giant's face as he
+realizes they are the ones mentioned by the mysterious
+planar entities with which he has spoken. Convinced
+that the characters can restore the ordning, Zephyros of­
+fers to transport them to one destination of their choice
+in the North. That is the extent of his involvement. The
+planar entities with whom Zephyros has spoken via the
+contact other plane spell warned him against taking
+a more direct hand in events. The party's destination
+should coincide with Morak's quest. After safely deliver­
+ing the characters to their destination, Zephyros and his
+tower depart for the Moonshae Isles.
+If the characters ask Zephyros to take them some­
+where other than Bryn Shander, Goldenfields, or
+Triboar, Zephyros (eccentric wizard that he is) gets a
+little befuddled and ends up taking them to one of these
+places by accident.
+Zephyros is a cloud giant, with the following changes:
+
+Second
+P1a,r
+
+First
+
+Floor
+
+Top View
+leqi,ae•IOfie«
+
+Aerie
+
+Second
+Floor
+
+• Zephyros is neutral good.
+• He has an Intelligence score of 18 (+4) and the spell­
+casting feature described below.
+• He carries a giant-sized staff of the magi instead of a
+morningstar. As an action, he can make two melee at­
+tacks with the staff. Each attack has a +15 bonus to hit
+and deals 20 (3d6 + 10) bludgeoning damage on a hit,
+or 23 (3d8 + 10) bludgeoning damage if used with two
+hands. This damage is considered magical.
+He has a challenge rating of 13 (10,000 XP).
+
+First
+Floor
+
+Spellcasting. Zephyros is a 12th-level spellcaster. His spellcast­
+ing ability is Intelligence (spell save DC 17, +11 to hit with spell
+attacks). He has the following wizard spells prepared:
+
+Can trips (at will): mending, message, prestidigitation, ray of frost,
+shocking grasp
+
+1st level (4 slots): charm person, comprehend languages, magic
+missile, shield
+
+2nd level (3 slots): crown of madness, gust of wind, levitate
+3rd level (3 slots): nondetection, protection from energy, tongues
+MAP 1.3: TOWER OF' ZEPHVROS
+
+CHAPTER l f A GREAT UPHEAVAL
+
+33
+
+flame spells cast on them. The illuminated spheres keep
+
+the room brightly lit.
+The tower's second floor can be seen through a
+20-foot-wide hole in the soaring ceiling.
+
+SECOND FLOOR
+This level of the tower has an 80-foot-high ceiling and
+tall, slender windows set with panes of stained glass.
+Furnishings include a giant-sized bed and an enormous
+wooden chest sealed by an arcane lock spell. Stone
+shelves protrude from the walls at heights of 20, 40, and
+60 feet, and these shelves bear the weight of Zephyros's
+vast collection of journals (see "Treasure").
+F loating 10 feet above the floor is a navigation orb (see
+appendix B) that Zephyros uses to control the movement
+of the tower.
+Zephyros uses magic to move between levels. A
+20-foot-diameter hole in the floor allows access to the
+first level, the floor of which is 100 feet below. A simi­
+larly sized hole in the ceiling leads to the aerie.
+TREASURE
+
+4th level (3 slots): conjure minor elementals, greater invisibility,
+Otiluke's resilient sphere
+
+5th level (2 slots): cone ofcold, contact other plane
+6th level (1 slot): mass suggestion
+Zephyros's tower has no fitting accommodations for
+small folk, but the cloud giant wizard allows the party to
+camp on the first floor. He requests that the characters
+confine their activities to the first floor and stay away
+from the second floor and the aerie. Zephyros controls
+the tower's movements using a navigation orb (see ap­
+pendix B) on the second floor.
+The Tower of Zephyros Travel Times table summa­
+rizes how long it takes the tower to travel from Night­
+stone to Bryn Shander, Goldenfields, or Triboar. Regard­
+less of their ultimate destination, the characters have at
+least one encounter en route (see the "Unfriendly Skies"
+section for details).
+TOWER OF ZEPHYROS TRAVEL TIMES
+
+Destination
+Bryn Shander
+Goldenfields
+Triboar
+
+Travel Time
+624 hours (26 days)
+72 hours (3 days)
+275 hours (111/z days)
+
+FIRST FLOOR
+The tower rests atop a cloud that feels solid underfoot.
+An open archway leads to an empty vestibule, at the
+back of which hangs a thin, translucent blue curtain that
+flaps in the breeze. Beyond the curtain lies a 100-foot­
+high hexagonal chamber containing a giant-sized
+wooden table and stone chair. Dangling from the ceiling
+by iron chains are six crystal spheres with continual
+
+< HAPTER 1
+
+A GREAT UPHEAVAL
+
+The wooden chest is 9 feet long, 5 feet wide, and 5 feet
+tall. It contains an assortment of giant-sized robes, a
+giant pair of sandals, a large electrum comb encrusted
+with moonstones (worth 750 gp and weighing 25
+pounds), and Zephyros's spellbook. The spellbook
+weighs 250 pounds has gilded silver covers. It contains
+all the spells that Zephyros has prepared plus the fol­
+lowing additional spells: arcane eye, continual flame,
+fire shield, hypnotic pattern, mage armor, mirror image,
+misty step, modify memory, shatter, and slow.
+
+Zephyros's library contains more than five hundred re­
+search journals that he wrote himself. For the past fifty
+years, Zephyros has been drifting around the Moonshae
+Isles and cataloging its many wonders, both magical
+and mundane. Each book weighs 100 pounds, consoli­
+dates a month's worth of research, and is worth as much
+as 250 gp.
+
+AERIE
+The highest level of the tower has open archways set
+into its walls. Four griffons have made nests in the
+aerie, and Zephyros treats them like cats. At any given
+time, ld4 of the griffons are present; absent griffons are
+out hunting and return after ld4 hours. Griffons that are
+present attack if they or their nests are disturbed. The
+griffons' nests contain no treasure.
+
+UNFRIENDLY SKIES
+One or both of the following encounters occur while the
+characters are traveling with Zephyros. If the characters
+are making the journey on their own, without the cloud
+giant's assistance, skip this section and use the Random
+Wilderness Encounters table in chapter 3 to generate
+overland encounters.
+
+DAY 3: THE HOWLING HATRED
+On the third day of the party's journey, representatives
+of an evil elemental cult called the Howling Hatred ar­
+rive at Zephyros's tower, hoping to find a powerful cloud
+
+
