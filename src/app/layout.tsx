@@ -31,6 +31,14 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <ThemeToggle />
         {children}
+        <script
+          src="https://cdn.jsdelivr.net/gh/joshualparris/JoshHub@main/public/podcast-dock-universal.js"
+          data-bank="dnd"
+          data-label="🎲 Listen to a different D&D podcast"
+          data-only-paths="/|/start|/builder"
+          data-quiet-on-input="true"
+          defer
+        />
       </body>
     </html>
   );
