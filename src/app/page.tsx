@@ -55,6 +55,12 @@ export default function Home() {
         >
           Build adventure
         </Link>
+        <Link
+          className="rounded-lg border border-emerald-600 px-5 py-3 text-sm font-medium text-emerald-800 dark:border-emerald-500 dark:text-emerald-200"
+          href="/reference"
+        >
+          Rules &amp; character vault
+        </Link>
         <a
           className="rounded-lg border border-zinc-300 px-5 py-3 text-sm dark:border-zinc-600"
           href="https://github.com/parristechservices-prog/AIDungeonMaster"
@@ -84,6 +90,16 @@ export default function Home() {
             Facts you establish are logged and fed back into every DM turn.
           </p>
         </div>
+      </section>
+
+      <section className="mt-12 rounded-lg border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-900 dark:bg-emerald-950/20">
+        <h2 className="font-semibold text-emerald-950 dark:text-emerald-100">Rules &amp; Character Vault</h2>
+        <p className="mt-2 text-sm leading-6 text-emerald-900/80 dark:text-emerald-200/80">
+          Bram Oakmoss, Wild Shape, familiars, Sorcerer quick rulings, 2014-vs-current rules, older character records, and campaign continuity are now consolidated in one edition-aware reference.
+        </p>
+        <Link className="mt-3 inline-block text-sm font-medium underline underline-offset-4" href="/reference">
+          Open the vault →
+        </Link>
       </section>
 
       <section className="mt-12">
