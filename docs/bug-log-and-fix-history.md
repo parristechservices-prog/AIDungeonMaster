@@ -11,6 +11,20 @@ This document preserves the bugs, fixes, open issues, and next prompts discovere
 
 ## Current quick status
 
+### 2026-09-29: loading freeze — podcasts removed
+
+Removed the shared podcast script from the root layout on every route. Its
+MutationObserver watched subtree child-list changes, while its callback
+unconditionally assigned the launcher's textContent. That write generated
+another observed mutation, repeatedly scheduling the callback and starving
+browser input/rendering. The production homepage timed out in browser automation.
+Podcast removal is the requested resolution; game narration and audio are unchanged.
+
+Verification: production build/typecheck and ESLint passed; existing mobile and
+desktop startup browser tests both passed through to the game composer. Blocking
+only podcast scripts on the old production site also restored homepage navigation
+to `/start` with no uncaught browser errors, confirming the integration as the cause.
+
 ### Fixed or materially improved
 
 | Area | Status |
