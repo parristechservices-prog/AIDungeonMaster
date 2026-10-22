@@ -1,10 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { POST as startSession } from '@/app/api/session/start/route';
 
-vi.mock('@/lib/llm/provider', () => ({
-  generateDmTurn: vi.fn(),
-  generateNarration: vi.fn(),
-}));
+vi.mock('@/lib/llm/provider', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/llm/provider')>();
+  return {
+    ...actual,
+    generateDmTurn: vi.fn(),
+    generateNarration: vi.fn(),
+  };
+});
 
 describe('Table Rules fallback when AI generation fails', () => {
   const originalEnv = { ...process.env };

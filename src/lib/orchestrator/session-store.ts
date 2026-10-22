@@ -9,14 +9,13 @@ import { getDb, hasDb } from '@/lib/db/client';
  * the in-memory Map is the sole store — same ephemeral behaviour as before, but
  * no filesystem writes.
  *
- * Read-through cache: `sessions`/`recapsCache` are checked first; on a miss we
- * load from the DB and populate the cache. Writes go to both. `turnCounters` and
- * `pendingTurns` are per-active-request and intentionally in-memory only.
+ * Security-sensitive request state (manual-dice continuation, request locks and
+ * the last idempotent response) lives inside GameState so it survives serverless
+ * instance changes. The cache is only an optimization, never the source of truth.
  */
 const sessions = new Map<string, GameState>();
 const turnCounters = new Map<string, number>();
 const recapsCache = new Map<string, PartyQuestRecap[]>();
-const pendingTurns = new Map<string, unknown>();
 
 /** Applies legacy field migrations to a loaded state blob, then normalizes it. */
 function migrateLoaded(sessionId: string, raw: unknown): GameState {
@@ -24,24 +23,22 @@ function migrateLoaded(sessionId: string, raw: unknown): GameState {
   const defaults = createInitialState(sessionId);
 
   if (state.player && !state.party) state.party = [state.player];
-  if (state.characterTemplateId && !state.characterTemplateIds) {
-    state.characterTemplateIds = [state.characterTemplateId];
-  }
+  if (state.characterTemplateId && !state.characterTemplateIds) state.characterTemplateIds = [state.characterTemplateId];
   if (!state.player && state.party && state.party.length > 0) state.player = state.party[0];
-  if (!state.characterTemplateId && (state.characterTemplateIds?.length ?? 0) > 0) {
-    state.characterTemplateId = state.characterTemplateIds![0];
-  }
-  if (!state.activeCharacterId && state.party && state.party.length > 0) {
-    state.activeCharacterId = state.party[0].id;
-  }
+  if (!state.characterTemplateId && (state.characterTemplateIds?.length ?? 0) > 0) state.characterTemplateId = state.characterTemplateIds![0];
+  if (!state.activeCharacterId && state.party && state.party.length > 0) state.activeCharacterId = state.party[0].id;
   if (!state.npcs) state.npcs = defaults.npcs;
   if (!state.canonLog) state.canonLog = defaults.canonLog;
 
   return migrateGameState(state as GameState);
 }
 
-export async function startNewGame(sessionId: string, options: NewGameOptions): Promise<GameState> {
-  const state = createInitialState(sessionId, options);
+export async function startNewGame(
+  sessionId: string,
+  options: NewGameOptions,
+  sessionAccessHash?: string,
+): Promise<GameState> {
+  const state = { ...createInitialState(sessionId, options), sessionAccessHash };
   sessions.set(sessionId, state);
   turnCounters.set(sessionId, 0);
   recapsCache.set(sessionId, []);
@@ -57,7 +54,8 @@ export async function startNewGame(sessionId: string, options: NewGameOptions): 
   return state;
 }
 
-export async function getOrCreateSession(sessionId: string): Promise<GameState> {
+/** Loads an existing session without creating a new public record on a guessed id. */
+export async function getSession(sessionId: string): Promise<GameState | null> {
   if (sessions.has(sessionId)) {
     const cached = migrateGameState(sessions.get(sessionId)!);
     sessions.set(sessionId, cached);
@@ -71,12 +69,11 @@ export async function getOrCreateSession(sessionId: string): Promise<GameState> 
       if (rows.length > 0) {
         const migrated = migrateLoaded(sessionId, rows[0].state);
         sessions.set(sessionId, migrated);
-        // Seed the turn counter from stored recaps so numbering survives a cold start.
         try {
           const counted = await db`select count(*)::int as n from recaps where session_id = ${sessionId}`;
           turnCounters.set(sessionId, counted[0].n);
         } catch {
-          // non-fatal; counter defaults to 0
+          // Non-fatal: turn numbering can resume from zero in this process.
         }
         return migrated;
       }
@@ -85,6 +82,13 @@ export async function getOrCreateSession(sessionId: string): Promise<GameState> 
     }
   }
 
+  return null;
+}
+
+/** Internal/dev convenience. Public routes should call getSession and reject misses. */
+export async function getOrCreateSession(sessionId: string): Promise<GameState> {
+  const existing = await getSession(sessionId);
+  if (existing) return existing;
   const next = migrateGameState(createInitialState(sessionId));
   sessions.set(sessionId, next);
   await saveSession(next);
@@ -104,6 +108,75 @@ export async function saveSession(state: GameState): Promise<void> {
       console.warn('Failed to persist session to DB', e);
     }
   }
+}
+
+/**
+ * Claims a turn before any dice or model calls run. With Postgres this is a
+ * conditional UPDATE, so two serverless instances cannot both own the same turn.
+ * Returns the freshly claimed state, or null when another non-stale request owns it.
+ */
+export async function claimSessionRequest(
+  sessionId: string,
+  requestId: string,
+  staleAfterMs = 120_000,
+): Promise<GameState | null> {
+  const startedAt = Date.now();
+  const staleBefore = startedAt - staleAfterMs;
+  const db = getDb();
+  if (db) {
+    const lock = { requestId, startedAt };
+    try {
+      const rows = await db`
+        update sessions
+        set state = jsonb_set(state, '{activeRequest}', ${db.json(lock as never)}, true), updated_at = now()
+        where session_id = ${sessionId}
+          and (
+            state->'activeRequest' is null
+            or coalesce((state #>> '{activeRequest,startedAt}')::bigint, 0) < ${staleBefore}
+          )
+        returning state`;
+      if (rows.length === 0) return null;
+      const claimed = migrateLoaded(sessionId, rows[0].state);
+      sessions.set(sessionId, claimed);
+      return claimed;
+    } catch (e) {
+      console.error('Failed to claim session turn in DB', e);
+      return null;
+    }
+  }
+
+  const state = await getSession(sessionId);
+  if (!state) return null;
+  if (state.activeRequest && state.activeRequest.startedAt >= staleBefore) return null;
+  const claimed = { ...state, activeRequest: { requestId, startedAt } };
+  sessions.set(sessionId, claimed);
+  return claimed;
+}
+
+/** Clears only the caller's own turn lock; it cannot release another request. */
+export async function releaseSessionRequest(sessionId: string, requestId: string): Promise<void> {
+  const db = getDb();
+  if (db) {
+    try {
+      const rows = await db`
+        update sessions
+        set state = state - 'activeRequest', updated_at = now()
+        where session_id = ${sessionId}
+          and state #>> '{activeRequest,requestId}' = ${requestId}
+        returning state`;
+      if (rows.length > 0) sessions.set(sessionId, migrateLoaded(sessionId, rows[0].state));
+      return;
+    } catch (e) {
+      console.warn('Failed to release session turn in DB', e);
+      return;
+    }
+  }
+
+  const state = sessions.get(sessionId);
+  if (!state || state.activeRequest?.requestId !== requestId) return;
+  const next = { ...state };
+  delete next.activeRequest;
+  sessions.set(sessionId, next);
 }
 
 export function nextTurnNumber(sessionId: string): number {
@@ -134,16 +207,25 @@ export async function saveRecap(sessionId: string, recap: PartyQuestRecap): Prom
   }
 }
 
-export function savePendingTurn(sessionId: string, turn: unknown): void {
-  pendingTurns.set(sessionId, turn);
+/** @deprecated The turn route stores pendingDmTurn on GameState directly. */
+export async function savePendingTurn(sessionId: string, turn: unknown): Promise<void> {
+  const state = await getSession(sessionId);
+  if (!state) return;
+  await saveSession({ ...state, pendingDmTurn: { turn, playerInput: '', createdAt: Date.now() } });
 }
 
-export function getPendingTurn(sessionId: string): unknown {
-  return pendingTurns.get(sessionId);
+/** @deprecated Read GameState.pendingDmTurn in the turn route. */
+export async function getPendingTurn(sessionId: string): Promise<unknown> {
+  return (await getSession(sessionId))?.pendingDmTurn?.turn;
 }
 
-export function clearPendingTurn(sessionId: string): void {
-  pendingTurns.delete(sessionId);
+/** @deprecated Clear GameState.pendingDmTurn in the turn route. */
+export async function clearPendingTurn(sessionId: string): Promise<void> {
+  const state = await getSession(sessionId);
+  if (!state?.pendingDmTurn) return;
+  const next = { ...state };
+  delete next.pendingDmTurn;
+  await saveSession(next);
 }
 
 export async function getRecaps(sessionId: string): Promise<PartyQuestRecap[]> {

@@ -110,6 +110,14 @@ export type DMPersona = {
 
 export type GameState = {
   sessionId: string;
+  /** SHA-256 of the httpOnly bearer token for this campaign; never exposed to the browser. */
+  sessionAccessHash?: string;
+  /** Manual-dice continuation state must survive serverless instance changes. */
+  pendingDmTurn?: { turn: unknown; playerInput: string; createdAt: number };
+  /** Best-effort cross-instance turn lock. Stale locks are ignored after the route timeout. */
+  activeRequest?: { requestId: string; startedAt: number };
+  /** One completed response is retained so a retried request is idempotent after a cold start. */
+  lastTurnResult?: { requestId: string; response: unknown; completedAt: number };
   adventureId: string;
   /** @deprecated Use characterTemplateIds[0]. */
   characterTemplateId: string;

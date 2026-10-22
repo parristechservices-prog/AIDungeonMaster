@@ -9,7 +9,7 @@ import { loadClientSnapshot } from '@/lib/persistence/client-snapshot';
 import type { TurnResponse } from '@/lib/play/types';
 
 export function newSessionId(): string {
-  return `sess-${crypto.randomUUID().slice(0, 8)}`;
+  return `sess-${crypto.randomUUID()}`;
 }
 
 export type PlayBootstrap = {

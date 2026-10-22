@@ -35,6 +35,7 @@ export function buildSystemPrompt(state: GameState): string {
       `- Combat: HP ${p.hp}/${p.maxHp}, AC ${p.ac}, Prof Bonus +${p.proficiencyBonus}`,
       p.conditions.length > 0 ? `- CONDITIONS: ${p.conditions.join(', ')}` : '',
       p.unconscious ? `- STATUS: UNCONSCIOUS (Death Saves: ${p.deathSaves.success} Successes, ${p.deathSaves.failure} Failures)` : '',
+      `- Gold: ${p.gold}`,
       `- Inventory: ${p.inventory.join(', ') || 'Empty'}`,
       `- Features: ${featuresList || 'None'}`,
       `- Spell Slots: ${slotsList || 'None'}`,
@@ -42,7 +43,7 @@ export function buildSystemPrompt(state: GameState): string {
     ].join('\n');
   }).join('\n\n');
 
-  return buildDmSystemPromptV05(
+  const basePrompt = buildDmSystemPromptV05(
     state,
     persona,
     sceneMeta,
@@ -52,7 +53,18 @@ export function buildSystemPrompt(state: GameState): string {
     adventure.levelRange ? 'Frontier fantasy with giant-related threats. Use names and facts from the campaign guide and canon log only. Do not invent HP or dice.' : undefined,
     adventure.campaignGuide
   );
+
+  return `${basePrompt}\n\n${WORLD_AUTHORITY_RULES}`;
 }
+
+const WORLD_AUTHORITY_RULES = `## WORLD AUTHORITY — ECONOMY, INVENTORY, RELATIONSHIPS, LOCATION
+- The engine owns gold and inventory exactly as it owns HP and dice. A completed purchase, payment, sale, gift transfer, loot pickup, food/drink consumption, or other item transfer MUST emit update_inventory for the affected character.
+- update_inventory can fail (insufficient gold or missing quantity), so set needsResultBeforeNarrating=true and do not say the transaction completed until the engine result exists. Offers, menus, prices and negotiations can be narrated without changing state.
+- Never silently charge a player, invent an item they now possess, or consume an item only in prose. If the player asks for four bottles and owns/buys fewer than four, the engine quantity is authoritative.
+- Do not invent a spouse, parent, child, sibling, employer, ownership claim, reservation, prior purchase, or other pre-existing relationship/history for the player. It must already be present in canon/current state, or be explicitly established through a valid same-turn canon/state request.
+- After move_area, describe the actual destination in SPATIAL STATE. Do not rename a kitchen as a restaurant, invent a reservation, or add prior history merely to make prose flow.
+- Alcohol and other consumables are inventory first: consume them through update_inventory. Do not claim a physiological condition that is absent from engine state. If a rules-supported condition is warranted, request apply_condition and narrate only its engine result.
+- Arithmetic is not flavour. Never paraphrase a quantity into a different count of bottles, coins, items, attacks, rolls, or other tracked objects.`;
 
 function buildSpatialPromptBlock(state: GameState): string {
   if (!state.exploration) return '';
@@ -93,8 +105,6 @@ function buildTacticalPromptBlock(state: GameState): string {
   if (!self || !pos) return '';
 
   try {
-    // Show only nearby actors (within a generous radius) with engine-computed
-    // distance/LOS/cover so the model never estimates geometry itself.
     const nearby = targetsInRange(map, activeId, 60)
       .map((t) => `- ${t.id}: ${t.distanceFt} ft${t.inReach ? ', in melee reach' : ''}${t.hasLineOfSight ? '' : ', no line of sight'}${t.cover !== 'none' ? `, ${t.cover} cover` : ''}`)
       .join('\n');
