@@ -1,0 +1,32 @@
+name: Original DM public browser audio acceptance
+on:
+  push:
+    branches: [test/live-recorded-dm-20261029]
+    paths:
+      - 'scripts/recorded-dm-live.e2e.mjs'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/recorded-dm-live.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-recordings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '9'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Test current production opt-in player and all 20 original voice files without LLM calls
+        env:
+          DM_AUDIO_TEST_ORIGIN: https://ai-dungeon-master-azure.vercel.app
+        run: node scripts/recorded-dm-live.e2e.mjs
