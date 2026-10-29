@@ -303,6 +303,11 @@ export default function PlayPage() {
             onSubmit={() => sendTurn(input)}
             placeholder="Describe what you do…"
           />
+          {turnCount === 0 && (
+            <p className="mt-1 text-xs text-zinc-500">
+              Not sure what to type? Try &quot;look around&quot;, &quot;talk to someone&quot;, &quot;what is my goal?&quot;, or &quot;help&quot;.
+            </p>
+          )}
           {isFeatureEnabled('appealTheDm') && (
             <AppealButton
               busy={busy}
