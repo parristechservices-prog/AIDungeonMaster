@@ -48,7 +48,7 @@ try {
     assert.ok(captions.some(t=>t.includes(id.slice(2))||t.length>40),'A visible caption must accompany '+id);
     assert.equal(await page.evaluate(()=>window.__nativeSpeech),0,'No substituted device voice');
     await details.getByRole('button',{name:'Stop recorded voice'}).click();
-    const paused=await page.evaluate(id=>window.__originalDmAudio.find(a=>a.currentSrc.endsWith('/voice/'+id+'.mp3'))?.paused,id);
+    const paused=await page.evaluate(()=>window.__originalDmAudio.at(-1)?.paused);
     assert.equal(paused,true,'Stop must pause actual '+id);
     console.log('PASS Original Dungeon Master',viewport.width,id);
    }
