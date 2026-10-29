@@ -135,3 +135,7 @@ See `src/lib/config/features.ts` for roadmap toggles (voice, multiplayer, cloud 
 ## License
 
 Private / project-specific — see repository owner.
+
+
+## Original ElevenLabs Dungeon Master voice lines
+The existing owner-approved VO081–VO100 recordings are bundled unchanged in `public/voice/`, with original SHA-256 and exact scripts in `src/lib/voice/recorded-dm-lines.json`. Open **Recorded Dungeon Master** in the play-screen audio dock, turn the recordings on, and choose a suggested cue or browse all twenty. All audio is player-initiated, captioned, muted by default, interruptible, and played from local assets without ElevenLabs credit charges. Suggestions for skill checks, class, scenario, combat and health come from actual game state. No unverified win/loot/chapter outcome is asserted automatically. This feature does not replace the text-based AI narration with dynamic speech.

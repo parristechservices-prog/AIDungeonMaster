@@ -1,0 +1,165 @@
+{
+  "source": "Original approved ElevenLabs_100_Approved_Tracks/tracks_manifest.csv, 2026-10-29",
+  "clips": [
+    {
+      "id": "VO081",
+      "label": "Start adventure",
+      "text": "Welcome to the table. You will make the choices; the dice and the world will answer them.",
+      "bytes": 81963,
+      "sha256": "5558494787d968fb1521a093688a1ebf915179cc24b298ea268b608b695efee8",
+      "voice": "George"
+    },
+    {
+      "id": "VO082",
+      "label": "Open Brindlehook Inn",
+      "text": "The Brindlehook Inn is warm, noisy, and full of people who have stopped watching the door.",
+      "bytes": 76111,
+      "sha256": "af1ffa2b94bb142320de097a539109542cd995e0e12ff9b356bc181f04b5b038",
+      "voice": "George"
+    },
+    {
+      "id": "VO083",
+      "label": "Open Crypt of Whispers",
+      "text": "The crypt answers footsteps with an echo that seems to arrive a moment too late.",
+      "bytes": 75275,
+      "sha256": "f3a30726f6f73d12aa1a6d1d9249ac6a7ee3c5c6bdaa6fd945357fca4bfd5093",
+      "voice": "George"
+    },
+    {
+      "id": "VO084",
+      "label": "Open Smugglers Cove",
+      "text": "Salt hangs in the air. Somewhere beyond the fog, wood knocks quietly against a hidden jetty.",
+      "bytes": 93247,
+      "sha256": "e78ba3e0162f3c235f1be47ac4b3bd400c96dbfbbaf5160c9022776811b1434e",
+      "voice": "George"
+    },
+    {
+      "id": "VO085",
+      "label": "Player chooses fighter",
+      "text": "A fighter knows that courage is a choice made before the first blow lands.",
+      "bytes": 66498,
+      "sha256": "45046796bba80fb670bf2e5deea28697e2d76eff5573f231e8edbccf4d3c069b",
+      "voice": "George"
+    },
+    {
+      "id": "VO086",
+      "label": "Player chooses wizard",
+      "text": "A wizard understands that a question can be more dangerous than an answer.",
+      "bytes": 69424,
+      "sha256": "07dc8b43c50d58339e3fe0c971c35263973f812caa5426f6e99bd8c3e703d490",
+      "voice": "George"
+    },
+    {
+      "id": "VO087",
+      "label": "Player chooses rogue",
+      "text": "A rogue notices the door everyone else has decided not to see.",
+      "bytes": 60647,
+      "sha256": "7612d9ee5ad36666a8d5d33044c08b6d05b14204ccd759878696697c98f31f00",
+      "voice": "George"
+    },
+    {
+      "id": "VO088",
+      "label": "Player chooses cleric",
+      "text": "A cleric carries conviction into places where certainty does not survive long.",
+      "bytes": 73185,
+      "sha256": "3623ab1ff643102bfe8060b21844b3d7ce4c9347d497c77314894a24c5c73c34",
+      "voice": "George"
+    },
+    {
+      "id": "VO089",
+      "label": "Before dice roll",
+      "text": "The outcome is not decided yet. When you are ready, roll.",
+      "bytes": 61901,
+      "sha256": "a9352c3374220b5c9e861393ed6993a717a6298998efbe1126293a83b980b70a",
+      "voice": "George"
+    },
+    {
+      "id": "VO090",
+      "label": "Skill check succeeds",
+      "text": "The attempt succeeds. Now we discover what your success changes.",
+      "bytes": 74021,
+      "sha256": "de1fa57434f8c833226a88e0743e29764e8ab644f246c663f062684fa1b91d37",
+      "voice": "George"
+    },
+    {
+      "id": "VO091",
+      "label": "Skill check fails",
+      "text": "The attempt fails, but the story keeps moving. There may still be a choice worth making.",
+      "bytes": 87814,
+      "sha256": "f01418daf64df0c804b09626ad1fd30a1cc2caeb1ae68f90e29fcb25c2706b39",
+      "voice": "George"
+    },
+    {
+      "id": "VO092",
+      "label": "Combat begins",
+      "text": "A threat steps forward. Before anyone moves, check where the danger stands.",
+      "bytes": 74021,
+      "sha256": "75197f3d03e7b81c852a8c3f513f98c1e1d1eecdc762b4862ea6f2f07238aec2",
+      "voice": "George"
+    },
+    {
+      "id": "VO093",
+      "label": "Turn begins",
+      "text": "Your turn. You can act, prepare, or choose another way through.",
+      "bytes": 58975,
+      "sha256": "eaffe69b5c4a7c35f3164d394bc7c0b551485c4349c3f83b4aa21189e0602a00",
+      "voice": "George"
+    },
+    {
+      "id": "VO094",
+      "label": "Low health",
+      "text": "You have taken a hard hit. Decide whether to press on or protect yourself.",
+      "bytes": 71096,
+      "sha256": "bf372ae68ac8d4e77a6133d088cb43cd5f03bf1d3b597505ad47727e945f1329",
+      "voice": "George"
+    },
+    {
+      "id": "VO095",
+      "label": "Enemy defeated",
+      "text": "The danger has passed. For now, the room belongs to the survivors.",
+      "bytes": 62736,
+      "sha256": "c1d3a0e69df49adafa5c671fb8577620720e3112d9623adb35b1f0b27f50259e",
+      "voice": "George"
+    },
+    {
+      "id": "VO096",
+      "label": "Loot recovered",
+      "text": "There is something useful here. Take a closer look before deciding whether to carry it.",
+      "bytes": 77783,
+      "sha256": "2d13df630ca6f4d17c4b0b28e2e3fca27d86af30bab82bf370479856e5c31045",
+      "voice": "George"
+    },
+    {
+      "id": "VO097",
+      "label": "Choice made",
+      "text": "You have chosen a path. Let us see what waits at its end.",
+      "bytes": 56885,
+      "sha256": "bdf99d5a785a347f94515b3c2bd9a819c0f80b77b3afdc68bb25728d3f30cdd4",
+      "voice": "George"
+    },
+    {
+      "id": "VO098",
+      "label": "New chapter",
+      "text": "A new chapter begins. The world remembers what you have already done.",
+      "bytes": 69424,
+      "sha256": "5dfa65423fe0a628c8e7b848b8517140ebfd1d1fe14e2c7d93b98790e35490f9",
+      "voice": "George"
+    },
+    {
+      "id": "VO099",
+      "label": "Adventure ends in success",
+      "text": "Your adventure has reached its ending. Keep the choices that brought you here in mind.",
+      "bytes": 76947,
+      "sha256": "b92a17d3c75373be34830c36f8e427d106ab56d7d2f4e36b723c43a7310aae31",
+      "voice": "George"
+    },
+    {
+      "id": "VO100",
+      "label": "Adventure ends in failure",
+      "text": "This story has ended differently than you hoped. Its next telling can begin with a wiser choice.",
+      "bytes": 87814,
+      "sha256": "06b3e538c8fb0ded96ecc56a01459220e93cb59fe61157e86e6d08ad800430d4",
+      "voice": "George"
+    }
+  ]
+}
