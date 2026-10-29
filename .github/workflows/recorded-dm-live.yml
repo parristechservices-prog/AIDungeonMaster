@@ -4,6 +4,7 @@ on:
     branches: [test/live-recorded-dm-20261029]
     paths:
       - 'scripts/recorded-dm-live.e2e.mjs'
+      - 'pnpm-lock.yaml'
       - '.github/workflows/recorded-dm-live.yml'
   workflow_dispatch:
 permissions:
