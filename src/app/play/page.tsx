@@ -13,6 +13,7 @@ import { NarrationPanel } from '@/components/play/NarrationPanel';
 import { OnboardingBanner } from '@/components/play/OnboardingBanner';
 import { AppealButton } from '@/components/play/AppealButton';
 import { AmbientAudio } from '@/components/play/AmbientAudio';
+import { RecordedDungeonGuide } from '@/components/play/RecordedDungeonGuide';
 import { ManualRollModal } from '@/components/play/ManualRollModal';
 import { FailedCheckRecovery } from '@/components/play/FailedCheckRecovery';
 import { CampaignMemory } from '@/components/play/CampaignMemory';
@@ -400,6 +401,7 @@ export default function PlayPage() {
             >
               {/* Docked ambient audio bar — in flow, never overlays input/suggestions */}
               {display.showAudio && <AmbientAudio type={ambient} />}
+              {display.showAudio && <RecordedDungeonGuide adventureId={adventureId} sceneId={sceneId} turnCount={turnCount} characterClass={state?.party?.[0]?.className ?? ''} combatActive={state?.combat?.active ?? false} lowHealth={state?.party?.some(p=>p.maxHp>0&&p.hp/p.maxHp<=0.3) ?? false} pendingRoll={Boolean(manualRollContext)} engineResults={lastEngineResults} />}
               <InputBox
                 value={input}
                 busy={busy}
