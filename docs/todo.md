@@ -16,7 +16,7 @@ Status source: source inspection on 2026-06-02. This file is the concise, curren
 - **Mobile play layout:** add a sticky input bar and character-sheet drawer for phone play.
 - **Failed-check UX:** mock narration gives hints, but the UI still needs inline/toast feedback for failed checks and clearer recovery choices.
 - **Accessibility pass:** improve focus order, narration log semantics, screen-reader labels, and reduced-motion behavior; add automated accessibility checks.
-- **Cost controls and rate limiting:** add per-session/IP turn limits, token estimation, and graceful "limit reached" messaging.
+- **Cost controls and rate limiting:** per-session and per-IP turn limits per minute now exist (`src/lib/rate-limit.ts`, env `TURN_LIMIT_PER_MINUTE_SESSION`/`_IP`) with a 429 and a "limit reached" message in `/play`. Best effort only (in-memory, per serverless instance). Still open: token estimation, daily caps, and a shared KV-backed limiter.
 
 ## Rules And Content Depth
 

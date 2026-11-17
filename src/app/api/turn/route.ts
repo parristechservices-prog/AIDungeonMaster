@@ -20,6 +20,7 @@ import {
   startNewGame
 } from '@/lib/orchestrator/session-store';
 import { writeDevLog } from '@/lib/logging/dev-log';
+import { checkTurnRateLimit, clientIp } from '@/lib/rate-limit';
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
@@ -31,6 +32,14 @@ export async function POST(req: Request) {
   const playerInput = typeof body?.playerInput === 'string' ? body.playerInput.slice(0, 800) : '';
   const manualRoll = typeof body?.manualRoll === 'number' ? body.manualRoll : undefined;
   const physicalDice = Boolean(body?.physicalDice);
+
+  const limit = checkTurnRateLimit(sessionId, clientIp(req));
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { ok: false, code: 'rate_limited', retryAfterSeconds: limit.retryAfterSeconds },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } },
+    );
+  }
 
   try {
     let state = getOrCreateSession(sessionId);

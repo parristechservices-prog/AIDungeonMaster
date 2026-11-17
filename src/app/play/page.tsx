@@ -179,6 +179,11 @@ export default function PlayPage() {
             manualRoll
           }),
         });
+        if (res.status === 429) {
+          const wait = Number(res.headers.get('Retry-After')) || 30;
+          setHistory((h) => [...h, `The guide needs a breather. Turn limit reached; try again in about ${wait}s.`]);
+          return;
+        }
         const contentType = res.headers.get('content-type') ?? '';
         if (!contentType.includes('application/json')) {
           throw new Error('Non-JSON turn response');
