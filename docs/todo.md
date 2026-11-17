@@ -5,7 +5,7 @@ Status source: source inspection on 2026-06-02. This file is the concise, curren
 ## Highest Priority
 
 - **Durable server persistence:** sessions currently persist to `.data/` locally and to process memory on Vercel, with a client `localStorage` snapshot for UI resume. Add KV/Postgres/Supabase or another durable store for cross-device and post-deploy resume.
-- **Prompt versioning and evals:** the active DM prompt is inline in `src/lib/llm/system-prompt.ts`. Add versioned prompt files, an active prompt registry, prompt changelogs, and an eval script/CI job.
+- **Prompt versioning and evals:** the DM prompt is now a versioned registry (`src/lib/llm/prompts/`: `v1.ts`, `registry.ts`, `CHANGELOG.md`); v1 is byte-identical to the old inline prompt (hash-checked in `src/test/prompt-registry.test.ts`), with `PARTYQUEST_PROMPT_VERSION` to trial a version. Structural evals run in `pnpm test`. Still open: model-in-the-loop evals (needs an API key and budget) and a CI job.
 - **Safety enforcement:** `validateNarrationAgainstState` logs numeric-state warnings, but narration is not blocked or regenerated. Add moderation/safety checks and one retry/regeneration path before display.
 - **Rules-engine determinism:** engine rolls still use `Math.random()`. Add a seedable PRNG and deterministic replay support for tests and bug reports.
 - **Turn legality and action economy:** combat works for the prototype, but movement, reactions, strict turn ownership, and action/bonus-action spending are not enforced end to end.
