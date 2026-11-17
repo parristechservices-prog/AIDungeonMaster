@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { shouldUseMockFlavorPrefix } from '@/lib/llm/credentials';
-import { generateDmTurn } from '@/lib/llm/provider';
+import { callLlm, generateDmTurn } from '@/lib/llm/provider';
+import { guardNarration } from '@/lib/llm/narration-guard';
 import { buildSystemPrompt } from '@/lib/llm/system-prompt';
 import { validateNarrationAgainstState } from '@/lib/llm/validate-narration';
 import { summarizeCanonLog } from '@/lib/llm/summarizer';
@@ -101,14 +102,24 @@ export async function POST(req: Request) {
     saveSession(state);
     const turnNumber = nextTurnNumber(sessionId);
 
-    const narration =
+    const draftNarration =
       fallbackUsed && shouldUseMockFlavorPrefix()
         ? `The wind shifts and the tale steadies itself. ${turn.response.narration}`
         : turn.response.narration;
 
-    const narrationWarnings = validateNarrationAgainstState(narration, state);
+    // Only AI-written narration can hallucinate state; mock narration is derived from it.
+    const guarded = aiUsed
+      ? await guardNarration(
+          draftNarration,
+          state,
+          turn.response.engineResults.map((r) => r.summary),
+          (prompt) => callLlm(prompt),
+        )
+      : { narration: draftNarration, warnings: validateNarrationAgainstState(draftNarration, state), source: 'original' as const };
+    const narration = guarded.narration;
+    const narrationWarnings = guarded.warnings;
     if (narrationWarnings.length > 0) {
-      writeDevLog({ type: 'narration_validation', sessionId, warnings: narrationWarnings });
+      writeDevLog({ type: 'narration_validation', sessionId, warnings: narrationWarnings, outcome: guarded.source });
     }
 
     const recap = buildRecap({
