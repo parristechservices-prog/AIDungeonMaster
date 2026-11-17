@@ -3,6 +3,7 @@ import { getAdventure } from '@/lib/game/adventures/registry.server';
 import type { GameState, Character } from '@/lib/game/types';
 import { advanceScene } from '@/lib/game/state';
 import type { EngineRequest, EngineResult, RollBreakdown } from './types';
+import { pick, rollDie } from './rng';
 
 function hasCondition(creature: { conditions: import('@/lib/game/types').Condition[] }, condition: import('@/lib/game/types').Condition): boolean {
   return creature.conditions.includes(condition);
@@ -164,7 +165,7 @@ export function resolveEngineRequest(
       // Target a random conscious player
       const consciousPlayers = state.party.filter(p => !p.unconscious);
       const target = consciousPlayers.length > 0 
-        ? consciousPlayers[Math.floor(Math.random() * consciousPlayers.length)]
+        ? pick(consciousPlayers)
         : state.party[0];
 
       let advantage = false;
@@ -493,7 +494,7 @@ function appendLog(state: GameState, line: string): GameState {
 }
 
 function d20() {
-  return Math.floor(Math.random() * 20) + 1;
+  return rollDie(20);
 }
 
 function rollFormula(
@@ -507,16 +508,16 @@ function rollFormula(
   const sides = Number(match[2]);
   const inlineMod = match[3] ? Number(match[3]) : fallbackMod;
 
-  let rolls = Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1);
+  let rolls = Array.from({ length: count }, () => rollDie(sides));
   let keptRoll = rolls[0];
 
   if (count === 1 && sides === 20) {
     if (options?.advantage) {
-      const secondRoll = Math.floor(Math.random() * sides) + 1;
+      const secondRoll = rollDie(sides);
       rolls = [rolls[0], secondRoll];
       keptRoll = Math.max(...rolls);
     } else if (options?.disadvantage) {
-      const secondRoll = Math.floor(Math.random() * sides) + 1;
+      const secondRoll = rollDie(sides);
       rolls = [rolls[0], secondRoll];
       keptRoll = Math.min(...rolls);
     }

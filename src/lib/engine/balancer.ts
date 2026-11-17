@@ -1,5 +1,6 @@
 import { MONSTER_LIBRARY, getMonster } from '../game/monsters';
 import { Monster } from '../game/types';
+import { pick } from './rng';
 
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'deadly';
 
@@ -62,12 +63,12 @@ export function buildBalancedEncounter(
             .filter(([id, m]) => CR_TO_XP[m.cr] <= remainingXP * 2);
         if (anyCandidates.length === 0) break;
         
-        const [id] = anyCandidates[Math.floor(Math.random() * anyCandidates.length)];
+        const [id] = pick(anyCandidates);
         const m = MONSTER_LIBRARY[id];
         monsters.push(getMonster(id));
         currentXP += CR_TO_XP[m.cr];
     } else {
-        const [id] = candidates[Math.floor(Math.random() * candidates.length)];
+        const [id] = pick(candidates);
         const m = MONSTER_LIBRARY[id];
         monsters.push(getMonster(id));
         currentXP += CR_TO_XP[m.cr];

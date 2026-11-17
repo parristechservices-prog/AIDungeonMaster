@@ -7,7 +7,7 @@ Status source: source inspection on 2026-06-02. This file is the concise, curren
 - **Durable server persistence:** sessions currently persist to `.data/` locally and to process memory on Vercel, with a client `localStorage` snapshot for UI resume. Add KV/Postgres/Supabase or another durable store for cross-device and post-deploy resume.
 - **Prompt versioning and evals:** the active DM prompt is inline in `src/lib/llm/system-prompt.ts`. Add versioned prompt files, an active prompt registry, prompt changelogs, and an eval script/CI job.
 - **Safety enforcement:** `validateNarrationAgainstState` logs numeric-state warnings, but narration is not blocked or regenerated. Add moderation/safety checks and one retry/regeneration path before display.
-- **Rules-engine determinism:** engine rolls still use `Math.random()`. Add a seedable PRNG and deterministic replay support for tests and bug reports.
+- **Rules-engine determinism:** dice rolls and random picks now go through `src/lib/engine/rng.ts` (`seedRng(n)` / `resetRng()`), defaulting to `Math.random`, so seeded replays work in tests. Still open: persist the seed in session state so a bug report can replay a whole session; entity ID generators still use `Math.random`.
 - **Turn legality and action economy:** combat works for the prototype, but movement, reactions, strict turn ownership, and action/bonus-action spending are not enforced end to end.
 
 ## Product Polish
