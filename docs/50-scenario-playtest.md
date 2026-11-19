@@ -115,3 +115,16 @@ These are direct production API observations from disposable games. The checkbox
 
 - **4, 45.** Reproduced a same-class party collision: two fighters created in the same millisecond could share an actor ID. The regression creates both on the same clock tick and sends only one to the drawbridge. It verifies both map positions independently. Multiple browsers and existing saves with duplicate IDs remain unverified.
 - **23, 26, 30.** Reproduced a melee attack resolving against a worg 20 feet away. The engine now checks map distance against melee reach before spending the action or rolling. The regression checks that the distant attack leaves combat state intact. The adjacent-target cover test checks that legal melee attacks still resolve.
+
+### Local two-server playtest
+
+- **37, 39, 41.** Ran two production builds against a shared PGlite database. The second app process recovered a pending roll and the original two-hero roster, inventory and locations. Before the fix, submitting the consumed roll to the original app process was accepted. Postgres now supplies the current state, and a conditional update makes the stored roll ID single-use.
+- **23–25, 40, 44, 46.** The Table Rules run used a fighter and a wizard, crossed the drawbridge, entered the square, and attacked a worg. Attacking before initiative had been rolled started combat without a map until reload. The implicit combat start now builds the map immediately. The integration test checks both tokens, four initiative entries and the round-trip across app processes.
+- **38, 49–50.** Chromium could not start in the local sandbox. Browser refresh, microphone and audio playback remain unverified by this pass.
+- **23, 26, 30, 46–47.** The new battle map exposed a Table Rules combat stall in Crypt of Whispers. The attack command now uses available movement to approach an out-of-reach target, and defeated foes stop blocking squares or taking turns. A legal attack spends its action even when it misses. All four built-in deterministic completion flows pass. Crypt uses a higher-HP test hero because the fixed dice also maximise enemy damage.
+
+### Remaining capability gaps
+
+- **28–29, 33.** The turn contract supports applying conditions. It has no dedicated grapple, shove or concentration resolution. These scenarios still need rules work and gameplay verification.
+- **45.** Multiple heroes can share a campaign. Multiplayer rooms are disabled, so a multi-client party has no supported room flow to verify.
+- **48.** The local HTTP run reached and reloaded the square encounter. It did not finish all of Nightstone Chapter 1.

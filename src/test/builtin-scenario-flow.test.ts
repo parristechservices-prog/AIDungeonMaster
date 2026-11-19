@@ -13,6 +13,12 @@ describe('built-in scenario offline flows', () => {
     (adventureId, scenario) => {
       setRandomProvider(() => 0.99);
       let state = createInitialState(`offline-${adventureId}`, { adventureId, characterId: 'fighter' });
+      if (adventureId === 'crypt-of-whispers') {
+        // This flow verifies completion and encounter transitions. Use a durable
+        // test hero because the deterministic provider also maxes enemy damage.
+        const fighter = { ...state.party[0], hp: 150, maxHp: 150 };
+        state = { ...state, player: fighter, party: [fighter] };
+      }
       const actions = ['I ask the NPC what they know', 'I inspect the area', ...Array(12).fill('I attack')];
 
       for (const action of actions) {

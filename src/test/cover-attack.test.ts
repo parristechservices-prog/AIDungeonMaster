@@ -37,9 +37,10 @@ describe('cover in ranged attack resolution', () => {
 
   it('half cover raises AC by 2 and turns the same hit into a miss', () => {
     const { state, heroId } = rangedSetup({ terrain: 'normal', cover: 'half' });
-    const { result } = resolveEngineRequest(state, { kind: 'player_attack', characterId: heroId, targetId: 'goblin', ranged: true, manualRoll: 8 });
+    const { result, state: afterAttack } = resolveEngineRequest(state, { kind: 'player_attack', characterId: heroId, targetId: 'goblin', ranged: true, manualRoll: 8 });
     expect(result.ok).toBe(false);
     expect(result.cover).toMatchObject({ kind: 'half', baseAc: 12, bonus: 2, effectiveAc: 14 });
+    expect(afterAttack.combat.battleMap?.actors[heroId].actionUsed).toBe(true);
   });
 
   it('three-quarters cover raises AC by 5', () => {

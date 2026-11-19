@@ -23,10 +23,10 @@ async function checkStorage() {
   }
 }
 
-export async function GET(request?: Request) {
-  const inspectSource = request ? new URL(request.url).searchParams.get('source') === 'skt' : false;
+export async function GET(request: Request) {
+  const inspectSource = new URL(request.url).searchParams.get('source') === 'skt';
   const source = inspectSource ? await loadSourceForAdventure('skt-nightstone-chapter1') : null;
-  const inspectStorage = request && new URL(request.url).searchParams.get('storage') === 'check';
+  const inspectStorage = new URL(request.url).searchParams.get('storage') === 'check';
   const storageStatus = inspectStorage ? await checkStorage() : undefined;
   return NextResponse.json({
     ok: true,

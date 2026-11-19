@@ -254,7 +254,9 @@ export async function POST(req: Request) {
     // Deterministic pruning bounds canon-log growth over a long campaign.
     state = { ...state, canonLog: pruneCanonLog(state.canonLog) };
 
-    await saveSession(state);
+    if (!await saveSession(state, manualRoll === undefined ? undefined : pending?.rollId)) {
+      return NextResponse.json({ ok: false, error: 'This dice request is no longer active.' }, { status: 409 });
+    }
     const turnNumber = nextTurnNumber(sessionId);
 
     narration = fallbackUsed && shouldUseMockFlavorPrefix()

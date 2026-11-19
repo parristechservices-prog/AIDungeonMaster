@@ -9,10 +9,11 @@ import { getDb, hasDb } from '@/lib/db/client';
  * the in-memory Map is the sole store — same ephemeral behaviour as before, but
  * no filesystem writes.
  *
- * Read-through cache: `sessions`/`recapsCache` are checked first; on a miss we
- * load from the DB and populate the cache. Writes go to both. Pending dice prompts are saved alongside game state.
+ * Postgres is authoritative across server instances. In-memory copies allow an
+ * already-loaded session to continue when storage is temporarily unavailable.
  */
 const sessions = new Map<string, GameState>();
+const durableSessions = new Set<string>();
 const turnCounters = new Map<string, number>();
 const recapsCache = new Map<string, PartyQuestRecap[]>();
 type PendingTurn = {
@@ -63,12 +64,6 @@ export async function startNewGame(sessionId: string, options: NewGameOptions): 
 }
 
 export async function getOrCreateSession(sessionId: string): Promise<GameState> {
-  if (sessions.has(sessionId)) {
-    const cached = migrateGameState(sessions.get(sessionId)!);
-    sessions.set(sessionId, cached);
-    return cached;
-  }
-
   const db = getDb();
   if (db) {
     try {
@@ -76,9 +71,11 @@ export async function getOrCreateSession(sessionId: string): Promise<GameState> 
       if (rows.length > 0) {
         const { pendingDice, ...storedState } = rows[0].state as GameState & { pendingDice?: PendingTurn };
         if (pendingDice) pendingTurns.set(sessionId, pendingDice);
+        else clearPendingTurn(sessionId);
         const migrated = migrateLoaded(sessionId, storedState);
         sessions.set(sessionId, migrated);
-        // Seed the turn counter from stored recaps so numbering survives a cold start.
+        durableSessions.add(sessionId);
+        // Reconcile turn numbering with changes made by other server processes.
         try {
           const counted = await db`select count(*)::int as n from recaps where session_id = ${sessionId}`;
           turnCounters.set(sessionId, counted[0].n);
@@ -92,26 +89,44 @@ export async function getOrCreateSession(sessionId: string): Promise<GameState> 
     }
   }
 
+  if (sessions.has(sessionId)) {
+    const cached = migrateGameState(sessions.get(sessionId)!);
+    sessions.set(sessionId, cached);
+    return cached;
+  }
+
   const next = migrateGameState(createInitialState(sessionId));
   sessions.set(sessionId, next);
   await saveSession(next);
   return next;
 }
 
-export async function saveSession(state: GameState): Promise<void> {
-  sessions.set(state.sessionId, state);
+export async function saveSession(state: GameState, consumedRollId?: string): Promise<boolean> {
   const pendingDice = getPendingTurn(state.sessionId);
   const db = getDb();
   if (db) {
     try {
-      await db`
-        insert into sessions (session_id, state, updated_at)
-        values (${state.sessionId}, ${db.json({ ...state, pendingDice } as never)}, now())
-        on conflict (session_id) do update set state = excluded.state, updated_at = now()`;
+      if (consumedRollId && durableSessions.has(state.sessionId)) {
+        const updated = await db`
+          update sessions
+          set state = ${db.json({ ...state, pendingDice } as never)}, updated_at = now()
+          where session_id = ${state.sessionId} and state->'pendingDice'->>'rollId' = ${consumedRollId}
+          returning session_id`;
+        if (!updated.length) return false;
+      } else {
+        await db`
+          insert into sessions (session_id, state, updated_at)
+          values (${state.sessionId}, ${db.json({ ...state, pendingDice } as never)}, now())
+          on conflict (session_id) do update set state = excluded.state, updated_at = now()`;
+      }
+      durableSessions.add(state.sessionId);
     } catch (e) {
       console.warn('Failed to persist session to DB', e);
+      if (consumedRollId && durableSessions.has(state.sessionId)) throw e;
     }
   }
+  sessions.set(state.sessionId, state);
+  return true;
 }
 
 export function nextTurnNumber(sessionId: string): number {
@@ -155,8 +170,6 @@ export function clearPendingTurn(sessionId: string): void {
 }
 
 export async function getRecaps(sessionId: string): Promise<PartyQuestRecap[]> {
-  if (recapsCache.has(sessionId)) return recapsCache.get(sessionId)!;
-
   const db = getDb();
   if (db) {
     try {
@@ -168,7 +181,7 @@ export async function getRecaps(sessionId: string): Promise<PartyQuestRecap[]> {
       console.error('Failed to load recaps from DB', e);
     }
   }
-  return [];
+  return recapsCache.get(sessionId) ?? [];
 }
 
 export async function getLatestRecap(sessionId: string): Promise<PartyQuestRecap | null> {

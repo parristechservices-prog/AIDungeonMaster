@@ -315,19 +315,35 @@ export function resolveEngineRequest(
 
       if (!toHit.ok) {
         const coverNote = coverOutcome ? ` (${coverOutcome.kind.replace('_', '-')} cover: AC ${coverOutcome.baseAc}+${coverOutcome.bonus})` : '';
-        return { state: appendLog(state, `${char.name} missed ${target.name}.`), result: { ok: false, summary: `Attack missed${coverNote}.`, breakdown: toHit, cover: coverOutcome } };
+        return { state: appendLog(nextState, `${char.name} missed ${target.name}.`), result: { ok: false, summary: `Attack missed${coverNote}.`, breakdown: toHit, cover: coverOutcome } };
       }
       // Use the attacker's actual weapon damage; a crit doubles the dice (5e).
       const damage = rollFormula(critical ? critFormula(char.weapon.damage) : char.weapon.damage);
       const monsters = nextState.monsters.map((m) => m.id === target.id ? { ...m, hp: Math.max(0, m.hp - damage.total) } : m);
       let next = { ...nextState, monsters };
+      const battleMap = next.combat.battleMap;
+      if (battleMap && monsters.some((monster) => monster.id === target.id && monster.hp === 0)) {
+        const positions = { ...battleMap.positions };
+        delete positions[target.id];
+        next = { ...next, combat: { ...next.combat, battleMap: { ...battleMap, positions } } };
+      }
       const allDown = monsters.every((m) => m.hp <= 0);
       if (allDown) {
         next = advanceScene({ ...next, combat: { ...next.combat, active: false } });
       } else if (!next.combat.active) {
         // Attacking living enemies starts combat, so the HUD shows them and
         // monster turns / initiative proceed instead of the fight staying hidden.
-        next = { ...next, combat: { active: true, initiative: rollInitiative(next), turnIndex: 0 } };
+        const initiative = rollInitiative(next);
+        const encounter = {
+          ...next,
+          activeCharacterId: initiative[0].actorId,
+          combat: { active: true, initiative, turnIndex: 0 },
+        };
+        const authoredMap = encounterBattleMap(getAdventure(next.adventureId), next.sceneId);
+        next = {
+          ...encounter,
+          combat: { ...encounter.combat, battleMap: buildBattleMap(encounter, undefined, authoredMap) },
+        };
       }
       return {
         state: appendLog(next, `${char.name} hit ${target.name} for ${damage.total}.`),
@@ -339,7 +355,11 @@ export function resolveEngineRequest(
       const init = state.combat.initiative;
       if (init.length === 0) return { state, result: { ok: false, summary: 'No initiative order.' } };
       
-      const nextTurnIndex = (state.combat.turnIndex + 1) % init.length;
+      let nextTurnIndex = (state.combat.turnIndex + 1) % init.length;
+      while (nextTurnIndex !== state.combat.turnIndex &&
+        state.monsters.some((monster) => monster.id === init[nextTurnIndex].actorId && monster.hp <= 0)) {
+        nextTurnIndex = (nextTurnIndex + 1) % init.length;
+      }
       const nextActorId = init[nextTurnIndex].actorId;
       
       const nextState: GameState = {

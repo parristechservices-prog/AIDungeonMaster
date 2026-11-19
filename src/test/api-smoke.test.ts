@@ -117,7 +117,7 @@ describe('no-key API smoke flow', () => {
   });
 
   it('reports secret-safe health information', async () => {
-    const response = await getHealth();
+    const response = await getHealth(new Request('http://localhost/api/health'));
     expect(await response.json()).toMatchObject({
       ok: true,
       service: 'partyquest',
