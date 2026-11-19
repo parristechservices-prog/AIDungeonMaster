@@ -114,3 +114,4 @@ These are direct production API observations from disposable games. The checkbox
 ### Local rules-engine playtest
 
 - **4, 45.** Reproduced a same-class party collision: two fighters created in the same millisecond could share an actor ID. The regression creates both on the same clock tick and sends only one to the drawbridge. It verifies both map positions independently. Multiple browsers and existing saves with duplicate IDs remain unverified.
+- **23, 26, 30.** Reproduced a melee attack resolving against a worg 20 feet away. The engine now checks map distance against melee reach before spending the action or rolling. The regression checks that the distant attack leaves combat state intact. The adjacent-target cover test checks that legal melee attacks still resolve.

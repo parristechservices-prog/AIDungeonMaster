@@ -40,6 +40,23 @@ describe('engine', () => {
     }
   });
 
+  it('refuses a distant worg melee target without using the fighter action', () => {
+    const state = createInitialState('nightstone-melee-reach', { adventureId: 'skt-nightstone-chapter1' });
+    const combat = resolveEngineRequest(state, { kind: 'start_combat' }).state;
+    const fighter = combat.party[0];
+    const worg = combat.monsters[0];
+    const map = combat.combat.battleMap!;
+    map.positions[fighter.id] = { x: 0, y: 0 };
+    map.positions[worg.id] = { x: 4, y: 0 };
+
+    const result = resolveEngineRequest(combat, {
+      kind: 'player_attack', characterId: fighter.id, targetId: worg.id, manualRoll: 20,
+    });
+    expect(result.result).toMatchObject({ ok: false, summary: expect.stringContaining('outside your 5 ft melee reach') });
+    expect(result.state).toBe(combat);
+    expect(map.actors[fighter.id].actionUsed).toBe(false);
+  });
+
   it('repairs a saved party-only Nightstone initiative without rerolling the party', () => {
     const state = createInitialState('nightstone-repair', { adventureId: 'skt-nightstone-chapter1' });
     state.sceneId = 'village-square';

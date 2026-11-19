@@ -213,6 +213,13 @@ export function resolveEngineRequest(
       if (!target) return { state, result: { ok: false, summary: 'No valid target.' } };
 
       const map = state.combat.battleMap;
+      if (map && !request.ranged) {
+        const distance = distanceBetweenActors(map, char.id, target.id);
+        const reach = map.actors[char.id]?.reachFt ?? 5;
+        if (distance !== undefined && distance > reach) {
+          return { state, result: { ok: false, summary: `${target.name} is ${distance} ft away, outside your ${reach} ft melee reach.` } };
+        }
+      }
       let nextState = state;
       if (map) {
         const actor = map.actors[char.id];
