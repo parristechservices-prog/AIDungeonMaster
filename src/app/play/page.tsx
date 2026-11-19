@@ -333,14 +333,15 @@ export default function PlayPage() {
             {/* Panel header — stacks on mobile (title row, then wrapping controls) */}
             <header className="shrink-0 flex flex-col gap-2 border-b border-zinc-200 px-3 py-2 dark:border-zinc-700 md:flex-row md:items-start md:justify-between md:px-4 md:pt-4 md:pb-3">
               <div className="min-w-0">
-                <h1 className="text-base font-bold leading-tight line-clamp-2 md:text-xl md:truncate">{adventureTitle}</h1>
+                <h1 className="text-base font-bold leading-tight line-clamp-2 md:text-xl md:truncate [@media(max-height:500px)]:line-clamp-1">{adventureTitle}</h1>
+                {/* Short screens (a phone held sideways) drop the secondary header lines. */}
                 {display.showSceneMeta && (
-                  <p className="mt-0.5 truncate text-[11px] text-zinc-500 dark:text-zinc-400 md:text-xs">
+                  <p className="mt-0.5 truncate text-[11px] text-zinc-500 dark:text-zinc-400 md:text-xs [@media(max-height:500px)]:hidden">
                     Scene: <b>{sceneId}</b> · {sceneGoal}
                   </p>
                 )}
                 {(display.showModePill || display.showActiveCharacter || (display.showTurnNumber && turnCount > 0)) && (
-                  <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-zinc-500 md:text-xs">
+                  <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-zinc-500 md:text-xs [@media(max-height:500px)]:hidden">
                     {display.showModePill && (
                       <span className="rounded-full border border-zinc-300 px-2 py-0.5 font-semibold dark:border-zinc-700">
                         {mode === 'ai_director' ? 'AI Director' : 'Table Rules'}
