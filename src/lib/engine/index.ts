@@ -6,8 +6,9 @@ import { advanceScene, buildBattleMap } from '@/lib/game/state';
 import type { EngineRequest, EngineResult, RollBreakdown, OpportunityAttackOutcome, CoverOutcome } from './types';
 import { resolveSpatialRequest, type SpatialEngineResult } from './spatial';
 import { resolveTacticalRequest, lineOfSight, coverAcBonus, reachableCells, resolveMove, distanceFt, distanceBetweenActors, type TacticalEngineRequest, type TacticalEngineResult, type BattleMap, type CoverKind, type GridCoord } from './spatial/tactical';
-import { monsterAttacks } from '@/lib/game/monsters';
-import { abilityMod, getHitDice, saveBonus } from '@/lib/game/rules';
+import { MONSTER_LIBRARY, getMonster, monsterAttacks } from '@/lib/game/monsters';
+import { abilityMod, getHitDice, saveBonus, canGrappleSize, characterSkillBonus, chooseWeapon, monsterSkillBonus, passivePerception } from '@/lib/game/rules';
+import type { Condition, Weapon } from '@/lib/game/types';
 import type { Monster, MonsterAttack } from '@/lib/game/types';
 
 let randomProvider = Math.random;
@@ -41,7 +42,37 @@ function requestedCharacterId(characterId?: string): string | undefined {
   return characterId;
 }
 
+/**
+ * Every engine action goes through here, then a consistency pass: an
+ * unconscious character is prone and can't stay hidden or dodging (5e), and a
+ * party wipe ends the fight, however the last blow landed.
+ */
 export function resolveEngineRequest(
+  state: GameState,
+  request: EngineRequest,
+  options?: { physicalDice?: boolean; advanceOnSkillSuccess?: boolean },
+): { state: GameState; result: EngineResult } {
+  const out = resolveEngineRequestInner(state, request, options);
+  return { state: normaliseState(out.state), result: out.result };
+}
+
+function normaliseState(state: GameState): GameState {
+  let next = state;
+  for (const p of next.party) {
+    if (p.unconscious && p.conditions.some((c) => c === 'hidden' || c === 'dodging' || c === 'helped' || c === 'surprised')) {
+      next = updateCharacterInParty(next, p.id, (c) => ({ ...c, conditions: c.conditions.filter((x) => !['hidden', 'dodging', 'helped', 'surprised'].includes(x)) }));
+    }
+    if (p.unconscious && !p.conditions.includes('prone')) {
+      next = updateCharacterInParty(next, p.id, (c) => ({ ...c, conditions: [...c.conditions, 'prone'] }));
+    }
+  }
+  if (next.party.length > 0 && next.party.every((p) => p.deathSaves.failure >= 3)) {
+    if (next.combat.active || next.sceneId !== 'ending') next = { ...next, sceneId: 'ending', combat: { ...next.combat, active: false } };
+  }
+  return next;
+}
+
+function resolveEngineRequestInner(
   state: GameState,
   request: EngineRequest,
   options?: { physicalDice?: boolean; advanceOnSkillSuccess?: boolean }
@@ -80,6 +111,13 @@ export function resolveEngineRequest(
       const battleMap = state.combat.battleMap;
       if (!state.combat.active || !battleMap) {
         return { state, result: { ok: false, summary: 'No tactical battle map is active.' } };
+      }
+      if (request.kind === 'move_creature' || request.kind === 'dash' || request.kind === 'disengage') {
+        const mover = state.party.find((p) => p.id === request.actorId);
+        if (mover?.unconscious) return { state, result: { ok: false, summary: `${mover.name} is unconscious and cannot move.` } };
+        if (mover && ['grappled', 'restrained'].some((c) => hasCondition(mover, c as Condition)) && request.kind === 'move_creature') {
+          return { state, result: { ok: false, summary: `${mover.name} is ${mover.conditions.includes('grappled') ? 'grappled' : 'restrained'} (speed 0) and must escape first.` } };
+        }
       }
       try {
         const resolved = resolveTacticalRequest(battleMap, request as TacticalEngineRequest);
@@ -158,45 +196,279 @@ export function resolveEngineRequest(
       const ok = breakdown.total >= request.dc;
       breakdown.dc = request.dc;
       breakdown.ok = ok;
+      // A check moves the story on when the DM marks it as completing the scene
+      // goal (advancesScene). If the DM doesn't say, Table Rules mode keeps its
+      // old default of advancing on success outside combat scenes.
       const inCombatScene =
         getSceneKind(getAdventure(state.adventureId), state.sceneId) === 'combat';
-      const next = ok && !inCombatScene && options?.advanceOnSkillSuccess !== false ? advanceScene(state) : state;
+      const advances = request.advancesScene ?? (options?.advanceOnSkillSuccess === true && !inCombatScene);
+      const next = ok && advances && !state.combat.active ? advanceScene(state) : state;
       return {
         state: appendLog(next, `${char.name}: ${request.skill} check ${ok ? 'passed' : 'failed'} (${breakdown.total} vs DC ${request.dc})`),
         result: { ok, summary: `${request.reason}: ${ok ? 'success' : 'failure'}`, breakdown },
       };
     }
     case 'start_combat': {
-      if (state.combat.active) {
-        const repaired = repairMissingEncounter(state);
-        return { state: repaired, result: { ok: repaired !== state, summary: repaired !== state
-          ? 'Missing enemies restored to initiative.' : 'Combat is already active.' } };
+      if (state.party.length > 0 && state.party.every((p) => p.deathSaves.failure >= 3)) {
+        return { state, result: { ok: false, summary: 'The party has fallen; there is no one left to fight.' } };
       }
       const adventure = getAdventure(state.adventureId);
-      const combatSceneId = getSceneKind(adventure, state.sceneId) === 'combat'
-        ? state.sceneId
-        : adventure.sceneOrder.find((id) => adventure.scenes[id]?.kind === 'combat') ?? 'combat';
-      const monsters = getSceneKind(adventure, combatSceneId) === 'combat' &&
-          (state.monsters.length === 0 || (state.sceneId !== combatSceneId && adventure.sceneEncounters?.[combatSceneId]))
-        ? resolveCombatMonsters(adventure, combatSceneId, state.party[0].level)
-        : state.monsters;
-      if (!monsters.some((monster) => monster.hp > 0)) {
+      const living = (list: Monster[] | undefined) => (list ?? []).filter((m) => m.hp > 0);
+      // Who is fighting? 1) combatants the DM names, 2) hostiles already here,
+      // 3) this scene's authored encounter, 4) for legacy scenes with nothing
+      // authored, the next combat scene's encounter.
+      let reserve = state.reserveMonsters ?? [];
+      const spawned: Monster[] = [];
+      if (request.combatants?.length) {
+        for (const c of request.combatants) {
+          if (c.monsterId) {
+            const found = [...state.monsters, ...reserve].find((m) => m.id === c.monsterId && m.hp > 0);
+            if (found) { spawned.push(found); reserve = reserve.filter((m) => m.id !== found.id); }
+            continue;
+          }
+          if (!c.template || !MONSTER_LIBRARY[c.template]) {
+            return { state, result: { ok: false, summary: `Unknown combatant template "${c.template ?? '?'}". Known: ${Object.keys(MONSTER_LIBRARY).join(', ')}.` } };
+          }
+          const count = Math.max(1, Math.min(12, c.count ?? 1));
+          for (let n = 0; n < count; n++) {
+            const base = getMonster(c.template);
+            const name = c.name ? (count > 1 ? `${c.name} ${n + 1}` : c.name) : base.name;
+            const id = uniqueMonsterId(state, `${slugifyTag(c.name ?? c.template)}${count > 1 ? `-${n + 1}` : ''}`, spawned);
+            spawned.push({ ...base, id, name });
+          }
+        }
+      }
+
+      if (state.combat.active) {
+        if (spawned.length === 0) {
+          const repaired = repairMissingEncounter(state);
+          return { state: repaired, result: { ok: repaired !== state, summary: repaired !== state
+            ? 'Missing enemies restored to initiative.' : 'Combat is already active.' } };
+        }
+        // Reinforcements join the fight with their own initiative.
+        const joined = joinCombat({ ...state, reserveMonsters: reserve }, spawned);
+        return { state: appendLog(joined, `${spawned.map((m) => m.name).join(', ')} join the fight!`), result: { ok: true, summary: `${spawned.map((m) => m.name).join(', ')} join the fight and roll initiative.` } };
+      }
+
+      let monsters: Monster[];
+      let sceneId = state.sceneId;
+      if (spawned.length > 0) {
+        // Hostiles already present but not named stay nearby, out of this fight.
+        const bystanders = living(state.monsters).filter((m) => !spawned.some((x) => x.id === m.id));
+        reserve = [...reserve, ...bystanders.map((m) => ({ ...m, homeSceneId: m.homeSceneId ?? state.sceneId }))];
+        monsters = spawned;
+      } else if (living(state.monsters).length > 0) {
+        monsters = state.monsters;
+        // Legacy adventures pre-place the first fight's monsters; starting combat
+        // outside a combat scene there means "go to that fight".
+        if (!adventure.playConfig?.spawnMonstersOnCombatOnly && getSceneKind(adventure, state.sceneId) !== 'combat' && !adventure.sceneEncounters?.[state.sceneId]) {
+          sceneId = adventure.sceneOrder.find((id) => adventure.scenes[id]?.kind === 'combat') ?? state.sceneId;
+        }
+      } else if (reserve.some((m) => m.hp > 0 && m.homeSceneId === state.sceneId)) {
+        monsters = reserve.filter((m) => m.hp > 0 && m.homeSceneId === state.sceneId);
+        reserve = reserve.filter((m) => !monsters.includes(m));
+      } else if ((adventure.sceneEncounters?.[state.sceneId] || getSceneKind(adventure, state.sceneId) === 'combat') && !state.monsters.some((m) => m.hp <= 0)) {
+        ({ monsters, reserve } = claimFromReserve(resolveCombatMonsters(adventure, state.sceneId, state.party[0].level), reserve));
+      } else if (getSceneKind(adventure, state.sceneId) !== 'combat' && state.monsters.length === 0) {
+        const from = Math.max(0, adventure.sceneOrder.indexOf(state.sceneId));
+        const nextCombat = adventure.sceneOrder.slice(from).find((id) => adventure.scenes[id]?.kind === 'combat');
+        if (!nextCombat) return { state, result: { ok: false, summary: 'No enemies are present. Name the combatants (start_combat.combatants).' } };
+        ({ monsters, reserve } = claimFromReserve(resolveCombatMonsters(adventure, nextCombat, state.party[0].level), reserve));
+        sceneId = nextCombat;
+      } else {
+        return { state, result: { ok: false, summary: 'No active enemies to roll initiative for. Name the combatants (start_combat.combatants).' } };
+      }
+      if (!monsters.some((m) => m.hp > 0)) {
         return { state, result: { ok: false, summary: 'No active enemies to roll initiative for.' } };
       }
-      const init = rollInitiative({ ...state, monsters });
-      const draft = {
-        ...state,
-        monsters,
-        combat: { active: true, initiative: init, turnIndex: 0 },
-        sceneId: combatSceneId,
-        activeCharacterId: init[0].actorId,
+
+      // Surprise (5e): stealthy attackers vs passive Perception decide this; the
+      // DM names who is surprised. Surprised creatures lose their first turn.
+      const surprisedIds = resolveSurpriseIds(state, monsters, request.surprised);
+      const started = beginCombat({ ...state, sceneId, reserveMonsters: reserve }, monsters, surprisedIds);
+      const surpriseNote = surprisedIds.length
+        ? ` Surprised: ${surprisedIds.map((id) => started.monsters.find((m) => m.id === id)?.name ?? started.party.find((p) => p.id === id)?.name ?? id).join(', ')}.`
+        : '';
+      return {
+        state: appendLog(started, `Combat started. Roll for initiative!${surpriseNote}`),
+        result: { ok: true, summary: `Initiative rolled: ${started.combat.initiative.map((e) => `${started.monsters.find((m) => m.id === e.actorId)?.name ?? started.party.find((p) => p.id === e.actorId)?.name ?? e.actorId} ${e.roll}`).join(', ')}.${surpriseNote}` },
       };
-      const authoredMap = encounterBattleMap(adventure, combatSceneId);
-      const next = {
-        ...draft,
-        combat: { ...draft.combat, battleMap: buildBattleMap(draft, undefined, authoredMap) },
-      };
-      return { state: appendLog(next, 'Combat started. Roll for initiative!'), result: { ok: true, summary: 'Initiative rolled.' } };
+    }
+    case 'end_combat': {
+      if (!state.combat.active) return { state, result: { ok: true, summary: 'Not in combat.' } };
+      // The party escapes, both sides back off, or a truce is struck. Enemies keep
+      // their wounds and stay where they are; they can return later.
+      const next: GameState = { ...state, combat: { active: false, initiative: [], turnIndex: 0 } };
+      const why = request.reason?.trim() || 'The fight breaks off.';
+      return { state: appendLog(next, `Combat ends: ${why}`), result: { ok: true, summary: `Combat ends: ${why}` } };
+    }
+    case 'remove_combatant': {
+      const m = state.monsters.find((x) => x.id === request.targetId);
+      if (!m) return { state, result: { ok: false, summary: `No combatant ${request.targetId}.` } };
+      const outcome = request.outcome ?? 'fled';
+      const verb: Record<string, string> = { fled: 'flees', surrendered: 'surrenders', captured: 'is captured', calmed: 'is calmed and backs off', dismissed: 'leaves the fight', befriended: 'stops fighting' };
+      let next = removeMonster(state, m.id);
+      if (outcome === 'surrendered' || outcome === 'captured') {
+        next = { ...next, canonLog: [...next.canonLog, { id: `fact-${next.canonLog.length + 1}`, content: `${m.name} ${verb[outcome]} (${m.hp}/${m.maxHp} HP) and is in the party's custody.`, importance: 'medium' }] };
+      } else {
+        // Fled creatures leave the area; calmed or dismissed ones are still around.
+        next = { ...next, reserveMonsters: [...(next.reserveMonsters ?? []), { ...m, conditions: [], homeSceneId: outcome === 'fled' ? undefined : state.sceneId }] };
+      }
+      const wasFighting = state.combat.active;
+      next = finishCombatIfResolved(next);
+      const summary = `${m.name} ${verb[outcome] ?? 'leaves the fight'}.${wasFighting && !next.combat.active ? ' No enemies remain in the fight.' : ''}`;
+      return { state: appendLog(next, summary), result: { ok: true, summary } };
+    }
+    case 'contest': {
+      // Opposed check (5e): grapple escapes, Stealth vs Perception, Deception vs
+      // Insight, tug-of-war... A tie leaves things as they were (initiator fails).
+      const char = state.party.find((p) => p.id === requestedCharacterId(request.characterId));
+      if (!char) return { state, result: { ok: false, summary: 'Character not found.' } };
+      if (char.unconscious) return { state, result: { ok: false, summary: `${char.name} is unconscious.` } };
+      const foe = state.monsters.find((m) => m.id === request.targetId) ?? [...(state.reserveMonsters ?? [])].find((m) => m.id === request.targetId);
+      const npc = foe ? undefined : state.npcs.find((n) => n.id === request.targetId);
+      if (!foe && !npc) return { state, result: { ok: false, summary: `No creature ${request.targetId} to contest.` } };
+      const oppSkill = request.targetSkill ?? defaultOpposingSkill(request.skill);
+      const oppBonus = foe ? monsterSkillBonus(foe, oppSkill) : (request.targetBonus ?? 0);
+      const helped = hasCondition(char, 'helped');
+      const mine = rollFormula('1d20', characterSkillBonus(char, request.skill), {
+        advantage: request.advantage || helped,
+        disadvantage: request.disadvantage || hasCondition(char, 'poisoned'),
+        bonusFormula: hasCondition(char, 'blessed') ? '1d4' : undefined,
+      });
+      const theirs = request.passive ? { total: 10 + oppBonus, formula: `passive ${oppSkill}`, rolls: [], modifier: oppBonus } : rollFormula('1d20', oppBonus);
+      const ok = request.passive ? mine.total >= theirs.total : mine.total > theirs.total;
+      mine.dc = theirs.total; mine.ok = ok;
+      let next = helped ? updateCharacterInParty(state, char.id, (c) => ({ ...c, conditions: c.conditions.filter((x) => x !== 'helped') })) : state;
+      next = spendAction(next, char.id, request.usesAction);
+      const oppName = foe?.name ?? npc!.name;
+      const summary = `${request.reason}: ${char.name} ${request.skill} ${mine.total} vs ${oppName} ${request.passive ? 'passive ' : ''}${oppSkill} ${theirs.total}: ${ok ? 'success' : 'failure'}.`;
+      return { state: appendLog(next, summary), result: { ok, summary, breakdown: mine } };
+    }
+    case 'ability_check':
+    case 'saving_throw': {
+      const char = state.party.find((p) => p.id === requestedCharacterId(request.characterId));
+      if (!char) return { state, result: { ok: false, summary: 'Character not found.' } };
+      const isSave = request.kind === 'saving_throw';
+      // Unconscious creatures automatically fail Strength and Dexterity saves.
+      if (isSave && char.unconscious && (request.ability === 'str' || request.ability === 'dex')) {
+        const next = request.damage ? applyPcDamage(state, char.id, rollFormula(request.damage).total) : state;
+        return { state: next, result: { ok: false, summary: `${request.reason}: ${char.name} is unconscious and automatically fails.` } };
+      }
+      const bonus = isSave ? saveBonus(char, request.ability) : abilityMod(char.abilities[request.ability]);
+      const helped = !isSave && hasCondition(char, 'helped');
+      const roll = rollFormula('1d20', bonus, {
+        advantage: request.advantage || helped || (isSave && request.ability === 'dex' && hasCondition(char, 'dodging')),
+        disadvantage: request.disadvantage || (!isSave && hasCondition(char, 'poisoned')) || (isSave && request.ability === 'dex' && hasCondition(char, 'restrained')),
+        bonusFormula: hasCondition(char, 'blessed') ? '1d4' : undefined,
+      });
+      const ok = roll.total >= request.dc;
+      roll.dc = request.dc; roll.ok = ok;
+      let next = helped ? updateCharacterInParty(state, char.id, (c) => ({ ...c, conditions: c.conditions.filter((x) => x !== 'helped') })) : state;
+      let dmgNote = '';
+      if (request.damage) {
+        const raw = rollFormula(request.damage).total;
+        const dmg = ok ? (request.halfOnSuccess ? Math.floor(raw / 2) : 0) : raw;
+        if (dmg > 0) { next = applyPcDamage(next, char.id, dmg); dmgNote = ` Takes ${dmg}${request.damageType ? ` ${request.damageType}` : ''} damage.`; }
+        else dmgNote = ' Takes no damage.';
+      }
+      if (!ok && request.conditionOnFail) {
+        next = updateCharacterInParty(next, char.id, (c) => ({ ...c, conditions: c.conditions.includes(request.conditionOnFail!) ? c.conditions : [...c.conditions, request.conditionOnFail!] }));
+        dmgNote += ` ${char.name} is ${request.conditionOnFail}.`;
+      }
+      const label = `${request.ability.toUpperCase()} ${isSave ? 'save' : 'check'}`;
+      const summary = `${request.reason}: ${char.name} ${label} ${roll.total} vs DC ${request.dc}: ${ok ? 'success' : 'failure'}.${dmgNote}`;
+      return { state: appendLog(next, summary), result: { ok, summary, breakdown: roll } };
+    }
+    case 'grapple':
+    case 'shove': {
+      // 5e: replaces one attack. Athletics vs the target's Athletics or Acrobatics;
+      // the target can be at most one size larger.
+      const char = state.party.find((p) => p.id === requestedCharacterId(request.characterId));
+      if (!char) return { state, result: { ok: false, summary: 'Character not found.' } };
+      if (char.unconscious) return { state, result: { ok: false, summary: `${char.name} is unconscious.` } };
+      const target = state.monsters.find((m) => m.id === request.targetId && m.hp > 0);
+      if (!target) return { state, result: { ok: false, summary: 'No valid target.' } };
+      if (!canGrappleSize('medium', target.size)) {
+        return { state, result: { ok: false, summary: `${target.name} is too big to ${request.kind} (more than one size larger).` } };
+      }
+      if (request.kind === 'grapple' && hasCondition(target, 'grappled')) {
+        return { state, result: { ok: false, summary: `${target.name} is already grappled.` } };
+      }
+      const approach = approachForMelee(state, char.id, target.id, false);
+      if (approach.result) return { state: approach.state, result: approach.result };
+      let next = approach.state;
+      if (next.combat.battleMap?.actors[char.id]?.actionUsed) {
+        return { state, result: { ok: false, summary: `${char.name} has already used their action this turn.` } };
+      }
+      next = spendAction(next, char.id, true);
+      const mine = rollFormula('1d20', characterSkillBonus(char, 'athletics'), { advantage: hasCondition(char, 'helped') || hasCondition(char, 'hidden') });
+      const theirSkill = monsterSkillBonus(target, 'athletics') >= monsterSkillBonus(target, 'acrobatics') ? 'athletics' : 'acrobatics';
+      const theirs = rollFormula('1d20', monsterSkillBonus(target, theirSkill), { disadvantage: hasCondition(target, 'surprised') && false });
+      const ok = mine.total > theirs.total;
+      mine.dc = theirs.total; mine.ok = ok;
+      next = updateCharacterInParty(next, char.id, (c) => ({ ...c, conditions: c.conditions.filter((x) => x !== 'helped' && x !== 'hidden') }));
+      let effect = '';
+      if (ok) {
+        if (request.kind === 'grapple') {
+          next = addMonsterCondition(next, target.id, 'grappled');
+          effect = `${target.name} is grappled (speed 0).`;
+        } else if (request.effect === 'push') {
+          next = pushMonsterAway(next, char.id, target.id);
+          effect = `${target.name} is shoved 5 ft away.`;
+        } else {
+          next = addMonsterCondition(next, target.id, 'prone');
+          effect = `${target.name} is knocked prone.`;
+        }
+      }
+      if (!next.combat.active && next.monsters.some((m) => m.hp > 0)) next = beginCombat(next, next.monsters, []);
+      const verb = request.kind === 'grapple' ? 'Grapple' : request.effect === 'push' ? 'Shove (push)' : 'Shove (prone)';
+      const summary = `${approach.note}${verb}: ${char.name} Athletics ${mine.total} vs ${target.name} ${theirSkill} ${theirs.total}: ${ok ? `success. ${effect}` : 'failure.'}`;
+      return { state: appendLog(next, summary), result: { ok, summary, breakdown: mine } };
+    }
+    case 'take_action': {
+      const char = state.party.find((p) => p.id === requestedCharacterId(request.characterId));
+      if (!char) return { state, result: { ok: false, summary: 'Character not found.' } };
+      if (char.unconscious) return { state, result: { ok: false, summary: `${char.name} is unconscious.` } };
+      if (state.combat.active && state.combat.battleMap?.actors[char.id]?.actionUsed) {
+        return { state, result: { ok: false, summary: `${char.name} has already used their action this turn.` } };
+      }
+      let next = spendAction(state, char.id, true);
+      const addCond = (id: string, cond: Condition) => updateCharacterInParty(next, id, (c) => ({ ...c, conditions: c.conditions.includes(cond) ? c.conditions : [...c.conditions, cond] }));
+      switch (request.action) {
+        case 'dodge': {
+          next = addCond(char.id, 'dodging');
+          const summary = `${char.name} takes the Dodge action: attacks against them have disadvantage until their next turn.`;
+          return { state: appendLog(next, summary), result: { ok: true, summary } };
+        }
+        case 'help': {
+          const ally = state.party.find((p) => p.id === request.targetId && p.id !== char.id);
+          if (!ally) return { state, result: { ok: false, summary: 'Help needs an ally as the target.' } };
+          next = addCond(ally.id, 'helped');
+          const summary = `${char.name} helps ${ally.name}: advantage on their next attack or ability check.`;
+          return { state: appendLog(next, summary), result: { ok: true, summary } };
+        }
+        case 'hide': {
+          // Stealth vs the best passive Perception of enemies who could notice.
+          const watchers = state.monsters.filter((m) => m.hp > 0 && !hasCondition(m, 'unconscious'));
+          const dc = watchers.length ? Math.max(...watchers.map((m) => passivePerception(m))) : (request.dc ?? 10);
+          const roll = rollFormula('1d20', characterSkillBonus(char, 'stealth'), {
+            advantage: hasCondition(char, 'helped'),
+            disadvantage: char.inventory.some((i) => /chain mail|splint|plate|ring mail/i.test(i)),
+          });
+          const ok = roll.total >= dc;
+          roll.dc = dc; roll.ok = ok;
+          if (ok) next = addCond(char.id, 'hidden');
+          const armour = char.inventory.some((i) => /chain mail|splint|plate|ring mail/i.test(i)) ? ' (heavy armour: disadvantage)' : '';
+          const summary = `${char.name} tries to hide: Stealth ${roll.total} vs passive Perception ${dc}${armour}: ${ok ? 'hidden' : 'spotted'}.`;
+          return { state: appendLog(next, summary), result: { ok, summary, breakdown: roll } };
+        }
+        default: {
+          const what = { ready: 'readies an action', search: 'searches', use_object: 'uses an object' }[request.action] ?? 'acts';
+          const summary = `${char.name} ${what}${request.reason ? `: ${request.reason}` : ''}.`;
+          return { state: appendLog(next, summary), result: { ok: true, summary } };
+        }
+      }
     }
     case 'player_attack': {
       const char = state.party.find((p) => p.id === requestedCharacterId(request.characterId));
@@ -211,16 +483,34 @@ export function resolveEngineRequest(
       const target = state.monsters.find((m) => m.id === request.targetId && m.hp > 0);
       if (!target) return { state, result: { ok: false, summary: 'No valid target.' } };
 
+      // Which weapon? Named weapon, else a ranged one when asked, else the main melee weapon.
+      const chosen = chooseWeapon(char, request.weapon, request.ranged);
+      if ('error' in chosen) return { state, result: { ok: false, summary: chosen.error } };
+      const weapon: Weapon = chosen;
+      const isRanged = weapon.kind === 'ranged';
+      let ammoNote = '';
+      if (weapon.ammo) {
+        const ammoIdx = char.inventory.findIndex((i) => new RegExp(`^(\\d+)\\s+${weapon.ammo}$`, 'i').test(i) || i.toLowerCase() === weapon.ammo!.toLowerCase());
+        const count = ammoIdx >= 0 ? Number(/^(\d+)/.exec(char.inventory[ammoIdx])?.[1] ?? 1) : 0;
+        if (count <= 0) return { state, result: { ok: false, summary: `${char.name} is out of ${weapon.ammo.toLowerCase()} for the ${weapon.name}.` } };
+        const left = count - 1;
+        state = updateCharacterInParty(state, char.id, (c) => ({
+          ...c,
+          inventory: left > 0 ? c.inventory.map((it, i) => (i === ammoIdx ? `${left} ${weapon.ammo}` : it)) : c.inventory.filter((_, i) => i !== ammoIdx),
+        }));
+        ammoNote = ` (${left} ${weapon.ammo!.toLowerCase()} left)`;
+      }
+
       // 5e move-then-attack: a melee attacker out of reach first spends their
       // remaining movement to close in (as monster turns already do). If they
       // still can't reach, they end up as close as possible with the action unspent.
-      const approach = approachForMelee(state, char.id, target.id, Boolean(request.ranged));
+      const approach = approachForMelee(state, char.id, target.id, isRanged);
       if (approach.result) return { state: approach.state, result: approach.result };
       state = approach.state;
       const approachNote = approach.note;
 
       const map = state.combat.battleMap;
-      if (map && !request.ranged) {
+      if (map && !isRanged) {
         const distance = distanceBetweenActors(map, char.id, target.id);
         const reach = map.actors[char.id]?.reachFt ?? 5;
         if (distance !== undefined && distance > reach) {
@@ -255,7 +545,21 @@ export function resolveEngineRequest(
       // Melee attacks ignore cover (5e), so this only applies when ranged.
       let coverOutcome: CoverOutcome | undefined;
       let effectiveTargetAc = target.ac;
-      if (request.ranged) {
+      let rangeDisadvantage = false;
+      let rangeNote = '';
+      if (isRanged && state.combat.battleMap?.positions[char.id] && state.combat.battleMap.positions[target.id]) {
+        const bm = state.combat.battleMap;
+        const dist = distanceBetweenActors(bm, char.id, target.id) ?? 0;
+        const long = weapon.longRangeFt ?? weapon.rangeFt ?? 0;
+        if (long && dist > long) {
+          return { state, result: { ok: false, summary: `${target.name} is ${dist} ft away, beyond the ${weapon.name}'s ${long} ft long range.` } };
+        }
+        if (weapon.rangeFt && dist > weapon.rangeFt) { rangeDisadvantage = true; rangeNote = ' (long range: disadvantage)'; }
+        // A ranged attack with a conscious enemy within 5 ft has disadvantage (5e).
+        const threatened = state.monsters.some((m) => m.hp > 0 && !hasCondition(m, 'surprised') && bm.positions[m.id] && (distanceBetweenActors(bm, char.id, m.id) ?? 99) <= 5);
+        if (threatened) { rangeDisadvantage = true; rangeNote += ' (enemy within 5 ft: disadvantage)'; }
+      }
+      if (isRanged) {
         const cov = resolveSpatialCover(state.combat.battleMap, char.id, target.id);
         if (cov.available && cov.blocked) {
           return {
@@ -273,9 +577,22 @@ export function resolveEngineRequest(
         }
       }
 
-      const attackMod = char.weapon.attackBonus;
+      const attackMod = weapon.attackBonus;
       let advantage = request.advantage;
-      let disadvantage = request.disadvantage;
+      let disadvantage = request.disadvantage || rangeDisadvantage;
+      // Unseen attacker (hidden) or an ally's Help: advantage. Both are spent by the attack.
+      const spentConditions: Condition[] = [];
+      if (hasCondition(char, 'hidden')) { advantage = true; spentConditions.push('hidden'); }
+      if (hasCondition(char, 'helped')) { advantage = true; spentConditions.push('helped'); }
+      if (hasCondition(char, 'frightened')) disadvantage = true;
+      if (hasCondition(target, 'dodging')) disadvantage = true;
+      if (hasCondition(target, 'surprised') || hasCondition(target, 'hidden')) {
+        // Surprised creatures can't react; hidden ones must be found before you aim (DM's call).
+      }
+      if (spentConditions.length) {
+        state = updateCharacterInParty(state, char.id, (c) => ({ ...c, conditions: c.conditions.filter((x) => !spentConditions.includes(x)) }));
+        nextState = updateCharacterInParty(nextState, char.id, (c) => ({ ...c, conditions: c.conditions.filter((x) => !spentConditions.includes(x)) }));
+      }
       let bonusFormula = undefined;
 
       // Attacker conditions
@@ -292,7 +609,7 @@ export function resolveEngineRequest(
       if (hasCondition(target, 'guiding_bolt_target')) advantage = true;
       // Prone target: advantage for melee, disadvantage for ranged (5e).
       if (hasCondition(target, 'prone')) {
-        if (request.ranged) disadvantage = true; else advantage = true;
+        if (isRanged) disadvantage = true; else advantage = true;
       }
 
       if (options?.physicalDice && request.manualRoll === undefined) {
@@ -331,39 +648,30 @@ export function resolveEngineRequest(
 
       if (!toHit.ok) {
         const coverNote = coverOutcome ? ` (${coverOutcome.kind.replace('_', '-')} cover: AC ${coverOutcome.baseAc}+${coverOutcome.bonus})` : '';
-        return { state: appendLog(nextState, `${char.name} missed ${target.name}.`), result: { ok: false, summary: `${approachNote}Attack missed${coverNote}.`, breakdown: toHit, cover: coverOutcome } };
+        // Attacking an enemy outside combat starts the fight (initiative, map).
+        const missed = nextState.combat.active ? nextState : beginCombat(nextState, nextState.monsters, []);
+        return { state: appendLog(missed, `${char.name} missed ${target.name}.`), result: { ok: false, summary: `${approachNote}${weapon.name} attack missed${coverNote}${rangeNote}.${ammoNote}`, breakdown: toHit, cover: coverOutcome } };
       }
-      // Use the attacker's actual weapon damage; a crit doubles the dice (5e).
-      const damage = rollFormula(critical ? critFormula(char.weapon.damage) : char.weapon.damage);
+      // Use the weapon's damage; a crit doubles the dice (5e).
+      const damage = rollFormula(critical ? critFormula(weapon.damage) : weapon.damage);
       const monsters = nextState.monsters.map((m) => m.id === target.id ? { ...m, hp: Math.max(0, m.hp - damage.total) } : m);
       let next = { ...nextState, monsters };
+      // A felled creature leaves the battle map.
       const battleMap = next.combat.battleMap;
       if (battleMap && monsters.some((monster) => monster.id === target.id && monster.hp === 0)) {
         const positions = { ...battleMap.positions };
         delete positions[target.id];
         next = { ...next, combat: { ...next.combat, battleMap: { ...battleMap, positions } } };
       }
-      const allDown = monsters.every((m) => m.hp <= 0);
-      if (allDown) {
-        next = advanceScene({ ...next, combat: { ...next.combat, active: false } });
-      } else if (!next.combat.active) {
-        // Attacking living enemies starts combat, so the HUD shows them and
-        // monster turns / initiative proceed instead of the fight staying hidden.
-        const initiative = rollInitiative(next);
-        const encounter = {
-          ...next,
-          activeCharacterId: initiative[0].actorId,
-          combat: { active: true, initiative, turnIndex: 0 },
-        };
-        const authoredMap = encounterBattleMap(getAdventure(next.adventureId), next.sceneId);
-        next = {
-          ...encounter,
-          combat: { ...encounter.combat, battleMap: buildBattleMap(encounter, undefined, authoredMap) },
-        };
+      if (monsters.some((m) => m.hp > 0) && !next.combat.active) {
+        // Attacking living enemies starts combat, so initiative and enemy turns follow.
+        next = beginCombat(next, next.monsters, []);
       }
+      next = finishCombatIfResolved(next);
+      const killed = monsters.find((m) => m.id === target.id)!.hp <= 0;
       return {
-        state: appendLog(next, `${char.name} hit ${target.name} for ${damage.total}.`),
-        result: { ok: true, summary: `${approachNote}Hit ${target.name} for ${damage.total} damage.${coverOutcome ? ` (${coverOutcome.kind.replace('_', '-')} cover applied, AC ${coverOutcome.effectiveAc})` : ''}`, breakdown: damage, critical, cover: coverOutcome },
+        state: appendLog(next, `${char.name} hit ${target.name} with the ${weapon.name} for ${damage.total}.${killed ? ` ${target.name} drops.` : ''}`),
+        result: { ok: true, summary: `${approachNote}${weapon.name} hits ${target.name} for ${damage.total} damage.${critical ? ' Critical hit!' : ''}${killed ? ` ${target.name} is down.` : ''}${coverOutcome ? ` (${coverOutcome.kind.replace('_', '-')} cover applied, AC ${coverOutcome.effectiveAc})` : ''}${rangeNote}${ammoNote}`, breakdown: damage, critical, cover: coverOutcome },
       };
     }
     case 'end_turn': {
@@ -412,9 +720,12 @@ export function resolveEngineRequest(
           };
         }
       }
-      const afterStand = standing ? removeConditionFrom(nextState, nextActorId, 'prone') : nextState;
+      const nextName = state.party.find((p) => p.id === nextActorId)?.name ?? state.monsters.find((m) => m.id === nextActorId)?.name ?? nextActorId;
+      let afterStand = standing ? removeConditionFrom(nextState, nextActorId, 'prone') : nextState;
+      // Dodge lasts until the start of the dodger's next turn.
+      afterStand = removeConditionFrom(afterStand, nextActorId, 'dodging');
       const standNote = standing ? ' They stand up from prone, using half their movement.' : '';
-      return { state: appendLog(afterStand, `Turn ended. It is now ${nextActorId}'s turn.${standNote}`), result: { ok: true, summary: `Ended turn. It is now ${nextActorId}'s turn.${standNote}` } };
+      return { state: appendLog(afterStand, `Turn ended. It is now ${nextName}'s turn.${standNote}`), result: { ok: true, summary: `Ended turn. It is now ${nextName}'s turn.${standNote}` } };
     }
     case 'monster_turn': {
       // 5e turn order: the monster that acts is the one whose initiative turn it is.
@@ -428,15 +739,40 @@ export function resolveEngineRequest(
         return { state, result: { ok: false, summary: `It is ${pc?.name ?? currentId}'s turn, not a monster's. End the turn first.` } };
       }
       const wantedId = request.monsterId ?? (currentIsMonster ? currentId : undefined);
-      const attacker = wantedId
+      let attacker = wantedId
         ? state.monsters.find((m) => m.id === wantedId && m.hp > 0)
         : state.monsters.find((m) => m.hp > 0);
       if (!attacker) {
         const anyAlive = state.monsters.some((m) => m.hp > 0);
         return { state, result: { ok: true, summary: anyAlive ? 'That monster is down and cannot act.' : 'No monsters remain.' } };
       }
-
-      const consciousPlayers = state.party.filter((p) => !p.unconscious);
+      // A grapple ends once no conscious character is holding on within 5 ft.
+      if (hasCondition(attacker, 'grappled')) {
+        const bm = state.combat.battleMap;
+        const heldId = attacker.id;
+        const held = state.party.some((p) => !p.unconscious && bm?.positions[p.id] && bm.positions[heldId] && (distanceBetweenActors(bm, p.id, heldId) ?? 99) <= 5);
+        if (!held) {
+          state = removeConditionFrom(state, attacker.id, 'grappled');
+          const freedId = attacker.id;
+          attacker = state.monsters.find((m) => m.id === freedId)!;
+        }
+      }
+      if (hasCondition(attacker, 'surprised')) {
+        const next = removeConditionFrom(state, attacker.id, 'surprised');
+        return { state: appendLog(next, `${attacker.name} is surprised and loses its turn.`), result: { ok: true, summary: `${attacker.name} is surprised and loses its turn.` } };
+      }
+      if (['incapacitated', 'paralyzed', 'stunned', 'unconscious', 'petrified'].some((c) => hasCondition(attacker, c as Condition))) {
+        return { state, result: { ok: true, summary: `${attacker.name} is incapacitated and cannot act.` } };
+      }
+      // Hidden characters can't be targeted until found.
+      const hiddenPcs = state.party.filter((p) => !p.unconscious && hasCondition(p, 'hidden'));
+      const consciousPlayers = state.party.filter((p) => !p.unconscious && !hasCondition(p, 'hidden'));
+      if (consciousPlayers.length === 0 && hiddenPcs.length > 0 && state.party.every((p) => p.unconscious || hasCondition(p, 'hidden'))) {
+        // It searches (Perception vs the hider's Stealth was already beaten), so it loses track.
+        return { state: appendLog(state, `${attacker.name} prowls, searching for its hidden prey.`), result: { ok: true, summary: `${attacker.name} can't find anyone to attack and searches the area.` } };
+      }
+      // A frightened, grappled or restrained creature won't (or can't) close in.
+      const canClose = !['grappled', 'restrained', 'frightened'].some((c) => hasCondition(attacker, c as Condition));
       const battleMap = state.combat.battleMap;
       const attacks = monsterAttacks(attacker);
       const melee = attacks.find((a) => a.kind === 'melee');
@@ -480,7 +816,7 @@ export function resolveEngineRequest(
         }
       }
       // 3. Move into melee reach if movement allows, then strike.
-      if (melee) {
+      if (melee && canClose) {
         const dest = bestReachableCellWithinReach(battleMap, attacker.id, target.id, reach);
         if (dest) {
           const moved = resolveMove(battleMap, attacker.id, dest);
@@ -557,6 +893,7 @@ export function resolveEngineRequest(
         msg = 'Failure. Marks 1 failure.';
       }
 
+      failure = Math.min(3, failure);
       if (failure >= 3) {
         msg += ' Has died.';
       } else if (success >= 3) {
@@ -572,7 +909,7 @@ export function resolveEngineRequest(
       }));
 
       const allDead = next.party.every(p => p.hp <= 0 && p.deathSaves.failure >= 3);
-      if (allDead) next = { ...next, sceneId: 'ending' };
+      if (allDead) next = { ...next, sceneId: 'ending', combat: { ...next.combat, active: false } };
       
       return { 
         state: appendLog(next, `${char.name} Death Save: ${msg}`), 
@@ -1293,7 +1630,9 @@ function resolveMonsterStrike(
   if (hasCondition(attacker, 'poisoned')) disadvantage = true;
   if (hasCondition(attacker, 'prone')) disadvantage = true;
   if (hasCondition(attacker, 'restrained')) disadvantage = true;
+  if (hasCondition(attacker, 'frightened')) disadvantage = true;
   if (hasCondition(attacker, 'blessed')) bonusFormula = '1d4';
+  if (hasCondition(target, 'dodging')) disadvantage = true;
 
   if (hasCondition(target, 'blinded')) advantage = true;
   if (hasCondition(target, 'paralyzed') || hasCondition(target, 'stunned') || hasCondition(target, 'unconscious')) advantage = true;
@@ -1330,7 +1669,7 @@ function resolveMonsterStrike(
     const failure = Math.min(3, target.deathSaves.failure + (critical ? 2 : 1));
     const died = failure >= 3;
     let next = updateCharacterInParty(state, target.id, (c) => ({ ...c, stable: false, deathSaves: { ...c.deathSaves, failure } }));
-    if (died && next.party.every((p) => p.hp <= 0 && p.deathSaves.failure >= 3)) next = { ...next, sceneId: 'ending' };
+    if (died && next.party.every((p) => p.hp <= 0 && p.deathSaves.failure >= 3)) next = { ...next, sceneId: 'ending', combat: { ...next.combat, active: false } };
     const note = died
       ? `${target.name} has died!`
       : `${target.name} suffers ${critical ? 'two death-save failures' : 'a death-save failure'} (${failure}/3).`;
@@ -1358,7 +1697,7 @@ function resolveMonsterStrike(
   let fallNote = '';
   if (instantDeath) {
     fallNote = ` ${target.name} is killed outright by massive damage!`;
-    if (next.party.every((p) => p.hp <= 0 && p.deathSaves.failure >= 3)) next = { ...next, sceneId: 'ending' };
+    if (next.party.every((p) => p.hp <= 0 && p.deathSaves.failure >= 3)) next = { ...next, sceneId: 'ending', combat: { ...next.combat, active: false } };
   } else if (unconscious) {
     fallNote = ` ${target.name} has fallen unconscious!`;
   }
@@ -1413,11 +1752,174 @@ function isProne(state: GameState, actorId: string): boolean {
   return Boolean(m && hasCondition(m, 'prone'));
 }
 
-function removeConditionFrom(state: GameState, actorId: string, condition: 'prone'): GameState {
+function removeConditionFrom(state: GameState, actorId: string, condition: Condition): GameState {
   if (state.party.some((p) => p.id === actorId)) {
     return updateCharacterInParty(state, actorId, (c) => ({ ...c, conditions: c.conditions.filter((x) => x !== condition) }));
   }
   return { ...state, monsters: state.monsters.map((m) => (m.id === actorId ? { ...m, conditions: m.conditions.filter((x) => x !== condition) } : m)) };
+}
+
+/** Roll initiative, place everyone on a battle map, mark surprised creatures. */
+function beginCombat(state: GameState, monsters: Monster[], surprisedIds: string[]): GameState {
+  const adventure = getAdventure(state.adventureId);
+  const marked = monsters.map((m) => (surprisedIds.includes(m.id) && !hasCondition(m, 'surprised') ? { ...m, conditions: [...m.conditions, 'surprised' as Condition] } : m));
+  let draft: GameState = { ...state, monsters: marked };
+  for (const id of surprisedIds) {
+    if (draft.party.some((p) => p.id === id)) draft = updateCharacterInParty(draft, id, (c) => ({ ...c, conditions: c.conditions.includes('surprised') ? c.conditions : [...c.conditions, 'surprised'] }));
+  }
+  const init = rollInitiative(draft);
+  draft = { ...draft, combat: { active: true, initiative: init, turnIndex: 0 }, activeCharacterId: draft.party.some((p) => p.id === init[0].actorId) ? init[0].actorId : draft.activeCharacterId };
+  const existingMap = state.combat.battleMap;
+  const map = existingMap && monsters.every((m) => existingMap.positions[m.id]) && state.party.every((p) => existingMap.positions[p.id])
+    ? existingMap
+    : buildBattleMap(draft, undefined, encounterBattleMap(adventure, draft.sceneId));
+  // Surprised creatures can't take reactions until their first turn ends.
+  const actors = { ...map.actors };
+  for (const id of surprisedIds) if (actors[id]) actors[id] = { ...actors[id], reactionAvailable: false };
+  return { ...draft, combat: { ...draft.combat, battleMap: { ...map, actors } } };
+}
+
+/** Reinforcements join an ongoing fight with their own initiative. */
+function joinCombat(state: GameState, arrivals: Monster[]): GameState {
+  const currentActor = state.combat.initiative[state.combat.turnIndex]?.actorId;
+  const monsters = [...state.monsters.filter((m) => !arrivals.some((a) => a.id === m.id)), ...arrivals];
+  const initiative = [
+    ...state.combat.initiative.filter((e) => !arrivals.some((a) => a.id === e.actorId)),
+    ...arrivals.map((m) => ({ actorId: m.id, roll: d20() + (m.initiativeBonus ?? 0) })),
+  ].sort((a, b) => b.roll - a.roll);
+  const draft: GameState = { ...state, monsters, combat: { ...state.combat, initiative, turnIndex: Math.max(0, initiative.findIndex((e) => e.actorId === currentActor)) } };
+  const adventure = getAdventure(state.adventureId);
+  const fresh = buildBattleMap(draft, undefined, encounterBattleMap(adventure, draft.sceneId));
+  const old = state.combat.battleMap;
+  const map = old
+    ? { ...old, positions: { ...fresh.positions, ...old.positions }, actors: { ...fresh.actors, ...old.actors } }
+    : fresh;
+  return { ...draft, combat: { ...draft.combat, battleMap: map } };
+}
+
+/** Ends combat when no enemy can fight; a won fight in a combat scene moves the story on. */
+function finishCombatIfResolved(state: GameState): GameState {
+  if (state.monsters.some((m) => m.hp > 0)) return state;
+  const ended: GameState = { ...state, combat: { ...state.combat, active: false } };
+  const adventure = getAdventure(state.adventureId);
+  return getSceneKind(adventure, state.sceneId) === 'combat' ? advanceScene(ended) : { ...ended, combat: { active: false, initiative: [], turnIndex: 0 } };
+}
+
+/** Take a monster out of the fight entirely (fled, surrendered, captured...). */
+function removeMonster(state: GameState, id: string): GameState {
+  const init = state.combat.initiative;
+  const idx = init.findIndex((e) => e.actorId === id);
+  const initiative = init.filter((e) => e.actorId !== id);
+  let turnIndex = state.combat.turnIndex;
+  if (idx >= 0 && idx < turnIndex) turnIndex -= 1;
+  if (initiative.length) turnIndex %= initiative.length; else turnIndex = 0;
+  const map = state.combat.battleMap;
+  let battleMap = map;
+  if (map) {
+    const positions = { ...map.positions };
+    const actors = { ...map.actors };
+    delete positions[id];
+    delete actors[id];
+    battleMap = { ...map, positions, actors };
+  }
+  return { ...state, monsters: state.monsters.filter((m) => m.id !== id), combat: { ...state.combat, initiative, turnIndex, battleMap } };
+}
+
+function addMonsterCondition(state: GameState, id: string, condition: Condition): GameState {
+  return { ...state, monsters: state.monsters.map((m) => (m.id === id && !m.conditions.includes(condition) ? { ...m, conditions: [...m.conditions, condition] } : m)) };
+}
+
+/** Shove (push): move the target one square directly away from the shover, if the square is free. */
+function pushMonsterAway(state: GameState, fromId: string, targetId: string): GameState {
+  const map = state.combat.battleMap;
+  if (!map?.positions[fromId] || !map.positions[targetId]) return state;
+  const a = map.positions[fromId];
+  const t = map.positions[targetId];
+  const dest = { x: t.x + Math.sign(t.x - a.x), y: t.y + Math.sign(t.y - a.y), z: t.z ?? 0 };
+  const inBounds = dest.x >= 0 && dest.y >= 0 && dest.x < map.width && dest.y < map.height;
+  const occupied = Object.entries(map.positions).some(([id, p]) => id !== targetId && p.x === dest.x && p.y === dest.y);
+  const blocked = map.cells?.[`${dest.x},${dest.y}`]?.blocksMovement;
+  if (!inBounds || occupied || blocked) return state;
+  return { ...state, combat: { ...state.combat, battleMap: { ...map, positions: { ...map.positions, [targetId]: dest } } } };
+}
+
+/** Marks a character's action as used during combat (no-op outside combat). */
+function spendAction(state: GameState, charId: string, uses: boolean | undefined): GameState {
+  const map = state.combat.battleMap;
+  if (!uses || !state.combat.active || !map?.actors[charId]) return state;
+  return { ...state, combat: { ...state.combat, battleMap: { ...map, actors: { ...map.actors, [charId]: { ...map.actors[charId], actionUsed: true } } } } };
+}
+
+/** Damage to a character from a trap, fall or effect (handles 0 HP, massive damage). */
+function applyPcDamage(state: GameState, id: string, dmg: number): GameState {
+  return updateCharacterInParty(state, id, (c) => {
+    if (c.hp <= 0) {
+      const failure = Math.min(3, c.deathSaves.failure + 1);
+      return { ...c, stable: false, deathSaves: { ...c.deathSaves, failure } };
+    }
+    const hp = Math.max(0, c.hp - dmg);
+    const instantDeath = hp === 0 && dmg - c.hp >= c.maxHp;
+    return { ...c, hp, unconscious: hp === 0, stable: false, deathSaves: instantDeath ? { success: 0, failure: 3 } : c.deathSaves };
+  });
+}
+
+function defaultOpposingSkill(skill: string): string {
+  return ({ stealth: 'perception', deception: 'insight', sleight_of_hand: 'perception', athletics: 'athletics', acrobatics: 'athletics', persuasion: 'insight', intimidation: 'insight', performance: 'insight' } as Record<string, string>)[skill] ?? skill;
+}
+
+function resolveSurpriseIds(state: GameState, monsters: Monster[], surprised: string[] | 'monsters' | 'party' | undefined): string[] {
+  if (!surprised) return [];
+  if (surprised === 'monsters') return monsters.map((m) => m.id);
+  if (surprised === 'party') return state.party.map((p) => p.id);
+  return surprised.filter((id) => monsters.some((m) => m.id === id) || state.party.some((p) => p.id === id));
+}
+
+/** Spawned creatures already waiting in reserve rejoin as themselves (wounds and all). */
+function claimFromReserve(spawned: Monster[], reserve: Monster[]): { monsters: Monster[]; reserve: Monster[] } {
+  const monsters = spawned
+    .map((m) => reserve.find((r) => r.id === m.id) ?? m)
+    .filter((m) => m.hp > 0)
+    .map((m) => ({ ...m, homeSceneId: undefined }));
+  return { monsters, reserve: reserve.filter((r) => !spawned.some((m) => m.id === r.id)) };
+}
+
+function uniqueMonsterId(state: GameState, base: string, pending: Monster[]): string {
+  const taken = new Set([...state.monsters, ...(state.reserveMonsters ?? []), ...pending].map((m) => m.id));
+  if (!taken.has(base)) return base;
+  let n = 2;
+  while (taken.has(`${base}-${n}`)) n++;
+  return `${base}-${n}`;
+}
+
+/**
+ * Enemy turns are engine-run: while it is a monster's turn (or a surprised
+ * character's), resolve it and pass the turn on, until a character can act.
+ */
+export function runEnemyTurns(state: GameState): { state: GameState; results: Array<{ kind: string } & EngineResult> } {
+  const results: Array<{ kind: string } & EngineResult> = [];
+  for (let guard = 0; guard < 40 && state.combat.active; guard++) {
+    const cur = state.combat.initiative[state.combat.turnIndex]?.actorId;
+    if (!cur) break;
+    const pc = state.party.find((p) => p.id === cur);
+    if (pc) {
+      if (!hasCondition(pc, 'surprised')) break;
+      state = appendLog(removeConditionFrom(state, pc.id, 'surprised'), `${pc.name} is surprised and loses their turn.`);
+      results.push({ kind: 'surprised', ok: true, summary: `${pc.name} is surprised and loses their turn.` });
+    } else {
+      const m = state.monsters.find((x) => x.id === cur);
+      if (m && m.hp > 0) {
+        const r = resolveEngineRequest(state, { kind: 'monster_turn' });
+        state = r.state;
+        results.push({ kind: 'monster_turn', ...r.result });
+        if (!state.combat.active) break;
+      }
+    }
+    if (state.party.every((p) => p.deathSaves.failure >= 3)) break;
+    const e = resolveEngineRequest(state, { kind: 'end_turn' });
+    state = e.state;
+    results.push({ kind: 'end_turn', ...e.result });
+  }
+  return { state, results };
 }
 
 function appendLog(state: GameState, line: string): GameState {
@@ -1499,6 +2001,10 @@ function rollFormula(
   fallbackMod = 0,
   options?: { advantage?: boolean; disadvantage?: boolean; bonusFormula?: string }
 ): RollBreakdown {
+  // Accept "2d6+3", "2d6 + 3", "1d8-1" and flat numbers like "4".
+  formula = formula.replace(/\s+/g, '');
+  const flat = /^(\d+)$/.exec(formula);
+  if (flat) return { formula, rolls: [], modifier: Number(flat[1]), total: Number(flat[1]) };
   const match = formula.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
   if (!match) return { formula, rolls: [], modifier: fallbackMod, total: fallbackMod };
   const count = Number(match[1]);

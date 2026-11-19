@@ -76,6 +76,8 @@ describe('mock DM hints', () => {
 
     expect(turn.engineRequests).toEqual([
       expect.objectContaining({ kind: 'skill_check', skill: 'stealth' }),
+      // If the worgs spot you, the fight starts.
+      expect.objectContaining({ kind: 'start_combat', when: 'failure' }),
     ]);
     expect(turn.needsResultBeforeNarrating).toBe(true);
     expect(turn.narration.toLowerCase()).toContain('cover');
@@ -97,6 +99,7 @@ describe('mock DM hints', () => {
         skill: 'stealth',
         reason: expect.stringContaining('behind the temple, through the graveyard route, toward the inn'),
       }),
+      expect.objectContaining({ kind: 'start_combat', when: 'failure' }),
     ]);
     expect(turn.narration.toLowerCase()).toContain('behind the temple');
     expect(turn.narration.toLowerCase()).toContain('graveyard');

@@ -37,6 +37,7 @@ export function applyCharacterLevel(character: Character, targetLevel: number): 
     ...(character.className === 'Wizard' && level < 3
       ? { subclass: undefined, spellSlots: { 1: { max: level === 1 ? 2 : 3, remaining: level === 1 ? 2 : 3 } } }
       : {}),
+    weapons: character.weapons?.map((w) => ({ ...w, attackBonus: w.attackBonus + weaponBonus })),
     weapon: {
       ...character.weapon,
       attackBonus: character.weapon.attackBonus + weaponBonus,

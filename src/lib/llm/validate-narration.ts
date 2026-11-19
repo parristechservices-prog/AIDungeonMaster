@@ -102,17 +102,30 @@ export function validateNarrationAgainstResults(
   const claimsSuccess = /\b(succeeds?|successful|hits?|lands?|finds?|discovers?|unlocks?|defeats?|kills?)\b/i.test(narration);
   const claimsFailure = /\b(fails?|failure|miss(?:es|ed)?|cannot|does not|unsuccessful)\b/i.test(narration);
 
-  for (const result of results) {
-    if (!result.ok && claimsSuccess) {
-      warnings.push(`${result.kind}: Narration claims success but the engine result failed.`);
-    }
-    if (result.ok && claimsFailure) {
-      warnings.push(`${result.kind}: Narration claims failure but the engine result succeeded.`);
-    }
+  // Only results with a real success/failure outcome are checked against the
+  // prose; turn hand-offs, combat starting, scene changes and the like aren't.
+  // A turn can now hold several outcomes (the hero's action plus enemy turns),
+  // and honest prose about a mixed round ("you miss; the worg's bite lands")
+  // contains both kinds of words, so the whole-narration check only applies
+  // when every outcome agrees.
+  const outcomes = results.filter((r) => OUTCOME_KINDS.has(r.kind));
+  const allFailed = outcomes.length > 0 && outcomes.every((r) => !r.ok);
+  const allSucceeded = outcomes.length > 0 && outcomes.every((r) => r.ok);
+  if (allFailed && claimsSuccess) {
+    for (const r of outcomes) warnings.push(`${r.kind}: Narration claims success but the engine result failed.`);
+  }
+  if (allSucceeded && claimsFailure) {
+    for (const r of outcomes) warnings.push(`${r.kind}: Narration claims failure but the engine result succeeded.`);
   }
 
   const lastMove = results.findLast((result) => result.spatial?.kind === 'move_area')?.spatial;
-  if (impliesSpatialArrival(narration)) {
+  // Moving on is legitimate after a scene advance or a successful check (e.g.
+  // sneaking to the temple); otherwise arrival needs a move.
+  const sceneAdvanced = results.some((r) => r.ok && r.kind === 'advance_scene');
+  const arrival = withoutNegatedClauses(narration);
+  // Battle-map movement ("the worg moves into reach") is tactical, not area travel.
+  const tacticalTurn = results.some((r) => ['monster_turn', 'player_attack', 'grapple', 'shove', 'move_creature', 'dash', 'disengage'].includes(r.kind));
+  if (impliesSpatialArrival(arrival) && !(sceneAdvanced && !lastMove && !impliesGapCrossing(arrival)) && !(tacticalTurn && !impliesGapCrossing(arrival))) {
     if (!lastMove) {
       warnings.push('Spatial: Narration implies movement or arrival, but no move_area request was issued.');
     } else if (lastMove.kind === 'move_area' && !lastMove.ok) {
@@ -147,7 +160,8 @@ export function validateNarrationAgainstResults(
   // Monster attack drift: a failed monster attack (out of reach, or blocked by
   // cover / line of sight) must not be narrated as a landed hit.
   const monsterMiss = results.find((r) => r.kind === 'monster_turn' && !r.ok);
-  if (monsterMiss && impliesAttackLands(narration)) {
+  const anyAttackLanded = results.some((r) => (r.kind === 'monster_turn' || r.kind === 'player_attack') && r.ok);
+  if (monsterMiss && !anyAttackLanded && impliesAttackLands(narration)) {
     const why = monsterMiss.cover?.kind === 'total' ? 'the target had total cover / no line of sight' : monsterMiss.cover ? 'cover raised the AC and the attack missed' : 'the monster could not reach or hit the target';
     warnings.push(`Tactical: Narration implies the monster's attack landed, but ${why}.`);
   }
@@ -165,8 +179,25 @@ export function validateNarrationAgainstResults(
   return [...new Set(warnings)];
 }
 
+const OUTCOME_KINDS = new Set([
+  'skill_check', 'player_attack', 'contest', 'ability_check', 'saving_throw',
+  'grapple', 'shove', 'death_save', 'monster_turn', 'move_area', 'move_creature', 'cast_spell', 'use_item',
+]);
+
+/** Drop clauses that describe something NOT happening ("before you can reach the bell"). */
+function withoutNegatedClauses(narration: string): string {
+  return narration
+    .split(/(?<=[.;!?,])\s+|\s+but\s+/i)
+    .filter((clause) => !/\b(can(?:'|no)?t|cannot|could(?:n'|\s+no)t|before (?:you|they|he|she|it|we) (?:can|could)|unable to|fail(?:s|ed)? to|tr(?:y|ies|ying|ied) to|attempt(?:s|ed|ing)? to|would|if (?:you|they))\b/i.test(clause))
+    .join(' ');
+}
+
 function impliesAttackLands(narration: string): boolean {
   return /\b(strikes?|hits?|lands? a (?:blow|hit|shot)|slashes?|stabs?|skewers?|cuts? down|shoots?|fells?|cleaves?)\b/i.test(narration);
+}
+
+function impliesGapCrossing(narration: string): boolean {
+  return /\b(?:clear(?:s|ed)?|leap(?:s|ed)? across|jump(?:s|ed)? across)\s+(?:the\s+)?(?:missing\s+(?:section|span)|gap|broken\s+(?:section|span))\b|\bland(?:s|ed)?\s+(?:\w+\s+){0,3}on\s+the\s+(?:far|other)\s+side\b/i.test(narration);
 }
 
 function impliesSpatialArrival(narration: string): boolean {

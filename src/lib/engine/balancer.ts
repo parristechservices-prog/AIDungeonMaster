@@ -1,6 +1,9 @@
 import { MONSTER_LIBRARY, getMonster } from '../game/monsters';
 import { Monster } from '../game/types';
 
+/** People stat blocks for DM-named fights; never picked for random encounters. */
+const NPC_STAT_BLOCKS = new Set(['spy', 'bandit_captain', 'guard', 'scout', 'commoner']);
+
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'deadly';
 
 // Single-character XP thresholds by level.
@@ -59,7 +62,7 @@ export function buildBalancedEncounter(
     if (candidates.length === 0) {
         // If no preferred monsters fit, try any monster
         const anyCandidates = Object.entries(MONSTER_LIBRARY)
-            .filter(([, m]) => CR_TO_XP[m.cr] <= remainingXP * 2);
+            .filter(([id, m]) => !NPC_STAT_BLOCKS.has(id) && CR_TO_XP[m.cr] <= remainingXP * 2);
         if (anyCandidates.length === 0) break;
         
         const [id] = anyCandidates[Math.floor(Math.random() * anyCandidates.length)];

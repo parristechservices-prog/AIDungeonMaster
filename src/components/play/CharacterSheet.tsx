@@ -150,12 +150,6 @@ export function CharacterSheet({ state }: Props) {
 
         <p className="mt-4 font-bold text-xs uppercase text-zinc-400 tracking-widest">Features & Spells</p>
         <div className="mt-1 space-y-1">
-          {char.className === 'Fighter' && char.inventory.includes('Shield') && char.inventory.includes('Longsword') && (
-            <p className="text-xs">Fighting Style: Dueling</p>
-          )}
-          {char.className === 'Fighter' && char.subclass === 'Champion' && char.level >= 3 && (
-            <p className="text-xs">Improved Critical (19–20)</p>
-          )}
           {char.features.map((f) => (
             <div key={f.id} className="flex justify-between items-center text-xs">
               <span>{f.name}</span>

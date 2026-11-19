@@ -43,7 +43,7 @@ export function isValidAdventureId(id: string): boolean {
 
 export function listAdventuresForCatalog() {
   return listAdventures().map(
-    ({ id, title, tagline, estimatedMinutes, tone, recommendedCharacters, source, levelRange }) => ({
+    ({ id, title, tagline, estimatedMinutes, tone, recommendedCharacters, source, levelRange, playConfig }) => ({
       id,
       title,
       tagline,
@@ -52,6 +52,7 @@ export function listAdventuresForCatalog() {
       recommendedCharacters,
       source,
       levelRange,
+      defaultLevel: playConfig?.defaultLevel,
     }),
   );
 }

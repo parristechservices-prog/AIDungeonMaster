@@ -28,7 +28,7 @@ describe('player melee: 5e move-then-attack', () => {
     const { state, heroId } = setup(0, 5); // 25 ft apart, 30 ft speed
     const { state: next, result } = resolveEngineRequest(state, { kind: 'player_attack', characterId: heroId, targetId: 'worg' });
     expect(result.summary).toMatch(/moves \d+ ft into reach of Worg/);
-    expect(result.summary).toMatch(/Hit Worg/);
+    expect(result.summary).toMatch(/hits Worg/);
     expect(distanceBetweenActors(next.combat.battleMap!, heroId, 'worg')).toBeLessThanOrEqual(5);
     expect(next.monsters[0].hp).toBeLessThan(26);
     expect(next.combat.battleMap!.actors[heroId].actionUsed).toBe(true);

@@ -25,6 +25,7 @@ type Catalog = {
     recommendedCharacters: string[];
     source?: 'builtin' | 'private' | 'template';
     levelRange?: [number, number];
+    defaultLevel?: number;
   }>;
   personas: Array<{ id: string; name: string; description: string }>;
 };
@@ -77,7 +78,9 @@ function StartContent() {
   useEffect(() => {
     const scenario = catalog?.scenarios.find((s) => s.id === adventureId);
     if (scenario?.levelRange) {
-      setPlayerLevel(scenario.levelRange[0]);
+      // The module's recommended starting level (e.g. Nightstone solo: 2), else its minimum.
+      const d = scenario.defaultLevel;
+      setPlayerLevel(d && d >= scenario.levelRange[0] && d <= scenario.levelRange[1] ? d : scenario.levelRange[0]);
     }
   }, [adventureId, catalog]);
 

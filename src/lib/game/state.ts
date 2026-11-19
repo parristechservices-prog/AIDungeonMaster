@@ -224,15 +224,30 @@ export function advanceScene(state: GameState): GameState {
   const i = order.indexOf(state.sceneId);
   if (i < 0 || i >= order.length - 1) return state;
   const nextSceneId = order[i + 1];
+  // Hostiles still alive in the scene being left (snuck past, fled from, or
+  // never fought) stay behind there, rather than following the party along.
+  const leftBehind = state.monsters
+    .filter((m) => m.hp > 0)
+    .map((m) => ({ ...m, conditions: [], homeSceneId: m.homeSceneId ?? state.sceneId }));
   let next: GameState = {
     ...state,
     sceneId: nextSceneId,
+    monsters: [],
+    reserveMonsters: [...(state.reserveMonsters ?? []).filter((m) => !leftBehind.some((x) => x.id === m.id)), ...leftBehind],
     combat: { active: false, initiative: [], turnIndex: 0 },
   };
   if (getSceneKind(adventure, nextSceneId) === 'combat') {
+    // Creatures waiting in reserve that belong to this fight (e.g. pre-placed
+    // ones) rejoin as themselves, wounds and all, rather than being duplicated.
+    const reserve = next.reserveMonsters ?? [];
+    const spawned = resolveCombatMonsters(adventure, nextSceneId, state.party[0].level).map((m) => {
+      const waiting = reserve.find((r) => r.id === m.id);
+      return waiting ? { ...waiting, homeSceneId: undefined } : m;
+    });
     next = {
       ...next,
-      monsters: resolveCombatMonsters(adventure, nextSceneId, state.party[0].level),
+      monsters: spawned,
+      reserveMonsters: reserve.filter((r) => !spawned.some((m) => m.id === r.id)),
     };
   }
   return next;

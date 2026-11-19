@@ -8,7 +8,7 @@ const skillSchema = z.enum([
   'stealth', 'survival',
 ]);
 
-const conditionSchema = z.enum(['blinded', 'charmed', 'deafened', 'frightened', 'grappled', 'incapacitated', 'invisible', 'paralyzed', 'petrified', 'poisoned', 'prone', 'restrained', 'stunned', 'unconscious', 'blessed', 'shielded', 'guiding_bolt_target']);
+const conditionSchema = z.enum(['blinded', 'charmed', 'deafened', 'frightened', 'grappled', 'incapacitated', 'invisible', 'paralyzed', 'petrified', 'poisoned', 'prone', 'restrained', 'stunned', 'unconscious', 'blessed', 'shielded', 'guiding_bolt_target', 'surprised', 'dodging', 'hidden', 'helped']);
 
 // NOTE: variants intentionally omit `.strict()`. LLMs frequently tack on stray
 // keys (e.g. an extra `reason` or `target`); stripping them is far better than
@@ -19,10 +19,26 @@ const gridCoordSchema = z.object({
   z: z.number().optional(),
 });
 
+const abilitySchema = z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']);
+// Dice like "2d6", "1d10+2", or a flat "3".
+const diceSchema = z.string().regex(/^\s*(\d+d\d+|\d+)(\s*[+-]\s*\d+)?\s*$/i);
+
 const engineRequestSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('skill_check'), characterId: z.string(), skill: skillSchema, dc: z.number().int().min(1).max(30), reason: z.string(), advantage: z.boolean().optional(), disadvantage: z.boolean().optional() }),
-  z.object({ kind: z.literal('start_combat') }),
-  z.object({ kind: z.literal('player_attack'), characterId: z.string(), targetId: z.string(), advantage: z.boolean().optional(), disadvantage: z.boolean().optional(), ranged: z.boolean().optional() }),
+  z.object({ kind: z.literal('skill_check'), characterId: z.string(), skill: skillSchema, dc: z.number().int().min(1).max(30), reason: z.string(), advantage: z.boolean().optional(), disadvantage: z.boolean().optional(), advancesScene: z.boolean().optional() }),
+  z.object({
+    kind: z.literal('start_combat'),
+    combatants: z.array(z.object({ template: z.string().optional(), name: z.string().optional(), count: z.number().int().min(1).max(12).optional(), monsterId: z.string().optional() })).max(12).optional(),
+    surprised: z.union([z.array(z.string()), z.enum(['monsters', 'party'])]).optional(),
+  }),
+  z.object({ kind: z.literal('end_combat'), reason: z.string().optional() }),
+  z.object({ kind: z.literal('remove_combatant'), targetId: z.string(), outcome: z.enum(['fled', 'surrendered', 'captured', 'calmed', 'dismissed', 'befriended']).optional() }),
+  z.object({ kind: z.literal('contest'), characterId: z.string(), skill: skillSchema, targetId: z.string(), targetSkill: skillSchema.optional(), targetBonus: z.number().int().optional(), passive: z.boolean().optional(), reason: z.string(), advantage: z.boolean().optional(), disadvantage: z.boolean().optional(), usesAction: z.boolean().optional() }),
+  z.object({ kind: z.literal('ability_check'), characterId: z.string(), ability: abilitySchema, dc: z.number().int().min(1).max(30), reason: z.string(), advantage: z.boolean().optional(), disadvantage: z.boolean().optional(), damage: diceSchema.optional(), damageType: z.string().optional(), halfOnSuccess: z.boolean().optional(), conditionOnFail: conditionSchema.optional() }),
+  z.object({ kind: z.literal('saving_throw'), characterId: z.string(), ability: abilitySchema, dc: z.number().int().min(1).max(30), reason: z.string(), advantage: z.boolean().optional(), disadvantage: z.boolean().optional(), damage: diceSchema.optional(), damageType: z.string().optional(), halfOnSuccess: z.boolean().optional(), conditionOnFail: conditionSchema.optional() }),
+  z.object({ kind: z.literal('grapple'), characterId: z.string(), targetId: z.string() }),
+  z.object({ kind: z.literal('shove'), characterId: z.string(), targetId: z.string(), effect: z.enum(['prone', 'push']).optional() }),
+  z.object({ kind: z.literal('take_action'), characterId: z.string(), action: z.enum(['dodge', 'help', 'hide', 'ready', 'search', 'use_object']), targetId: z.string().optional(), reason: z.string().optional(), dc: z.number().int().optional() }),
+  z.object({ kind: z.literal('player_attack'), characterId: z.string(), targetId: z.string(), advantage: z.boolean().optional(), disadvantage: z.boolean().optional(), ranged: z.boolean().optional(), weapon: z.string().optional() }),
   z.object({ kind: z.literal('monster_turn'), monsterId: z.string().optional() }),
   z.object({ kind: z.literal('death_save'), characterId: z.string() }),
   z.object({ kind: z.literal('use_feature'), characterId: z.string(), featureId: z.string() }),
@@ -52,7 +68,12 @@ const engineRequestSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('check_line_of_sight'), actorId: z.string(), targetId: z.string(), rangeFt: z.number().int().min(0).max(1000).optional() }),
 ]);
 
-export type EngineRequestInput = z.infer<typeof engineRequestSchema>;
+/**
+ * Optional on any request: "when": "success" | "failure" runs it only if the most
+ * recent check/contest/save in this turn had that outcome (e.g. the worgs notice
+ * you only if the sneak fails).
+ */
+export type EngineRequestInput = z.infer<typeof engineRequestSchema> & { when?: 'success' | 'failure' };
 
 const AMBIENT_VALUES = ['none', 'tavern', 'dungeon', 'combat', 'exploration', 'boss_fight'] as const;
 
@@ -66,7 +87,12 @@ function normalizeEngineRequest(value: unknown): unknown {
   const obj = { ...(value as Record<string, unknown>) };
   if (obj.kind === undefined && typeof obj.type === 'string') obj.kind = obj.type;
   delete obj.type;
-  if (obj.kind === 'skill_check' && typeof obj.reason !== 'string') obj.reason = 'Skill check';
+  if (['skill_check', 'contest', 'ability_check', 'saving_throw'].includes(String(obj.kind)) && typeof obj.reason !== 'string') obj.reason = 'Check';
+  if (typeof obj.ability === 'string') {
+    const full: Record<string, string> = { strength: 'str', dexterity: 'dex', constitution: 'con', intelligence: 'int', wisdom: 'wis', charisma: 'cha' };
+    const a = obj.ability.toLowerCase();
+    obj.ability = full[a] ?? a.slice(0, 3);
+  }
   return obj;
 }
 
@@ -83,7 +109,10 @@ export const dmTurnSchema = z.object({
       const out: EngineRequestInput[] = [];
       for (const item of arr) {
         const parsed = normalizedEngineRequest.safeParse(item);
-        if (parsed.success) out.push(parsed.data);
+        if (parsed.success) {
+          const when = item && typeof item === 'object' ? (item as { when?: unknown }).when : undefined;
+          out.push(when === 'success' || when === 'failure' ? { ...parsed.data, when } : parsed.data);
+        }
         if (out.length >= 5) break;
       }
       return out;

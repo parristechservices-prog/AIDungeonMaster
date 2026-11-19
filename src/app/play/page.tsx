@@ -57,6 +57,7 @@ export default function PlayPage() {
   const [lastEngineResults, setLastEngineResults] = useState<TurnResponse['engineResults']>([]);
   const [ambient, setAmbient] = useState<TurnResponse['ambient']>('none');
   const [physicalDice, setPhysicalDice] = useState(false);
+  const [showExtras, setShowExtras] = useState(false);
   const [manualRollContext, setManualRollContext] = useState<TurnResponse['manualRollContext'] | null>(null);
   const browserSave = useRef<string | undefined>(undefined);
   const [rollId, setRollId] = useState<string>();
@@ -280,13 +281,15 @@ export default function PlayPage() {
         // an answer to an ordinary question.
         const isInternalRefusal = (summary: string) =>
           /no tactical battle map|no exploration area graph|tactical request failed|spatial request failed/i.test(summary);
+        // Show each engine result once: skip turn hand-offs and anything the narration already says.
         const lines = [
           ...(data.sceneStarter ? [`— ${data.sceneStarter}`] : []),
           data.narration,
-          ...(data.engineResults?.filter((r) => !isInternalRefusal(r.summary)).map((r) => `• ${r.summary}`) ?? []),
-          data.browserSave
-            ? savedLocally ? `Turn ${data.recap.turnNumber} saved on this browser.` : 'Browser storage is unavailable. This turn can only continue in the current tab.'
-            : `Turn ${data.recap.turnNumber} saved.`,
+          ...(data.engineResults
+            ?.filter((r) => !isInternalRefusal(r.summary) && r.kind !== 'end_turn' && !String(data.narration).includes(r.summary))
+            .map((r) => `• ${r.summary}`) ?? []),
+          // Only mention saving when it's a warning the player needs.
+          ...(data.browserSave && !savedLocally ? ['Browser storage is unavailable. This turn can only continue in the current tab.'] : []),
           data.nextHook,
         ];
         setHistory((h) => [...h, ...lines]);
@@ -437,6 +440,17 @@ export default function PlayPage() {
               className="shrink-0 px-4 pt-3 border-t border-zinc-200 dark:border-zinc-700 space-y-2"
               style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
             >
+              {/* On phones the secondary controls fold away so the story keeps its room;
+                  they stay mounted (hidden) so audio keeps playing. */}
+              <button
+                type="button"
+                onClick={() => setShowExtras((v) => !v)}
+                aria-expanded={showExtras}
+                className="md:hidden text-xs font-medium text-zinc-500 underline"
+              >
+                {showExtras ? 'Fewer options' : 'More options (audio, voice, appeal, dice)'}
+              </button>
+              <div className={`${showExtras ? 'space-y-2' : 'hidden'} md:block md:space-y-2`}>
               {/* Docked ambient audio bar — in flow, never overlays input/suggestions */}
               {display.showAudio && <AmbientAudio type={ambient} />}
               {display.showRecordedGuide && <RecordedDungeonGuide adventureId={adventureId} sceneId={sceneId} turnCount={turnCount} characterClass={state?.party?.[0]?.className ?? ''} combatActive={state?.combat?.active ?? false} lowHealth={state?.party?.some(p=>p.maxHp>0&&p.hp/p.maxHp<=0.3) ?? false} pendingRoll={Boolean(manualRollContext)} engineResults={lastEngineResults} />}
@@ -444,6 +458,7 @@ export default function PlayPage() {
                 if (turnInFlight.current) setInput(text);
                 else void sendTurn(text);
               }} />}
+              </div>
               <InputBox
                 value={input}
                 busy={busy}
@@ -451,6 +466,7 @@ export default function PlayPage() {
                 onSubmit={() => sendTurn(input)}
                 placeholder="Describe what you do…"
               />
+              <div className={`${showExtras ? 'space-y-2' : 'hidden'} md:block md:space-y-2`}>
               {display.showAppealDm && isFeatureEnabled('appealTheDm') && (
                 <AppealButton
                   busy={busy}
@@ -477,6 +493,7 @@ export default function PlayPage() {
                   </label>
                 </div>
               )}
+              </div>
               {display.showSuggestedActions && <ChoiceButtons choices={choices} busy={busy} onPick={(c) => sendTurn(c)} />}
             </div>
           </section>
@@ -581,6 +598,7 @@ export default function PlayPage() {
           sessionId={sessionId}
           adventureTitle={adventureTitle}
           playerName={state?.party?.[0]?.name ?? 'Hero'}
+          fallen={Boolean(state?.party?.length && state.party.every((p) => p.deathSaves?.failure >= 3))}
           onNewGame={handleNewGame}
         />
       )}

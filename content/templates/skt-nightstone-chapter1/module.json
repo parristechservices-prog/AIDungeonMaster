@@ -153,6 +153,10 @@
     "village-square": {
       "templates": ["worg", "worg"]
     },
+    "chapel-bell": {
+      "templates": ["goblin", "goblin"],
+      "names": ["Beedo", "Vark"]
+    },
     "goblin-scouts": {
       "templates": ["goblin", "goblin"],
       "difficulty": "easy"

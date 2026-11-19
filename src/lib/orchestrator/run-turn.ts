@@ -1,4 +1,4 @@
-import { resolveEngineRequest } from '@/lib/engine';
+import { resolveEngineRequest, runEnemyTurns } from '@/lib/engine';
 import type { EngineRequest } from '@/lib/engine/types';
 import { dmTurnSchema, type DmTurn } from '@/lib/llm/contracts';
 import { getPlayableScene, getSceneChoices, getSceneGoal } from '@/lib/game/adventures/helpers';
@@ -118,19 +118,61 @@ export function runTurn(
   let needsManualRoll = false;
   let manualRollContext: TurnResult['manualRollContext'] | undefined;
   let skipConsequencesAfterFailedCheck = false;
+  // Enemy turns are run by the engine, in initiative order, as soon as play
+  // reaches them. The DM's own monster_turn requests are absorbed, and once the
+  // enemies have gone this turn a trailing end_turn would skip the hero's turn.
+  let enemiesActed = false;
+  const runEnemies = () => {
+    const auto = runEnemyTurns(state);
+    if (auto.results.length === 0) return;
+    state = auto.state;
+    enemiesActed = true;
+    for (const r of auto.results) engineResults.push(r);
+  };
+  runEnemies();
+
+  // Outcome of the most recent check this turn, for requests marked "when".
+  let lastCheck: 'success' | 'failure' | undefined;
+
   let pendingRequests: DmTurn['engineRequests'] | undefined;
   let suppliedRoll = context.manualRoll;
 
   for (const [index, request] of limitedRequests.entries()) {
+    if (request.when && request.when !== lastCheck) continue;
     // The Director separates resolving an approach from progressing the story.
     if (request.kind === 'advance_scene' && (state.sceneId !== prevScene || state.combat.active)) continue;
-    if (context.mode === 'ai_director' && skipConsequencesAfterFailedCheck &&
+    if (context.mode === 'ai_director' && skipConsequencesAfterFailedCheck && request.when !== 'failure' &&
         ['advance_scene', 'complete_objective', 'move_area'].includes(request.kind)) continue;
+    if (request.kind === 'monster_turn') continue;
+    if (request.kind === 'end_turn' && enemiesActed) continue;
+    // A natural 20 on a death save brings the character back with 1 HP, and they
+    // still take the rest of their turn (5e), so don't end it for them.
+    const prev = engineResults[engineResults.length - 1];
+    if (request.kind === 'end_turn' && prev?.kind === 'death_save' && state.party.some((p) => p.id === state.combat.initiative[state.combat.turnIndex]?.actorId && !p.unconscious)) continue;
     if (
       skipConsequencesAfterFailedCheck &&
-      ['update_npc', 'add_canon_fact', 'update_inventory', 'apply_condition', 'remove_condition'].includes(request.kind)
+      request.when !== 'failure' &&
+      ['update_npc', 'add_canon_fact', 'update_inventory', 'apply_condition', 'remove_condition', 'remove_combatant', 'end_combat', 'advance_scene', 'complete_objective'].includes(request.kind)
     ) {
       continue;
+    }
+
+    // Attacking enemies outside combat starts the fight properly (5e): roll
+    // initiative first; anyone faster acts before the attack lands. Surprise is
+    // the DM's call via start_combat.surprised.
+    if (
+      ['player_attack', 'grapple', 'shove'].includes(request.kind) &&
+      !state.combat.active &&
+      state.monsters.some((m) => m.hp > 0)
+    ) {
+      const started = resolveEngineRequest(state, { kind: 'start_combat' });
+      if (started.result.ok) {
+        state = started.state;
+        engineResults.push({ kind: 'start_combat', ...started.result });
+        runEnemies();
+        const actor = state.party.find((p) => p.id === ('characterId' in request ? request.characterId : ''));
+        if (!state.combat.active || actor?.unconscious) continue;
+      }
     }
 
     const manualRoll =
@@ -139,6 +181,7 @@ export function runTurn(
         ? suppliedRoll
         : undefined;
 
+    const sceneBefore = state.sceneId;
     if (manualRoll !== undefined) suppliedRoll = undefined;
     const resolved = resolveEngineRequest(state, toEngineRequest(request, manualRoll), {
       physicalDice: context.physicalDice,
@@ -146,10 +189,18 @@ export function runTurn(
     });
     state = resolved.state;
     engineResults.push({ kind: request.kind, ...resolved.result });
+    // A check that completed the scene goal moved the story on: record it like an advance.
+    if (request.kind !== 'advance_scene' && state.sceneId !== sceneBefore && state.sceneId !== 'ending' && !state.combat.active) {
+      engineResults.push({ kind: 'advance_scene', ok: true, summary: 'Scene advanced.' });
+    }
+    if (state.combat.active && !resolved.result.needsManualRoll) runEnemies();
+    if (['skill_check', 'contest', 'ability_check', 'saving_throw'].includes(request.kind) && !resolved.result.needsManualRoll) {
+      lastCheck = resolved.result.ok ? 'success' : 'failure';
+    }
     // Later requests describe the next steps of this action. If travel failed,
     // those steps cannot use the intended destination as their starting point.
     if (context.mode === 'ai_director' && request.kind === 'move_area' && !resolved.result.ok) break;
-    if (request.kind === 'skill_check' && !resolved.result.ok) {
+    if (['skill_check', 'contest', 'ability_check'].includes(request.kind) && !resolved.result.ok) {
       skipConsequencesAfterFailedCheck = true;
     }
 
@@ -179,9 +230,17 @@ export function runTurn(
           finalNarration = mainResult.ok
             ? `Your strike finds its mark! ${mainResult.summary}`
             : `Your blow is parried. ${mainResult.summary}`;
+        } else {
+          const lines = engineResults.filter((r) => !['end_turn', 'monster_turn', 'surprised'].includes(r.kind)).map((r) => r.summary);
+          finalNarration = `${turn.narration} ${lines.join(' ')}`.trim();
         }
       }
     }
+  }
+
+  const enemyLines = engineResults.filter((r) => r.kind === 'monster_turn' || r.kind === 'surprised').map((r) => r.summary);
+  if (enemiesActed && context.fallbackUsed && enemyLines.length) {
+    finalNarration = `${finalNarration} ${enemyLines.join(' ')}`.trim();
   }
 
   const adventure = getAdventure(state.adventureId);
@@ -211,7 +270,8 @@ export function runTurn(
       narration: finalNarration,
       ambient: turn.ambient,
       needsManualRoll,
-      needsResultBeforeNarrating: turn.needsResultBeforeNarrating,
+      // Enemy turns happened after the DM wrote its narration, so it must be re-narrated from results.
+      needsResultBeforeNarrating: turn.needsResultBeforeNarrating || enemiesActed,
       manualRollContext,
       engineResults,
       recentRolls,

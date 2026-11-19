@@ -20,6 +20,9 @@ describe('regression flow', () => {
     state = runTurn(state, deriveDmTurnFromInput(state, 'I inspect the tracks'), { mode: 'table_rules', aiUsed: false, fallbackUsed: true }).state;
     expect(state.sceneId).toBe('combat');
 
+    // Enemies may win initiative and act before the first swing (5e), so make
+    // the hero sturdy enough to survive max-roll crits within a single turn.
+    state = { ...state, party: state.party.map((p) => ({ ...p, hp: 999, maxHp: 999 })) };
     // Deterministic crit attacks remove the balanced encounter.
     for (let attack = 0; attack < 40 && state.monsters.some((m) => m.hp > 0); attack += 1) {
       state = runTurn(state, deriveDmTurnFromInput(state, 'I attack'), {
@@ -31,7 +34,7 @@ describe('regression flow', () => {
       // Hack for test: make player immortal and clear action economy
       state = {
         ...state,
-        party: state.party.map((p) => ({ ...p, hp: p.maxHp })),
+        party: state.party.map((p) => ({ ...p, hp: p.maxHp, unconscious: false })),
       };
       if (state.combat.battleMap) {
         state = {

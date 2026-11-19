@@ -43,6 +43,7 @@ const sceneEncounterSchema = z.object({
   difficulty: z.enum(['easy', 'medium', 'hard', 'deadly']).optional(),
   templates: z.array(z.string()).max(12).optional(),
   unscaled: z.boolean().optional(),
+  names: z.array(z.string()).max(12).optional(),
   auto: z.boolean().optional(),
   preferredTemplates: z.array(z.string()).max(8).optional(),
 });
