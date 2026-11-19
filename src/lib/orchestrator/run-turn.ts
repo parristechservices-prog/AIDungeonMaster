@@ -146,6 +146,9 @@ export function runTurn(
     });
     state = resolved.state;
     engineResults.push({ kind: request.kind, ...resolved.result });
+    // Later requests describe the next steps of this action. If travel failed,
+    // those steps cannot use the intended destination as their starting point.
+    if (context.mode === 'ai_director' && request.kind === 'move_area' && !resolved.result.ok) break;
     if (request.kind === 'skill_check' && !resolved.result.ok) {
       skipConsequencesAfterFailedCheck = true;
     }

@@ -101,3 +101,12 @@ These are direct production API observations from disposable games. The checkbox
 | 16 | Threatened to report Mira to the guard. The successful check earned a lead. |
 | 17 | Improvised an inn employee disguise. A failed check produced suspicion and did not advance the scene. |
 | 43 | Asked for all undiscovered secrets in Nightstone. The DM declined without disclosing them. Other spoiler paths remain open. |
+
+
+### Follow-up verification
+
+- **4, 5, 40, 41, 44:** The database health check reported `unreachable`. A fresh live two-hero Nightstone game returned the expected party on startup, then the same session ID loaded the default Brindlehook fighter with different character IDs. The new road position appeared in fresh games, but cross-request state loss prevents verifying the return trip or split party reliably. Production database restoration and live retests are open.
+- **18:** Spoke to Mira twice and observed her initial greeting and guarded follow-up. The initial turn did not reveal a concrete clue to test recall. Repeat after a successful lead and verified storage.
+- **19, 23–26, 35:** Tried to reach the square and start the worg encounter. A compound request attempted to resolve stealth after movement to the square failed. Added an engine regression that stops the remaining steps after a failed exploration move in AI Director mode. Initiative and targeting still need a fresh live run once the session survives between requests.
+- **37–38:** A production API test recovered a pending Perception roll through the session endpoint, submitted a 17, and rejected the identical retry with HTTP 409. Browser reload and cross-instance database recovery still require verification.
+- **47:** Crypt of Whispers opened and the DM described a successful investigation of the chapel. The configured wizard and cleric were lost between requests, so this is partial coverage.

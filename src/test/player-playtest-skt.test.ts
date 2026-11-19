@@ -98,6 +98,19 @@ describe('Nightstone open-ended Director actions', () => {
     expect(turn.state.sceneId).toBe(state.sceneId);
   });
 
+  it('does not resolve a follow-up stealth check at an unreachable destination', () => {
+    const state = nightstone();
+    const turn = runTurn(state, {
+      narration: 'You try to reach the square and sneak past its occupants.',
+      engineRequests: [
+        { kind: 'move_area', actorId: state.activeCharacterId, targetAreaId: 'south_square' },
+        { kind: 'skill_check', characterId: state.activeCharacterId, skill: 'stealth', dc: 10, reason: 'Sneak past the creatures in the square' },
+      ],
+    }, { ...mode, manualRoll: 20 });
+    expect(turn.response.engineResults).toMatchObject([{ kind: 'move_area', ok: false }]);
+    expect(turn.state.exploration?.locations).toEqual(state.exploration?.locations);
+  });
+
   it('does not move or advance after a failed attempt to sneak', () => {
     const state = nightstone();
     const turn = runTurn(state, {
