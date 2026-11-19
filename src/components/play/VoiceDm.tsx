@@ -16,14 +16,16 @@ type RecognitionWindow = Window & {
   webkitSpeechRecognition?: new () => Recognition;
 };
 
-export function VoiceDm({ narration, busy, onDictate }: {
+export function VoiceDm({ narration, busy, onDictate, onSend }: {
   narration: { text: string } | null;
   busy: boolean;
   onDictate: (text: string) => void;
+  onSend: (text: string) => void;
 }) {
   const [voice, setVoice] = useState('rowan');
   const [passcode, setPasscode] = useState('');
   const [enabled, setEnabled] = useState(false);
+  const [autoSend, setAutoSend] = useState(false);
   const [listening, setListening] = useState(false);
   const [status, setStatus] = useState('');
   const [playing, setPlaying] = useState(false);
@@ -83,15 +85,29 @@ export function VoiceDm({ narration, busy, onDictate }: {
     }
     const recognition = new Speech();
     recognition.lang = 'en-AU';
+    let transcript = '';
+    let failed = false;
     recognition.onresult = (event) => {
-      const text = Array.from(event.results, (result) => result[0].transcript).join(' ').trim();
-      if (text) {
-        onDictate(text);
+      transcript = Array.from(event.results, (result) => result[0].transcript).join(' ').trim();
+    };
+    recognition.onerror = () => {
+      failed = true;
+      setStatus('Could not hear your action. Try again or type it.');
+    };
+    recognition.onend = () => {
+      mic.current = null;
+      setListening(false);
+      if (failed) return;
+      if (!transcript) {
+        setStatus('No speech detected.');
+      } else if (autoSend) {
+        onSend(transcript);
+        setStatus('Spoken action sent.');
+      } else {
+        onDictate(transcript);
         setStatus('Check the transcript, then send your action.');
       }
     };
-    recognition.onerror = () => setStatus('Could not hear your action. Try again or type it.');
-    recognition.onend = () => { mic.current = null; setListening(false); };
     try {
       recognition.start();
       mic.current = recognition;
@@ -109,6 +125,9 @@ export function VoiceDm({ narration, busy, onDictate }: {
         <button type="button" disabled={busy && !listening} onClick={dictate} className="rounded border px-2 py-1">
           {listening ? 'Finish speaking' : 'Speak action'}
         </button>
+        <label className="flex items-center gap-1">
+          <input type="checkbox" checked={autoSend} disabled={listening} onChange={(event) => setAutoSend(event.target.checked)} /> Auto-send
+        </label>
         <label>Voice <select value={voice} onChange={(event) => setVoice(event.target.value)} className="rounded border px-2 py-1">
           <option value="rowan">Rowan</option><option value="ella">Ella</option>
         </select></label>

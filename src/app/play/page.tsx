@@ -409,7 +409,10 @@ export default function PlayPage() {
               {/* Docked ambient audio bar — in flow, never overlays input/suggestions */}
               {display.showAudio && <AmbientAudio type={ambient} />}
               {display.showRecordedGuide && <RecordedDungeonGuide adventureId={adventureId} sceneId={sceneId} turnCount={turnCount} characterClass={state?.party?.[0]?.className ?? ''} combatActive={state?.combat?.active ?? false} lowHealth={state?.party?.some(p=>p.maxHp>0&&p.hp/p.maxHp<=0.3) ?? false} pendingRoll={Boolean(manualRollContext)} engineResults={lastEngineResults} />}
-              {display.showVoiceDm && <VoiceDm narration={voiceNarration} busy={busy || !sessionId} onDictate={setInput} />}
+              {display.showVoiceDm && <VoiceDm narration={voiceNarration} busy={busy || !sessionId} onDictate={setInput} onSend={(text) => {
+                if (turnInFlight.current) setInput(text);
+                else void sendTurn(text);
+              }} />}
               <InputBox
                 value={input}
                 busy={busy}
