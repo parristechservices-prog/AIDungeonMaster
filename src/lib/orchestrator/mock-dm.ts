@@ -514,6 +514,19 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
   const sceneKind = getSceneKind(adventure, state.sceneId);
   const ambient = mockAmbientForKind(sceneKind);
 
+  // The story is over: a fallen party, or the adventure's end.
+  if (state.party.length > 0 && state.party.every((p) => p.deathSaves.failure >= 3)) {
+    return {
+      engineRequests: [],
+      narration: `${state.party.map((p) => p.name).join(' and ')} ${state.party.length > 1 ? 'have' : 'has'} fallen, and the adventure ends here. Start a new adventure to try again.`,
+      needsResultBeforeNarrating: false,
+      ambient: 'none',
+    };
+  }
+  if (state.sceneId === 'ending') {
+    return { engineRequests: [], narration: adventure.endingMessage, needsResultBeforeNarrating: false, ambient: 'none' };
+  }
+
   // A dying character's turn is a death saving throw, whatever they say (5e).
   const turnHolderId = state.combat.active ? state.combat.initiative[state.combat.turnIndex]?.actorId : state.activeCharacterId;
   const dying = state.party.find((p) => p.id === turnHolderId && p.unconscious && !p.stable && p.deathSaves.failure < 3);
@@ -1057,7 +1070,11 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
                 skill: 'stealth',
                 dc: 13,
                 reason: `Slip ${routeTarget} without drawing the ${livingNames}'s full attention.`,
+                // Sneaking out of the scene to a named place moves the story on.
+                advancesScene: !state.combat.active && routeTarget !== 'into cover among the rubble',
               },
+              // If they spot you, the fight starts.
+              ...(!state.combat.active ? [{ kind: 'start_combat' as const, when: 'failure' as const }] : []),
             ]
           : [{ kind: 'advance_scene' }],
       narration:

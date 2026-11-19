@@ -200,15 +200,17 @@ function resolveEngineRequestInner(
       breakdown.ok = ok;
       // A check only moves the story on when the DM marks it as completing the
       // scene goal; investigating, climbing or sneaking around stays in the scene.
-      const inCombatScene =
-        getSceneKind(getAdventure(state.adventureId), state.sceneId) === 'combat';
-      const next = ok && request.advancesScene && !inCombatScene && !state.combat.active ? advanceScene(state) : state;
+      // In a combat scene this only happens when the fight was avoided (e.g. sneaking past).
+      const next = ok && request.advancesScene && !state.combat.active ? advanceScene(state) : state;
       return {
         state: appendLog(next, `${char.name}: ${request.skill} check ${ok ? 'passed' : 'failed'} (${breakdown.total} vs DC ${request.dc})`),
         result: { ok, summary: `${request.reason}: ${ok ? 'success' : 'failure'}`, breakdown },
       };
     }
     case 'start_combat': {
+      if (state.party.length > 0 && state.party.every((p) => p.deathSaves.failure >= 3)) {
+        return { state, result: { ok: false, summary: 'The party has fallen; there is no one left to fight.' } };
+      }
       const adventure = getAdventure(state.adventureId);
       const living = (list: Monster[] | undefined) => (list ?? []).filter((m) => m.hp > 0);
       // Who is fighting? 1) combatants the DM names, 2) hostiles already here,
@@ -703,11 +705,12 @@ function resolveEngineRequestInner(
           };
         }
       }
+      const nextName = state.party.find((p) => p.id === nextActorId)?.name ?? state.monsters.find((m) => m.id === nextActorId)?.name ?? nextActorId;
       let afterStand = standing ? removeConditionFrom(nextState, nextActorId, 'prone') : nextState;
       // Dodge lasts until the start of the dodger's next turn.
       afterStand = removeConditionFrom(afterStand, nextActorId, 'dodging');
       const standNote = standing ? ' They stand up from prone, using half their movement.' : '';
-      return { state: appendLog(afterStand, `Turn ended. It is now ${nextActorId}'s turn.${standNote}`), result: { ok: true, summary: `Ended turn. It is now ${nextActorId}'s turn.${standNote}` } };
+      return { state: appendLog(afterStand, `Turn ended. It is now ${nextName}'s turn.${standNote}`), result: { ok: true, summary: `Ended turn. It is now ${nextName}'s turn.${standNote}` } };
     }
     case 'monster_turn': {
       // 5e turn order: the monster that acts is the one whose initiative turn it is.

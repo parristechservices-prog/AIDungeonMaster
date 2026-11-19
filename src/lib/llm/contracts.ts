@@ -68,7 +68,12 @@ const engineRequestSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('check_line_of_sight'), actorId: z.string(), targetId: z.string(), rangeFt: z.number().int().min(0).max(1000).optional() }),
 ]);
 
-export type EngineRequestInput = z.infer<typeof engineRequestSchema>;
+/**
+ * Optional on any request: "when": "success" | "failure" runs it only if the most
+ * recent check/contest/save in this turn had that outcome (e.g. the worgs notice
+ * you only if the sneak fails).
+ */
+export type EngineRequestInput = z.infer<typeof engineRequestSchema> & { when?: 'success' | 'failure' };
 
 const AMBIENT_VALUES = ['none', 'tavern', 'dungeon', 'combat', 'exploration', 'boss_fight'] as const;
 
@@ -104,7 +109,10 @@ export const dmTurnSchema = z.object({
       const out: EngineRequestInput[] = [];
       for (const item of arr) {
         const parsed = normalizedEngineRequest.safeParse(item);
-        if (parsed.success) out.push(parsed.data);
+        if (parsed.success) {
+          const when = item && typeof item === 'object' ? (item as { when?: unknown }).when : undefined;
+          out.push(when === 'success' || when === 'failure' ? { ...parsed.data, when } : parsed.data);
+        }
         if (out.length >= 5) break;
       }
       return out;

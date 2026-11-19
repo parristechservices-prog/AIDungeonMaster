@@ -228,3 +228,61 @@ describe('fallback DM (no AI available)', () => {
     expect(deriveDmTurnFromInput(at('goblin-scouts'), 'I shout at the goblins to surrender').engineRequests[0]).toMatchObject({ kind: 'contest', skill: 'intimidation' });
   });
 });
+
+describe('fixes from UI playtesting', () => {
+  it('"when" branches run only on the matching outcome of the latest check', () => {
+    const s = at('village-square');
+    const sneak = (face: number) => {
+      dice([face, 20]);
+      return dm(s, [
+        { kind: 'contest', characterId: hero(s), skill: 'stealth', targetId: living(s)[0].id, passive: true, reason: 'Sneak past' },
+        { kind: 'advance_scene', when: 'success' },
+        { kind: 'start_combat', when: 'failure' },
+      ]).state;
+    };
+    const spotted = sneak(1);
+    expect(spotted.sceneId).toBe('village-square');
+    expect(spotted.combat.active).toBe(true);
+    const slipped = sneak(20);
+    expect(slipped.sceneId).toBe('chapel-bell');
+    expect(slipped.combat.active).toBe(false);
+  });
+
+  it('turn hand-offs name the creature, not its internal id', () => {
+    const st = resolveEngineRequest(at('village-square'), { kind: 'start_combat' }).state;
+    const heroTurn = { ...st, combat: { ...st.combat, turnIndex: st.combat.initiative.findIndex((e) => e.actorId === hero(st)) } };
+    const out = resolveEngineRequest(heroTurn, { kind: 'end_turn' });
+    expect(out.result.summary).toMatch(/It is now Worg's turn/);
+    expect(out.result.summary).not.toMatch(/worg-village/);
+  });
+
+  it('a fallen party cannot start another fight, and the fallback DM says the adventure is over', () => {
+    const s = at('village-square');
+    const dead = { ...s, party: s.party.map((p) => ({ ...p, hp: 0, unconscious: true, deathSaves: { success: 0, failure: 3 } })) };
+    expect(resolveEngineRequest(dead, { kind: 'start_combat' }).result.ok).toBe(false);
+    const turn = deriveDmTurnFromInput(dead, 'I attack');
+    expect(turn.engineRequests).toEqual([]);
+    expect(turn.narration).toMatch(/fallen/);
+  });
+
+  it('the narration check accepts honest prose about a mixed round', async () => {
+    const { validateNarrationAgainstResults } = await import('@/lib/llm/validate-narration');
+    const mixed = [
+      { kind: 'player_attack', ok: false, summary: 'Longsword attack missed.' },
+      { kind: 'end_turn', ok: true, summary: 'Ended turn.' },
+      { kind: 'monster_turn', ok: true, summary: 'Worg hit Seren Ashfall for 12.' },
+      { kind: 'monster_turn', ok: false, summary: 'Worg missed.' },
+    ];
+    expect(validateNarrationAgainstResults('Your swing misses. One worg bites hard and hits you; the other misses.', mixed)).toEqual([]);
+    // But a pure miss narrated as a hit is still caught.
+    expect(validateNarrationAgainstResults('You hit the worg squarely.', [{ kind: 'player_attack', ok: false, summary: 'missed' }]).length).toBeGreaterThan(0);
+    // Negated movement isn't an arrival claim.
+    expect(validateNarrationAgainstResults('The worgs keep you pinned before you can reach the bell.', [{ kind: 'skill_check', ok: false, summary: 'failure' }])).toEqual([]);
+  });
+
+  it('the start page catalog offers the module\'s recommended level', async () => {
+    const { listAdventuresForCatalog } = await import('@/lib/game/adventures/registry.server');
+    const ns = listAdventuresForCatalog().find((a) => a.id === 'skt-nightstone-chapter1');
+    expect(ns?.defaultLevel).toBe(2);
+  });
+});

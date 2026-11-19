@@ -10,9 +10,11 @@ type Props = {
   adventureTitle: string;
   playerName: string;
   onNewGame: () => void;
+  /** True when the whole party died, rather than finishing the adventure. */
+  fallen?: boolean;
 };
 
-export function EndingScreen({ sessionId, adventureTitle, playerName, onNewGame }: Props) {
+export function EndingScreen({ sessionId, adventureTitle, playerName, onNewGame, fallen }: Props) {
   const [recap, setRecap] = useState<PartyQuestRecap | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -40,9 +42,9 @@ export function EndingScreen({ sessionId, adventureTitle, playerName, onNewGame 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-6">
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
-        <h2 className="text-2xl font-bold">Adventure complete</h2>
+        <h2 className="text-2xl font-bold">{fallen ? 'Fallen in battle' : 'Adventure complete'}</h2>
         <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-          {playerName} completed <em>{adventureTitle}</em>.
+          {fallen ? <>{playerName} died during <em>{adventureTitle}</em>.</> : <>{playerName} completed <em>{adventureTitle}</em>.</>}
         </p>
 
         {loading && <p className="mt-4 text-sm text-zinc-500">Loading recap…</p>}

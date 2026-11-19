@@ -41,11 +41,25 @@ export function Battlemap({ state, showTerrainOverlay = false, onSuggestCommand 
   };
 
   const tokenByCell = new Map<string, TokenView>();
-  const footprintCells = new Set<string>();
+  const footprintOwner = new Map<string, TokenView>();
   for (const t of view.tokens) {
     tokenByCell.set(`${t.x},${t.y}`, t);
-    for (let dx = 0; dx < t.span; dx++) for (let dy = 0; dy < t.span; dy++) footprintCells.add(`${t.x + dx},${t.y + dy}`);
+    for (let dx = 0; dx < t.span; dx++) for (let dy = 0; dy < t.span; dy++) footprintOwner.set(`${t.x + dx},${t.y + dy}`, t);
   }
+  // Number same-named creatures (W1, W2) so they can be told apart.
+  const shortLabel = (() => {
+    const counts = new Map<string, number>();
+    for (const t of view.tokens) counts.set(nameOf(t.id), (counts.get(nameOf(t.id)) ?? 0) + 1);
+    const seen = new Map<string, number>();
+    const labels = new Map<string, string>();
+    for (const t of view.tokens) {
+      const n = nameOf(t.id);
+      const k = (seen.get(n) ?? 0) + 1;
+      seen.set(n, k);
+      labels.set(t.id, (counts.get(n) ?? 1) > 1 ? `${n.slice(0, 1)}${k}` : n.slice(0, 2));
+    }
+    return (id: string) => labels.get(id) ?? nameOf(id).slice(0, 2);
+  })();
 
   function handleTap(x: number, y: number) {
     if (!map) return;
@@ -85,7 +99,8 @@ export function Battlemap({ state, showTerrainOverlay = false, onSuggestCommand 
           {view.cells.map((cell) => {
             const key = `${cell.x},${cell.y}`;
             const token = tokenByCell.get(key);
-            const inFootprint = footprintCells.has(key);
+            const owner = footprintOwner.get(key);
+            const inFootprint = Boolean(owner) && !token;
             const terrain = showTerrainOverlay ? terrainStyle(cell.terrain) : { className: '', label: 'Normal' };
             const cover = showTerrainOverlay ? coverBadge(cell.cover) : '';
             const tokenClass = token
@@ -109,14 +124,15 @@ export function Battlemap({ state, showTerrainOverlay = false, onSuggestCommand 
                   'border-zinc-200 dark:border-zinc-800',
                   terrain.className,
                   cell.reachable && !token ? 'ring-1 ring-sky-400/70' : '',
-                  inFootprint && !token ? 'outline outline-1 outline-sky-300/50' : '',
+                  // The rest of a Large/Huge creature's space, tinted by side.
+                  inFootprint ? (owner?.faction === 'party' ? 'bg-sky-300/60' : owner?.faction === 'monster' ? 'bg-red-400/60' : 'bg-zinc-300/60') : '',
                   token?.isSelected ? 'ring-2 ring-amber-400' : '',
                   token?.isCurrentTurn ? 'ring-2 ring-emerald-400' : '',
                   tokenClass,
                 ].filter(Boolean).join(' ')}
                 title={label}
               >
-                {token ? nameOf(token.id).slice(0, 2) : cover}
+                {token ? shortLabel(token.id) : cover}
               </button>
             );
           })}

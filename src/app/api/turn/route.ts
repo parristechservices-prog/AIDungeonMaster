@@ -263,7 +263,7 @@ export async function POST(req: Request) {
       turnNumber,
       narration,
       outcome: turn.response.engineResults[0]?.summary ?? turn.response.narration,
-      consequences: turn.response.engineResults.map((r) => r.summary),
+      consequences: turn.response.engineResults.filter((r) => r.kind !== 'end_turn').map((r) => r.summary),
       nextChoices: turn.response.nextChoices,
       nextHook: turn.response.nextHook,
       mode: turn.response.mode,

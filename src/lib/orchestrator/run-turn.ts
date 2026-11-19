@@ -131,7 +131,11 @@ export function runTurn(
   };
   runEnemies();
 
+  // Outcome of the most recent check this turn, for requests marked "when".
+  let lastCheck: 'success' | 'failure' | undefined;
+
   for (const request of limitedRequests) {
+    if (request.when && request.when !== lastCheck) continue;
     if (request.kind === 'monster_turn') continue;
     if (request.kind === 'end_turn' && enemiesActed) continue;
     // A natural 20 on a death save brings the character back with 1 HP, and they
@@ -140,6 +144,7 @@ export function runTurn(
     if (request.kind === 'end_turn' && prev?.kind === 'death_save' && state.party.some((p) => p.id === state.combat.initiative[state.combat.turnIndex]?.actorId && !p.unconscious)) continue;
     if (
       skipConsequencesAfterFailedCheck &&
+      request.when !== 'failure' &&
       ['update_npc', 'add_canon_fact', 'update_inventory', 'apply_condition', 'remove_condition', 'remove_combatant', 'end_combat', 'advance_scene', 'complete_objective'].includes(request.kind)
     ) {
       continue;
@@ -169,12 +174,20 @@ export function runTurn(
         ? context.manualRoll
         : undefined;
 
+    const sceneBefore = state.sceneId;
     const resolved = resolveEngineRequest(state, toEngineRequest(request, manualRoll), {
       physicalDice: context.physicalDice,
     });
     state = resolved.state;
     engineResults.push({ kind: request.kind, ...resolved.result });
+    // A check that completed the scene goal moved the story on: record it like an advance.
+    if (request.kind !== 'advance_scene' && state.sceneId !== sceneBefore && state.sceneId !== 'ending' && !state.combat.active) {
+      engineResults.push({ kind: 'advance_scene', ok: true, summary: 'Scene advanced.' });
+    }
     if (state.combat.active && !resolved.result.needsManualRoll) runEnemies();
+    if (['skill_check', 'contest', 'ability_check', 'saving_throw'].includes(request.kind) && !resolved.result.needsManualRoll) {
+      lastCheck = resolved.result.ok ? 'success' : 'failure';
+    }
     if (['skill_check', 'contest', 'ability_check'].includes(request.kind) && !resolved.result.ok) {
       skipConsequencesAfterFailedCheck = true;
     }

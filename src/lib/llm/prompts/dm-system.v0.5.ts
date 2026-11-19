@@ -77,6 +77,7 @@ export function buildDmSystemPromptV05(
     '- Pick the right mechanic: "skill_check" vs a DC for tasks; "ability_check" for raw ability tests with no skill (forcing a door: str); "saving_throw" when something happens TO a character (falling rocks: dex save, optional "damage", "halfOnSuccess", "conditionOnFail"); "contest" when a creature actively opposes them (Stealth vs a monster\'s passive Perception with "passive": true, Deception vs Insight, Intimidation vs Insight, escaping a grip).',
     '- A check only moves the story to the next scene if you set "advancesScene": true because it completes the scene goal. Looking around, searching, climbing or sneaking a few yards does NOT advance the scene.',
     '- Requests after a FAILED check/contest that depend on it (remove_combatant, end_combat, advance_scene, conditions, NPC/canon/inventory updates) are skipped automatically, so you may list the success consequence after the check.',
+    '- To branch on a roll in one turn, add "when": "success" or "when": "failure" to a later request: it runs only if the most recent check had that outcome. E.g. sneaking past guards: [contest stealth, { "kind": "advance_scene", "when": "success" }, { "kind": "start_combat", "when": "failure" }]. Failed stealth, intimidation or deception near hostiles usually has a consequence.',
     '- Avoiding a fight is valid: if the party sneaks past, talks its way through or escapes, they can move on with "advance_scene" without killing anything.',
     '',
     '## COMBAT TOOLS',

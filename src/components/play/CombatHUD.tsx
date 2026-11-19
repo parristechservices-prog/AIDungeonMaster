@@ -21,29 +21,31 @@ export function CombatHUD({ combat, party, monsters, showTerrainOverlay = false 
   const current = combat.initiative[combat.turnIndex];
   const grid = combat.battleMap;
   const activeActor = grid && current ? grid.actors[current.actorId] : undefined;
-  const actorsByCell = new Map<string, { id: string; label: string; kind: 'party' | 'monster'; defeated?: boolean }>();
+  const actorsByCell = new Map<string, { id: string; label: string; kind: 'party' | 'monster'; defeated?: boolean; anchor: boolean }>();
 
   if (grid) {
-    party.forEach((member) => {
-      const position = grid.positions[member.id];
-      if (position) {
-        actorsByCell.set(`${position.x},${position.y}`, {
-          id: member.id,
-          label: member.name.slice(0, 2),
-          kind: 'party',
-        });
+    // Large creatures fill 2x2 squares, Huge 3x3, Gargantuan 4x4 (5e).
+    const span = (id: string) => ({ large: 2, huge: 3, gargantuan: 4 } as Record<string, number>)[grid.actors[id]?.size ?? 'medium'] ?? 1;
+    const place = (id: string, label: string, kind: 'party' | 'monster', defeated?: boolean) => {
+      const position = grid.positions[id];
+      if (!position) return;
+      const n = span(id);
+      for (let dx = 0; dx < n; dx++) {
+        for (let dy = 0; dy < n; dy++) {
+          actorsByCell.set(`${position.x + dx},${position.y + dy}`, { id, label, kind, defeated, anchor: dx === 0 && dy === 0 });
+        }
       }
-    });
+    };
+    party.forEach((member) => place(member.id, member.name.slice(0, 2), 'party'));
+    // Number same-named foes (W1, W2) so they can be told apart.
+    const counts = new Map<string, number>();
+    monsters.forEach((m) => counts.set(m.name, (counts.get(m.name) ?? 0) + 1));
+    const seen = new Map<string, number>();
     monsters.forEach((monster) => {
-      const position = grid.positions[monster.id];
-      if (position) {
-        actorsByCell.set(`${position.x},${position.y}`, {
-          id: monster.id,
-          label: monster.name.slice(0, 2),
-          kind: 'monster',
-          defeated: monster.hp <= 0,
-        });
-      }
+      const k = (seen.get(monster.name) ?? 0) + 1;
+      seen.set(monster.name, k);
+      const label = (counts.get(monster.name) ?? 1) > 1 ? `${monster.name.slice(0, 1)}${k}` : monster.name.slice(0, 2);
+      place(monster.id, label, 'monster', monster.hp <= 0);
     });
   }
 
@@ -88,7 +90,7 @@ export function CombatHUD({ combat, party, monsters, showTerrainOverlay = false 
                   className={`relative flex aspect-square items-center justify-center rounded border text-[10px] font-bold ${cellClasses} ${isCurrent ? 'ring-2 ring-amber-400' : ''} ${actor?.defeated ? 'opacity-40 line-through' : ''}`}
                   title={actor ? actorLabel(actor.id, party, monsters) : `Space ${x + 1}, ${y + 1}`}
                 >
-                  {actor?.label ?? ''}
+                  {actor?.anchor ? actor.label : ''}
                   {cover ? (
                     <span className="absolute right-1 top-1 text-[9px] text-zinc-700 dark:text-zinc-200">{cover}</span>
                   ) : null}

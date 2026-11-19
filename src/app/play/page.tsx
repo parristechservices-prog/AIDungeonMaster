@@ -257,11 +257,13 @@ export default function PlayPage() {
         // an answer to an ordinary question.
         const isInternalRefusal = (summary: string) =>
           /no tactical battle map|no exploration area graph|tactical request failed|spatial request failed/i.test(summary);
+        // Show each engine result once: skip turn hand-offs and anything the narration already says.
         const lines = [
           ...(data.sceneStarter ? [`— ${data.sceneStarter}`] : []),
           data.narration,
-          ...(data.engineResults?.filter((r) => !isInternalRefusal(r.summary)).map((r) => `• ${r.summary}`) ?? []),
-          `Turn ${data.recap.turnNumber} saved.`,
+          ...(data.engineResults
+            ?.filter((r) => !isInternalRefusal(r.summary) && r.kind !== 'end_turn' && !String(data.narration).includes(r.summary))
+            .map((r) => `• ${r.summary}`) ?? []),
           data.nextHook,
         ];
         setHistory((h) => [...h, ...lines]);
@@ -556,6 +558,7 @@ export default function PlayPage() {
           sessionId={sessionId}
           adventureTitle={adventureTitle}
           playerName={state?.party?.[0]?.name ?? 'Hero'}
+          fallen={Boolean(state?.party?.length && state.party.every((p) => p.deathSaves?.failure >= 3))}
           onNewGame={handleNewGame}
         />
       )}
