@@ -212,6 +212,14 @@ export function resolveEngineRequest(
       const target = state.monsters.find((m) => m.id === request.targetId && m.hp > 0);
       if (!target) return { state, result: { ok: false, summary: 'No valid target.' } };
 
+      // 5e move-then-attack: a melee attacker out of reach first spends their
+      // remaining movement to close in (as monster turns already do). If they
+      // still can't reach, they end up as close as possible with the action unspent.
+      const approach = approachForMelee(state, char.id, target.id, Boolean(request.ranged));
+      if (approach.result) return { state: approach.state, result: approach.result };
+      state = approach.state;
+      const approachNote = approach.note;
+
       const map = state.combat.battleMap;
       let nextState = state;
       if (map) {
@@ -308,7 +316,7 @@ export function resolveEngineRequest(
 
       if (!toHit.ok) {
         const coverNote = coverOutcome ? ` (${coverOutcome.kind.replace('_', '-')} cover: AC ${coverOutcome.baseAc}+${coverOutcome.bonus})` : '';
-        return { state: appendLog(state, `${char.name} missed ${target.name}.`), result: { ok: false, summary: `Attack missed${coverNote}.`, breakdown: toHit, cover: coverOutcome } };
+        return { state: appendLog(nextState, `${char.name} missed ${target.name}.`), result: { ok: false, summary: `${approachNote}Attack missed${coverNote}.`, breakdown: toHit, cover: coverOutcome } };
       }
       // Use the attacker's actual weapon damage; a crit doubles the dice (5e).
       const damage = rollFormula(critical ? critFormula(char.weapon.damage) : char.weapon.damage);
@@ -324,7 +332,7 @@ export function resolveEngineRequest(
       }
       return {
         state: appendLog(next, `${char.name} hit ${target.name} for ${damage.total}.`),
-        result: { ok: true, summary: `Hit ${target.name} for ${damage.total} damage.${coverOutcome ? ` (${coverOutcome.kind.replace('_', '-')} cover applied, AC ${coverOutcome.effectiveAc})` : ''}`, breakdown: damage, critical, cover: coverOutcome },
+        result: { ok: true, summary: `${approachNote}Hit ${target.name} for ${damage.total} damage.${coverOutcome ? ` (${coverOutcome.kind.replace('_', '-')} cover applied, AC ${coverOutcome.effectiveAc})` : ''}`, breakdown: damage, critical, cover: coverOutcome },
       };
     }
     case 'end_turn': {
@@ -1024,6 +1032,81 @@ function resolveSpatialCover(
   const sight = lineOfSight(battleMap, battleMap.positions[attackerId], battleMap.positions[targetId]);
   if (!sight.hasLineOfSight || sight.cover === 'total') return { available: true, blocked: true, cover: 'total', bonus: 0 };
   return { available: true, blocked: false, cover: sight.cover, bonus: coverAcBonus(sight.cover) };
+}
+
+const PLAYER_MELEE_REACH_FT = 5;
+
+/**
+ * Moves a party member into melee reach of their target before an attack, using
+ * only the movement they have left this turn. Returns `result` when the attack
+ * cannot happen (action already used, still out of reach, or dropped by an
+ * opportunity attack); otherwise returns the moved state plus a short note.
+ */
+export function approachForMelee(
+  state: GameState,
+  charId: string,
+  targetId: string,
+  ranged: boolean,
+): { state: GameState; note: string; result?: EngineResult } {
+  const map = state.combat.battleMap;
+  if (ranged || !state.combat.active || !map || !map.positions[charId] || !map.positions[targetId]) {
+    return { state, note: '' };
+  }
+  const startDist = distanceBetweenActors(map, charId, targetId) ?? Infinity;
+  if (startDist <= PLAYER_MELEE_REACH_FT) return { state, note: '' };
+
+  const char = state.party.find((p) => p.id === charId);
+  const target = state.monsters.find((m) => m.id === targetId);
+  const name = char?.name ?? 'The attacker';
+  const targetName = target?.name ?? 'the target';
+  if (map.actors[charId]?.actionUsed) {
+    return { state, note: '', result: { ok: false, summary: `${name} has already used their action this turn.` } };
+  }
+  const spentBefore = map.actors[charId]?.movementSpentFt ?? 0;
+
+  const dest = bestReachableCellWithinReach(map, charId, targetId, PLAYER_MELEE_REACH_FT);
+  if (dest) {
+    const moved = resolveMove(map, charId, dest);
+    if (moved.result.ok) {
+      let next: GameState = { ...state, combat: { ...state.combat, battleMap: moved.map } };
+      const spent = moved.result.movementSpentFt - spentBefore;
+      let note = `${name} moves ${spent} ft into reach of ${targetName}. `;
+      if (moved.result.opportunityAttacks.length > 0) {
+        const oa = resolveOpportunityAttacks(next, charId, moved.result.opportunityAttacks);
+        next = oa.state;
+        for (const o of oa.outcomes) {
+          const line = o.warning ?? `${o.attackerName}'s opportunity attack ${o.hit ? `hits ${o.targetName} for ${o.damage} damage` : `misses ${o.targetName}`}.`;
+          next = appendLog(next, line);
+          note += `${line} `;
+        }
+        if (next.party.find((p) => p.id === charId)?.unconscious) {
+          return { state: next, note, result: { ok: false, summary: `${note}${name} falls before reaching ${targetName}.` } };
+        }
+      }
+      return { state: appendLog(next, `${name} closes ${spent} ft on ${targetName}.`), note };
+    }
+  }
+
+  // Can't reach this turn: move as close as possible and keep the action.
+  const targetPos = map.positions[targetId];
+  let best: GridCoord | undefined;
+  let bestDist = startDist;
+  for (const cell of reachableCells(map, charId)) {
+    const d = distanceFt(map, cell.coord, targetPos);
+    if (d < bestDist) { best = cell.coord; bestDist = d; }
+  }
+  let next = state;
+  let spent = 0;
+  if (best) {
+    const moved = resolveMove(map, charId, best);
+    if (moved.result.ok) {
+      next = { ...state, combat: { ...state.combat, battleMap: moved.map } };
+      spent = moved.result.movementSpentFt - spentBefore;
+    }
+  }
+  const remaining = distanceBetweenActors(next.combat.battleMap ?? map, charId, targetId) ?? bestDist;
+  const summary = `${name} moves ${spent} ft toward ${targetName} but is still ${remaining} ft away, out of melee reach. Their action is unspent: they can Dash to cover more ground or end their turn.`;
+  return { state: appendLog(next, summary), note: '', result: { ok: false, summary } };
 }
 
 /** Least-cost reachable cell that puts the mover within `reachFt` of the target. */
