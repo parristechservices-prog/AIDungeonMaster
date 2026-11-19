@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { resolveEngineRequest } from '@/lib/engine';
+import { resetRandomProvider, resolveEngineRequest, setRandomProvider } from '@/lib/engine';
 import { createInitialState, buildBattleMap } from '@/lib/game/state';
 import type { GameState } from '@/lib/game/types';
 import type { Cell } from '@/lib/engine/spatial/tactical';
 
 // Attacker at (0,0), target monster at (2,0). attackBonus 5, manualRoll 8 => to-hit 13.
 // Base monster AC 12 (a 13 hits). Half cover -> AC 14 (a 13 misses).
-function rangedSetup(targetCell?: Cell, blockerAt1?: Partial<Cell>): { state: GameState; heroId: string } {
+function rangedSetup(targetCell?: Cell, blockerAt1?: Partial<Cell>, targetX = 2): { state: GameState; heroId: string } {
   const base = createInitialState('sess-cover', { adventureId: 'brindlehook-inn' });
   const heroId = base.activeCharacterId;
   const party = base.party.map((p, i) => (i === 0 ? { ...p, weapon: { name: 'Shortbow', attackBonus: 5, damage: '1d6' } } : p));
@@ -18,8 +18,8 @@ function rangedSetup(targetCell?: Cell, blockerAt1?: Partial<Cell>): { state: Ga
   };
   const map = buildBattleMap(withMonster);
   map.positions[heroId] = { x: 0, y: 0, z: 0 };
-  map.positions.goblin = { x: 2, y: 0, z: 0 };
-  if (targetCell) map.cells['2,0'] = targetCell;
+  map.positions.goblin = { x: targetX, y: 0, z: 0 };
+  if (targetCell) map.cells[`${targetX},0`] = targetCell;
   if (blockerAt1) map.cells['1,0'] = { terrain: 'normal', ...blockerAt1 };
   return {
     state: { ...withMonster, combat: { active: true, initiative: [], turnIndex: 0, battleMap: map } },
@@ -35,11 +35,35 @@ describe('cover in ranged attack resolution', () => {
     expect(result.cover).toBeUndefined();
   });
 
+  it('treats a natural 1 as a miss even when the attack bonus beats AC', () => {
+    const { state, heroId } = rangedSetup();
+    state.party[0].weapon.attackBonus = 20;
+    const { result } = resolveEngineRequest(state, {
+      kind: 'player_attack', characterId: heroId, targetId: 'goblin', ranged: true, manualRoll: 1,
+    });
+    expect(result.summary).toMatch(/missed/i);
+  });
+
+  it('applies Bless to a physical attack roll', () => {
+    const { state, heroId } = rangedSetup();
+    state.party[0].conditions = ['blessed'];
+    setRandomProvider(() => 0.99);
+    try {
+      const { result } = resolveEngineRequest(state, {
+        kind: 'player_attack', characterId: heroId, targetId: 'goblin', ranged: true, manualRoll: 4,
+      });
+      expect(result.ok).toBe(true);
+    } finally {
+      resetRandomProvider();
+    }
+  });
+
   it('half cover raises AC by 2 and turns the same hit into a miss', () => {
     const { state, heroId } = rangedSetup({ terrain: 'normal', cover: 'half' });
-    const { result } = resolveEngineRequest(state, { kind: 'player_attack', characterId: heroId, targetId: 'goblin', ranged: true, manualRoll: 8 });
+    const { result, state: afterAttack } = resolveEngineRequest(state, { kind: 'player_attack', characterId: heroId, targetId: 'goblin', ranged: true, manualRoll: 8 });
     expect(result.ok).toBe(false);
     expect(result.cover).toMatchObject({ kind: 'half', baseAc: 12, bonus: 2, effectiveAc: 14 });
+    expect(afterAttack.combat.battleMap?.actors[heroId].actionUsed).toBe(true);
   });
 
   it('three-quarters cover raises AC by 5', () => {
@@ -57,8 +81,8 @@ describe('cover in ranged attack resolution', () => {
     expect(result.cover?.kind).toBe('total');
   });
 
-  it('melee attacks ignore cover (ranged flag not set)', () => {
-    const { state, heroId } = rangedSetup({ terrain: 'normal', cover: 'half' });
+  it('melee attacks within reach ignore cover', () => {
+    const { state, heroId } = rangedSetup({ terrain: 'normal', cover: 'half' }, undefined, 1);
     const { result } = resolveEngineRequest(state, { kind: 'player_attack', characterId: heroId, targetId: 'goblin', manualRoll: 8 });
     expect(result.ok).toBe(true);
     expect(result.cover).toBeUndefined();

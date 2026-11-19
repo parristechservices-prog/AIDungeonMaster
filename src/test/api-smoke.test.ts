@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { GET as reconnectSession } from '@/app/api/session/route';
 import { POST as startSession } from '@/app/api/session/start/route';
 import { POST as runApiTurn } from '@/app/api/turn/route';
 import { GET as getHealth } from '@/app/api/health/route';
@@ -28,6 +29,9 @@ describe('no-key API smoke flow', () => {
     const started = await startResponse.json();
     expect(started.ok).toBe(true);
     expect(started.sceneId).toBe('social');
+    expect(started.state.monsters).toEqual([]);
+    const restored = await reconnectSession(new Request(`http://localhost/api/session?sessionId=${sessionId}`));
+    expect((await restored.json()).state.monsters).toEqual([]);
 
     const greetingResponse = await runApiTurn(jsonRequest('http://localhost/api/turn', {
       sessionId,
@@ -86,8 +90,37 @@ describe('no-key API smoke flow', () => {
     });
   });
 
+  it('rejects a replayed physical die without saving another turn', async () => {
+    const sessionId = 'api-replayed-physical-die';
+    await startSession(jsonRequest('http://localhost/api/session/start', {
+      sessionId, adventureId: 'skt-nightstone-chapter1', characterId: 'fighter',
+    }));
+    const submit = (body: Record<string, unknown>) => runApiTurn(jsonRequest(
+      'http://localhost/api/turn', { sessionId, physicalDice: true, ...body },
+    ));
+    const request = await (await submit({ playerInput: 'I search for tracks.' })).json();
+    expect(request).toMatchObject({ needsManualRoll: true, rollId: expect.any(String) });
+
+    const reconnect = await (await reconnectSession(new Request(
+      `http://localhost/api/session?sessionId=${sessionId}`,
+    ))).json();
+    expect(reconnect).toMatchObject({
+      rollId: request.rollId,
+      manualRollContext: request.manualRollContext,
+    });
+    expect(reconnect.state).not.toHaveProperty('pendingDice');
+
+    const payload = { manualRoll: 17, rollId: reconnect.rollId };
+    const accepted = await (await submit(payload)).json();
+    expect(accepted).toMatchObject({ ok: true, recap: { turnNumber: 2 } });
+    const replay = await submit(payload);
+    expect(replay.status).toBe(409);
+    const next = await (await submit({ playerInput: 'Hello.' })).json();
+    expect(next.recap.turnNumber).toBe(3);
+  });
+
   it('reports secret-safe health information', async () => {
-    const response = await getHealth();
+    const response = await getHealth(new Request('http://localhost/api/health'));
     expect(await response.json()).toMatchObject({
       ok: true,
       service: 'partyquest',

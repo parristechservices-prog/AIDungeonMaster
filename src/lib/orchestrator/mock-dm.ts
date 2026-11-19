@@ -4,6 +4,7 @@ import { getAdventure } from '@/lib/game/adventures/registry.server';
 import type { Adventure } from '@/lib/game/adventures/types';
 import type { Character, GameState } from '@/lib/game/types';
 import { findPath, getActorArea, pathDistance } from '@/lib/engine/spatial/area-graph';
+import { distanceBetweenActors, distanceFt, reachableCells } from '@/lib/engine/spatial/tactical';
 import type { AreaId } from '@/lib/engine/spatial/types';
 
 const EXPLORATION_PHRASES = ['inspect', 'track', 'search', 'scout', 'boathouse', 'quay', 'trail'];
@@ -1043,9 +1044,29 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
   }
 
   if (input.includes('attack') || input.includes('strike') || input.includes('hit')) {
-    const living = state.monsters.find((m) => m.hp > 0);
+    const target = living[0];
+    const engineRequests: DmTurn['engineRequests'] = [];
+    if (target) {
+      const map = state.combat.battleMap;
+      const targetPosition = map?.positions[target.id];
+      const reach = map?.actors[activeChar.id]?.reachFt ?? 5;
+      let distance = map ? distanceBetweenActors(map, activeChar.id, target.id) : undefined;
+      if (map && targetPosition && distance !== undefined && distance > reach) {
+        const approach = reachableCells(map, activeChar.id)
+          .map((cell) => ({ ...cell, distance: distanceFt(map, cell.coord, targetPosition) }))
+          .sort((a, b) => a.distance - b.distance || a.costFt - b.costFt)[0];
+        if (approach && approach.distance < distance) {
+          engineRequests.push({ kind: 'move_creature', actorId: activeChar.id, target: approach.coord });
+          distance = approach.distance;
+        }
+      }
+      if (distance === undefined || distance <= reach) {
+        engineRequests.push({ kind: 'player_attack', characterId: activeChar.id, targetId: target.id });
+      }
+      engineRequests.push({ kind: 'end_turn' }, { kind: 'monster_turn' }, { kind: 'end_turn' });
+    }
     return {
-      engineRequests: living ? [{ kind: 'player_attack', characterId: activeChar.id, targetId: living.id }, { kind: 'end_turn' }, { kind: 'monster_turn' }, { kind: 'end_turn' }] : [],
+      engineRequests,
       narration: 'You lunge forward.',
       needsResultBeforeNarrating: true,
       ambient: 'combat',

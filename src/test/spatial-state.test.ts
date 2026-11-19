@@ -8,7 +8,7 @@ describe('exploration state wiring', () => {
     const state = createInitialState('sess-1', { adventureId: 'skt-nightstone-starter' });
     expect(state.exploration).toBeDefined();
     const activeId = state.activeCharacterId;
-    expect(state.exploration!.locations[activeId]).toBe('gatehouse');
+    expect(state.exploration!.locations[activeId]).toBe('nightstone_road');
   });
 
   it('leaves exploration undefined for adventures without a graph', () => {
@@ -21,7 +21,7 @@ describe('exploration state wiring', () => {
     const legacy = { ...state, exploration: undefined } as GameState;
     const migrated = migrateGameState(legacy);
     expect(migrated.exploration).toBeDefined();
-    expect(migrated.exploration!.locations[migrated.activeCharacterId]).toBe('gatehouse');
+    expect(migrated.exploration!.locations[migrated.activeCharacterId]).toBe('nightstone_road');
   });
 
   it('round-trips a move_area request through the engine', () => {
@@ -36,7 +36,7 @@ describe('exploration state wiring', () => {
     expect(result.spatial?.kind).toBe('move_area');
     expect(next.exploration!.locations[activeId]).toBe('drawbridge');
     // original state is untouched (engine is immutable)
-    expect(state.exploration!.locations[activeId]).toBe('gatehouse');
+    expect(state.exploration!.locations[activeId]).toBe('nightstone_road');
   });
 
   it('keeps a gated connection locked when the party lacks the key', () => {
@@ -86,6 +86,6 @@ describe('exploration state wiring', () => {
       targetAreaId: 'great_hall',
     });
     expect(result.ok).toBe(false);
-    expect(next.exploration!.locations[activeId]).toBe('gatehouse');
+    expect(next.exploration!.locations[activeId]).toBe('nightstone_road');
   });
 });

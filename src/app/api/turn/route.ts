@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { repairMissingEncounter } from '@/lib/engine';
 import { NextResponse } from 'next/server';
 import { shouldUseMockFlavorPrefix } from '@/lib/llm/credentials';
@@ -45,7 +46,7 @@ export async function POST(req: Request) {
     typeof body?.adventureId === 'string' && isValidAdventureId(body.adventureId)
       ? body.adventureId
       : undefined;
-  const playerInput = typeof body?.playerInput === 'string' ? body.playerInput.slice(0, 800) : '';
+  let playerInput = typeof body?.playerInput === 'string' ? body.playerInput.slice(0, 800) : '';
   const manualRoll = typeof body?.manualRoll === 'number' ? body.manualRoll : undefined;
   const physicalDice = Boolean(body?.physicalDice);
   if (body?.manualRoll !== undefined) {
@@ -61,7 +62,12 @@ export async function POST(req: Request) {
     const maxTurns = Number.isFinite(configuredMaxTurns) && configuredMaxTurns > 0
       ? Math.floor(configuredMaxTurns)
       : 0;
-    if (maxTurns > 0 && getTurnCount(sessionId) >= maxTurns) {
+    const pending = getPendingTurn(sessionId);
+    if (manualRoll !== undefined && (!pending || body.rollId !== pending.rollId ||
+        (requestedAdventureId && requestedAdventureId !== state.adventureId))) {
+      return NextResponse.json({ ok: false, error: 'This dice request is no longer active.' }, { status: 409 });
+    }
+    if (manualRoll === undefined && maxTurns > 0 && getTurnCount(sessionId) >= maxTurns) {
       return NextResponse.json({
         ok: false,
         sessionId,
@@ -92,12 +98,12 @@ export async function POST(req: Request) {
     let systemPrompt = '';
 
     // Check if we are resolving a pending turn with a manual roll.
-    const pending = getPendingTurn(sessionId);
-    const bridgeDescription = manualRoll === undefined && !pending
+    if (manualRoll === undefined) clearPendingTurn(sessionId);
+    const bridgeDescription = manualRoll === undefined
       ? describeNightstoneBridge(state.adventureId, playerInput)
       : undefined;
     if (pending && manualRoll !== undefined) {
-      rawTurn = pending;
+      ({ turn: rawTurn, aiUsed, fallbackUsed, systemPrompt, playerInput } = pending);
       clearPendingTurn(sessionId);
     } else if (bridgeDescription) {
       rawTurn = { engineRequests: [], narration: bridgeDescription, needsResultBeforeNarrating: false };
@@ -170,17 +176,18 @@ export async function POST(req: Request) {
       mode: fallbackUsed ? 'table_rules' : 'ai_director',
       aiUsed,
       fallbackUsed,
-      physicalDice,
+      physicalDice: physicalDice || manualRoll !== undefined,
       manualRoll,
     });
 
-    if (turn.response.needsManualRoll) {
-      savePendingTurn(sessionId, rawTurn);
+    const rollId = turn.pendingTurn ? randomUUID() : undefined;
+    if (turn.pendingTurn && rollId && turn.response.manualRollContext) {
+      savePendingTurn(sessionId, { rollId, context: turn.response.manualRollContext, playerInput, turn: turn.pendingTurn, aiUsed, fallbackUsed, systemPrompt });
     }
 
     state = turn.state;
     let narration = turn.response.narration;
-    if (!fallbackUsed && aiUsed && turn.response.needsResultBeforeNarrating && systemPrompt) {
+    if (!turn.response.needsManualRoll && !fallbackUsed && aiUsed && turn.response.needsResultBeforeNarrating && systemPrompt) {
       const visibleState = `Party: ${state.party.map((p) => `${p.name} (${p.hp}/${p.maxHp})`).join('; ')}.`;
       const narrationRewrite = await generateNarration({
         systemPrompt,
@@ -247,7 +254,9 @@ export async function POST(req: Request) {
     // Deterministic pruning bounds canon-log growth over a long campaign.
     state = { ...state, canonLog: pruneCanonLog(state.canonLog) };
 
-    await saveSession(state);
+    if (!await saveSession(state, manualRoll === undefined ? undefined : pending?.rollId)) {
+      return NextResponse.json({ ok: false, error: 'This dice request is no longer active.' }, { status: 409 });
+    }
     const turnNumber = nextTurnNumber(sessionId);
 
     narration = fallbackUsed && shouldUseMockFlavorPrefix()
@@ -276,6 +285,7 @@ export async function POST(req: Request) {
       ...turn.response,
       narration,
       narrationWarnings,
+      rollId,
       sessionId,
       recap,
     };

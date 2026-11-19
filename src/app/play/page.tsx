@@ -58,6 +58,7 @@ export default function PlayPage() {
   const [ambient, setAmbient] = useState<TurnResponse['ambient']>('none');
   const [physicalDice, setPhysicalDice] = useState(false);
   const [manualRollContext, setManualRollContext] = useState<TurnResponse['manualRollContext'] | null>(null);
+  const [rollId, setRollId] = useState<string>();
   const [showMobileCharacterSheet, setShowMobileCharacterSheet] = useState(false);
   const [showMobileMap, setShowMobileMap] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<'character' | 'map'>('character');
@@ -67,7 +68,7 @@ export default function PlayPage() {
   const showDmPanels = display.showDmViewButton && anyDevPanelSectionEnabled(devPanel);
   const visibleSidebarTab = sidebarTab === 'map' && display.showMapButton || !display.showCharacterButton ? 'map' : 'character';
 
-  async function hydrateSession(nextSessionId: string) {
+  async function hydrateSession(nextSessionId: string, hasSnapshot: boolean) {
     const res = await fetch(`/api/session?sessionId=${encodeURIComponent(nextSessionId)}`);
     const data = await res.json();
     if (!data.ok || !data.state) return;
@@ -77,10 +78,12 @@ export default function PlayPage() {
     setSceneId(data.sceneId);
     setSceneGoal(data.sceneGoal);
     setChoices(data.nextChoices ?? []);
-    setMode(data.mode ?? 'table_rules');
+    if (!hasSnapshot) setMode(data.mode ?? 'table_rules');
+    setRollId(data.rollId);
+    setManualRollContext(data.manualRollContext ?? null);
     setState(data.state);
     const hydratedOpening = data.sceneStarter ?? data.opening;
-    if (typeof hydratedOpening === 'string' && hydratedOpening.trim()) {
+    if (!hasSnapshot && typeof hydratedOpening === 'string' && hydratedOpening.trim()) {
       setHistory([hydratedOpening]);
       setVoiceNarration({ text: hydratedOpening });
     }
@@ -177,9 +180,14 @@ export default function PlayPage() {
       setAdventureTitle(boot.adventureTitle ?? getAdventure(boot.adventureId).title);
       setSceneGoal(boot.sceneGoal);
     }
-    if (!boot.state && boot.sessionId) {
-      hydrateSession(boot.sessionId).catch(() => {
+    if (boot.sessionId) {
+      turnInFlight.current = true;
+      setBusy(true);
+      hydrateSession(boot.sessionId, Boolean(boot.state)).catch(() => {
         // Keep local bootstrap fallback if reconnect state is unavailable.
+      }).finally(() => {
+        turnInFlight.current = false;
+        setBusy(false);
       });
     }
   }, []);
@@ -216,7 +224,8 @@ export default function PlayPage() {
             adventureId,
             playerInput: nextInput,
             physicalDice,
-            manualRoll
+            manualRoll,
+            rollId: manualRoll === undefined ? undefined : rollId,
           }),
         });
         const contentType = res.headers.get('content-type') ?? '';
@@ -224,7 +233,14 @@ export default function PlayPage() {
           throw new Error('Non-JSON turn response');
         }
         const data = (await res.json()) as TurnResponse;
+        if (res.status === 409 && manualRoll !== undefined) {
+          setManualRollContext(null);
+          setRollId(undefined);
+          setHistory((h) => [...h, 'That dice request has expired. You can describe your next action.']);
+          return;
+        }
         if (!data.ok) throw new Error('Turn failed');
+        setRollId(data.rollId);
 
         setAdventureId(data.adventureId);
         setAdventureTitle(data.adventureTitle);
@@ -273,7 +289,7 @@ export default function PlayPage() {
         setBusy(false);
       }
     },
-    [adventureId, physicalDice, sessionId],
+    [adventureId, physicalDice, rollId, sessionId],
   );
 
   function handleNewGame() {

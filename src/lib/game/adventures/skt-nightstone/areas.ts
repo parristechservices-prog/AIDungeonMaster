@@ -1,9 +1,20 @@
 import type { AreaGraph } from '@/lib/engine/spatial';
 
-export const nightstoneStartAreaId = 'gatehouse';
+export const nightstoneStartAreaId = 'nightstone_road';
 
 export const nightstoneAreas: AreaGraph = {
   areas: {
+    nightstone_road: {
+      id: 'nightstone_road',
+      x: 0,
+      y: 1,
+      name: 'Road to Nightstone',
+      description: 'The raised road approaches Nightstone from outside the village. The lowered drawbridge and open gate are ahead; the road leads back into the hills.',
+      tags: ['road', 'entry'],
+      connections: [
+        { to: 'drawbridge', label: 'toward the village', difficulty: 'normal', distanceFt: 40 },
+      ],
+    },
     gatehouse: {
       id: 'gatehouse',
       x: 0,
@@ -12,7 +23,7 @@ export const nightstoneAreas: AreaGraph = {
       description: 'The village gatehouse opens onto the road and the damaged drawbridge approach.',
       tags: ['village', 'entry'],
       connections: [
-        { to: 'drawbridge', label: 'the raised-road approach', difficulty: 'normal', distanceFt: 40 },
+        { to: 'drawbridge', label: 'back across the moat', difficulty: 'normal', distanceFt: 40 },
         { to: 'south_square', label: 'the inner cart track', difficulty: 'normal', distanceFt: 60 },
       ],
     },
@@ -24,8 +35,8 @@ export const nightstoneAreas: AreaGraph = {
       description: 'A defensive bridge spans the moat between the gatehouse and the village streets.',
       tags: ['village', 'moat'],
       connections: [
-        { to: 'gatehouse', label: 'back toward the gatehouse', difficulty: 'normal', distanceFt: 40 },
-        { to: 'south_square', label: 'into the village lane', difficulty: 'normal', distanceFt: 50 },
+        { to: 'nightstone_road', label: 'away from the village toward the hills', difficulty: 'normal', distanceFt: 40 },
+        { to: 'gatehouse', label: 'toward the village gatehouse', difficulty: 'normal', distanceFt: 40 },
       ],
     },
     south_square: {
@@ -37,7 +48,6 @@ export const nightstoneAreas: AreaGraph = {
       tags: ['village', 'debris'],
       connections: [
         { to: 'gatehouse', difficulty: 'normal', distanceFt: 60 },
-        { to: 'drawbridge', difficulty: 'normal', distanceFt: 50 },
         { to: 'nightstone_inn', label: 'the inn porch', difficulty: 'normal', distanceFt: 40 },
         { to: 'stable', label: 'the stable yard', difficulty: 'normal', distanceFt: 45 },
         { to: 'central_square', label: 'the main street north', difficulty: 'normal', distanceFt: 80 },

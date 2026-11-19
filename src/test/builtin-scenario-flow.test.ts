@@ -13,6 +13,10 @@ describe('built-in scenario offline flows', () => {
     (adventureId, scenario) => {
       setRandomProvider(() => 0.99);
       let state = createInitialState(`offline-${adventureId}`, { adventureId, characterId: 'fighter' });
+      // This tests scenario completion. The fixed die also maximises enemy
+      // critical damage, so use a durable fixture to exercise all transitions.
+      const fighter = { ...state.party[0], hp: 300, maxHp: 300 };
+      state = { ...state, player: fighter, party: [fighter] };
       const actions = ['I ask the NPC what they know', 'I inspect the area', ...Array(12).fill('I attack')];
 
       for (const action of actions) {
