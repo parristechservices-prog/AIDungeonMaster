@@ -53,20 +53,12 @@ export function VoiceDm({ narration, busy, onDictate, onSend }: {
     setStatus('Preparing narration…');
     void (async () => {
       try {
-        const options = {
+        const response = await fetch('/api/voice-narration', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ voice, passcode, narration: narration.text.slice(0, 2000) }),
           signal: request.signal,
-        };
-        let response = await fetch('https://natter-two.vercel.app/api/narrate', options)
-          .catch((error: unknown) => {
-            if (request.signal.aborted || !(error instanceof TypeError)) throw error;
-            return null;
-          });
-        if (!response || response.status === 404 || response.status === 405 || response.status >= 500) {
-          response = await fetch('https://natter-narration-backup.vercel.app/api/narrate', options);
-        }
+        });
         if (!response.ok) throw new Error(response.status === 401
           ? 'Check your Natter passcode.' : 'Voice unavailable. The turn is saved in AI DM.');
         const clip = await response.blob();
