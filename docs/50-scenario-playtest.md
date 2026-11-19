@@ -191,3 +191,9 @@ A live observation records a particular outcome. Local verification uses the rul
 The production retest of build `5bdf527` opened 12 disposable campaigns. None retained the original campaign and actor IDs across both reconnect and the first turn. The health check reported the configured database as unreachable. This blocks multi-turn acceptance in production and explains why a wizard came back as a fighter. The local two-server tests use a separate database and remain useful for verifying the application paths.
 
 - **50. Hosted-voice diagnostic:** The primary Natter endpoint returned 404. The backup returned a Vercel deployment authentication response. The app now identifies that failure and points to its built-in browser voice, which does not use Natter. Hosted audio playback remains blocked.
+
+### Phone and desktop browser emulation
+
+- **38, 41, 44.** Live Chromium tests on Pixel 5 (390 × 844) and desktop (1366 × 768) created a wizard, kept its ID and location through a turn, refreshed, restored the narration and submitted the next turn. Both passed against production build `37cb96e`.
+- **38.** On the same two emulated profiles against a local build, a page refresh reopened an outstanding physical dice prompt. A manually entered 17 resolved the turn in both profiles.
+- **49–50.** Both profiles passed review and auto-send for a simulated speech-recognition result, plus delivery of the story text to a simulated browser speech synthesis interface. These tests cover app wiring. Real microphone capture, audible playback and hosted Natter audio still require separate verification.
