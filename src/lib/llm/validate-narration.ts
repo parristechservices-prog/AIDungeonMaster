@@ -170,7 +170,8 @@ function impliesAttackLands(narration: string): boolean {
 }
 
 function impliesSpatialArrival(narration: string): boolean {
-  return /\b(arrive[sd]?|enter(?:s|ed)?|reach(?:es|ed)?|move[sd]? into|walk(?:s|ed)? into|step(?:s|ped)? into|head(?:s|ed)? (?:to|toward|into)|go(?:es|ne)? (?:to|toward|into)|make(?:s| made) (?:your|their|his|her|our) way to|cross(?:es|ed)? into|pass(?:es|ed)? through)\b/i.test(narration);
+  const gapCrossing = /\b(?:clear(?:s|ed)?|leap(?:s|ed)? across|jump(?:s|ed)? across)\s+(?:the\s+)?(?:missing\s+(?:section|span)|gap|broken\s+(?:section|span))\b|\bland(?:s|ed)?\s+(?:\w+\s+){0,3}on\s+the\s+(?:far|other)\s+side\b/i;
+  return gapCrossing.test(narration) || /\b(arrive[sd]?|enter(?:s|ed)?|reach(?:es|ed)?|move[sd]? into|walk(?:s|ed)? into|step(?:s|ped)? into|head(?:s|ed)? (?:to|toward|into)|go(?:es|ne)? (?:to|toward|into)|make(?:s| made) (?:your|their|his|her|our) way to|cross(?:es|ed)? into|pass(?:es|ed)? through)\b/i.test(narration);
 }
 
 export function buildEngineSafeNarration(results: NarrationEngineResult[]): string {

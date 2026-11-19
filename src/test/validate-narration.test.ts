@@ -67,3 +67,11 @@ describe('validateNarrationAgainstState', () => {
     expect(warnings.some((w) => w.includes('AC'))).toBe(true);
   });
 });
+
+it('rejects a bridge landing based only on a successful skill check', () => {
+  const warnings = validateNarrationAgainstResults(
+    'You clear the missing section of the sloped bridge and land solidly on the far side.',
+    [{ kind: 'skill_check', ok: true, summary: 'Attempting to leap across the broken section: success' }],
+  );
+  expect(warnings).toContain('Spatial: Narration implies movement or arrival, but no move_area request was issued.');
+});
