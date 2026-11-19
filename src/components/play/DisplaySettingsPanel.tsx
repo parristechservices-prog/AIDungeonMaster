@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   DISPLAY_SECTIONS,
   type DisplayPreset,
@@ -28,6 +28,13 @@ const PRESETS: { id: DisplayPreset; label: string }[] = [
  */
 export function DisplaySettingsPanel({ settings, toggle, reset, setPreset }: Props) {
   const [open, setOpen] = useState(false);
+  // Close with Escape, like any dialog.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
 
   return (
     <>
@@ -45,6 +52,7 @@ export function DisplaySettingsPanel({ settings, toggle, reset, setPreset }: Pro
             className="w-full max-w-md rounded-t-3xl bg-white p-5 text-sm dark:bg-zinc-900 sm:rounded-2xl max-h-[85vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
+            aria-modal="true"
             aria-label="Display settings"
           >
             <div className="mb-3 flex items-center justify-between">
