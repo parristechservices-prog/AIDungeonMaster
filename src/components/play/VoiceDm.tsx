@@ -29,6 +29,8 @@ export function VoiceDm({ narration, busy, onDictate, onSend }: {
   const [listening, setListening] = useState(false);
   const [status, setStatus] = useState('');
   const [playing, setPlaying] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [retry, setRetry] = useState(0);
   const audio = useRef<HTMLAudioElement>(null);
   const mic = useRef<Recognition | null>(null);
 
@@ -44,6 +46,7 @@ export function VoiceDm({ narration, busy, onDictate, onSend }: {
     if (!enabled || !narration?.text.trim() || !player) return;
     const request = new AbortController();
     let url: string | undefined;
+    setLoading(true);
     setStatus('Preparing narration…');
     void (async () => {
       try {
@@ -64,7 +67,11 @@ export function VoiceDm({ narration, busy, onDictate, onSend }: {
           if (!request.signal.aborted) setStatus('Press Play narration to listen.');
         });
       } catch (error) {
-        if (!request.signal.aborted) setStatus(error instanceof Error ? error.message : 'Voice unavailable.');
+        if (!request.signal.aborted) setStatus(error instanceof TypeError
+          ? 'Could not connect to Natter. Press Play narration to retry.'
+          : error instanceof Error ? error.message : 'Voice unavailable.');
+      } finally {
+        if (!request.signal.aborted) setLoading(false);
       }
     })();
     return () => {
@@ -73,7 +80,7 @@ export function VoiceDm({ narration, busy, onDictate, onSend }: {
       player.removeAttribute('src');
       if (url) URL.revokeObjectURL(url);
     };
-  }, [enabled, narration, passcode, voice]);
+  }, [enabled, narration, passcode, voice, retry]);
 
   function dictate() {
     if (mic.current) return mic.current.stop();
@@ -149,9 +156,12 @@ export function VoiceDm({ narration, busy, onDictate, onSend }: {
           {!enabled && <input name="passcode" aria-label="Natter passcode" placeholder="Natter passcode" type="password" required className="w-36 rounded border px-2 py-1" />}
           <button className="rounded border px-2 py-1">{enabled ? 'Turn narration off' : 'Enable narration'}</button>
         </form>
-        {enabled && narration && <button type="button" onClick={() => {
+        {enabled && narration && <button type="button" disabled={loading} onClick={() => {
           const player = audio.current;
-          if (!player?.getAttribute('src')) return;
+          if (!player?.getAttribute('src')) {
+            setRetry((count) => count + 1);
+            return;
+          }
           if (player.paused) void player.play().catch(() => setStatus('Could not play narration.'));
           else player.pause();
         }} className="rounded border px-2 py-1">{playing ? 'Pause narration' : 'Play narration'}</button>}
