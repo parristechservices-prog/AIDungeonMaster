@@ -29,6 +29,34 @@ const rangedOnly = (): Monster => ({ id: 'arc', name: 'Archer', ac: 12, maxHp: 7
 const meleeAndRanged = (): Monster => ({ id: 'arc', name: 'Skirmisher', ac: 12, maxHp: 7, hp: 7, attackBonus: 4, damage: '1d6', conditions: [], attacks: [{ id: 'sword', name: 'Sword', kind: 'melee', attackBonus: 4, damage: '1d6', reachFt: 5 }, { id: 'bow', name: 'Bow', kind: 'ranged', attackBonus: 4, damage: '1d6', rangeFt: 80 }] });
 
 describe('monster melee reach', () => {
+  it('uses the acting monster from initiative rather than the first monster on the roster', () => {
+    setRandomProvider(() => 0.5);
+    const second = { ...meleeGoblin(), id: 'second', name: 'Second Goblin' };
+    const { state, heroId } = setup([meleeGoblin(), second], {
+      gob: { x: 7, y: 0 }, second: { x: 0, y: 0 },
+    });
+    state.combat.battleMap!.positions[heroId] = { x: 1, y: 0 };
+    state.combat.initiative = [{ actorId: second.id, roll: 20 }];
+    const { result } = resolveEngineRequest(state, { kind: 'monster_turn' });
+    expect(result.summary).toMatch(/^Second Goblin hit/);
+  });
+
+  it('misses on a natural 1 even against low AC', () => {
+    setRandomProvider(() => 0);
+    const { state, heroId } = setup([{ ...meleeGoblin(), attackBonus: 20 }], { gob: { x: 0, y: 0 } });
+    state.combat.battleMap!.positions[heroId] = { x: 1, y: 0 };
+    const { result } = resolveEngineRequest(state, { kind: 'monster_turn' });
+    expect(result.summary).toMatch(/missed/i);
+  });
+
+  it('hits on a natural 20 and doubles damage dice even against high AC', () => {
+    setRandomProvider(() => 0.99);
+    const { state, heroId } = setup([meleeGoblin()], { gob: { x: 0, y: 0 } }, { heroAc: 30 });
+    state.combat.battleMap!.positions[heroId] = { x: 1, y: 0 };
+    const { state: next } = resolveEngineRequest(state, { kind: 'monster_turn' });
+    expect(next.party[0].hp).toBe(18);
+  });
+
   it('hits when adjacent', () => {
     setRandomProvider(() => 0.5); // d20 -> 11, +4 = 15 vs AC 15 hits
     const { state, heroId } = setup([meleeGoblin()], { gob: { x: 0, y: 0, z: 0 }, [`__h`]: { x: 0, y: 0, z: 0 } });

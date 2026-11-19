@@ -16,6 +16,8 @@ export type TurnResponse = {
   narration: string;
   ambient?: 'none' | 'tavern' | 'dungeon' | 'combat' | 'exploration' | 'boss_fight';
   needsManualRoll?: boolean;
+  rollId?: string;
+  browserSave?: string;
   manualRollContext?: {
     kind: 'skill_check' | 'player_attack';
     formula: string;
@@ -81,5 +83,5 @@ export type TurnResponse = {
     exploration?: GameState['exploration'];
     log: string[];
   };
-  recap: { turnNumber: number };
+  recap: import('@/lib/game/recap').PartyQuestRecap;
 };

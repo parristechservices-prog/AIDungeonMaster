@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { repairMissingEncounter } from '@/lib/engine';
 import { NextResponse } from 'next/server';
 import { shouldUseMockFlavorPrefix } from '@/lib/llm/credentials';
@@ -10,6 +11,7 @@ import { pruneCanonLog, summarizeCanonLog } from '@/lib/llm/summarizer';
 import { buildRecap } from '@/lib/game/recap';
 import { isValidAdventureId } from '@/lib/game/adventures/registry.server';
 import { deriveDmTurnFromInput } from '@/lib/orchestrator/mock-dm';
+import { openBrowserSave, sealBrowserSave } from '@/lib/orchestrator/browser-save';
 import { runTurn } from '@/lib/orchestrator/run-turn';
 import { buildDmTurnRepairPrompt, validateDmTurn, validateManualD20Roll } from '@/lib/orchestrator/validate-dm-turn';
 import { 
@@ -45,7 +47,7 @@ export async function POST(req: Request) {
     typeof body?.adventureId === 'string' && isValidAdventureId(body.adventureId)
       ? body.adventureId
       : undefined;
-  const playerInput = typeof body?.playerInput === 'string' ? body.playerInput.slice(0, 800) : '';
+  let playerInput = typeof body?.playerInput === 'string' ? body.playerInput.slice(0, 800) : '';
   const manualRoll = typeof body?.manualRoll === 'number' ? body.manualRoll : undefined;
   const physicalDice = Boolean(body?.physicalDice);
   if (body?.manualRoll !== undefined) {
@@ -56,17 +58,29 @@ export async function POST(req: Request) {
   }
 
   try {
-    let state = repairMissingEncounter(await getOrCreateSession(sessionId));
+    const browserSave = openBrowserSave(body?.browserSave, sessionId);
+    if (body?.browserSave !== undefined && !browserSave) {
+      return NextResponse.json({ ok: false, error: 'This browser save could not be opened.' }, { status: 422 });
+    }
+    let state = repairMissingEncounter(browserSave?.state ?? await getOrCreateSession(sessionId));
     const configuredMaxTurns = Number(process.env.PARTYQUEST_MAX_TURNS_PER_SESSION ?? 0);
     const maxTurns = Number.isFinite(configuredMaxTurns) && configuredMaxTurns > 0
       ? Math.floor(configuredMaxTurns)
       : 0;
-    if (maxTurns > 0 && getTurnCount(sessionId) >= maxTurns) {
+    const pending = browserSave ? browserSave.pending : getPendingTurn(sessionId);
+    if (manualRoll !== undefined && (!pending || body.rollId !== pending.rollId ||
+        (requestedAdventureId && requestedAdventureId !== state.adventureId))) {
+      return NextResponse.json({ ok: false, error: 'This dice request is no longer active.' }, { status: 409 });
+    }
+    if (manualRoll === undefined && maxTurns > 0 && (browserSave?.turnNumber ?? getTurnCount(sessionId)) >= maxTurns) {
       return NextResponse.json({
         ok: false,
         sessionId,
         error: `This session has reached its ${maxTurns}-turn limit.`,
       }, { status: 429 });
+    }
+    if (browserSave && requestedAdventureId && state.adventureId !== requestedAdventureId) {
+      return NextResponse.json({ ok: false, error: 'This browser save belongs to a different adventure.' }, { status: 409 });
     }
     if (requestedAdventureId && state.adventureId !== requestedAdventureId) {
       writeDevLog({
@@ -90,19 +104,20 @@ export async function POST(req: Request) {
     let aiUsed = false;
     let fallbackUsed = false;
     let systemPrompt = '';
+    const priorRecaps = browserSave?.recaps;
 
     // Check if we are resolving a pending turn with a manual roll.
-    const pending = getPendingTurn(sessionId);
-    const bridgeDescription = manualRoll === undefined && !pending
+    if (!browserSave && manualRoll === undefined) clearPendingTurn(sessionId);
+    const bridgeDescription = manualRoll === undefined
       ? describeNightstoneBridge(state.adventureId, playerInput)
       : undefined;
     if (pending && manualRoll !== undefined) {
-      rawTurn = pending;
-      clearPendingTurn(sessionId);
+      ({ turn: rawTurn, aiUsed, fallbackUsed, systemPrompt, playerInput } = pending);
+      if (!browserSave) clearPendingTurn(sessionId);
     } else if (bridgeDescription) {
       rawTurn = { engineRequests: [], narration: bridgeDescription, needsResultBeforeNarrating: false };
     } else {
-      const recentRecaps = (await getRecaps(sessionId)).slice(-5);
+      const recentRecaps = (priorRecaps ?? await getRecaps(sessionId)).slice(-5);
       // Ground the DM in the table's owned sourcebook (e.g. Storm King's Thunder):
       // retrieve the most relevant official passages and tell the DM to defer to
       // them when in doubt. No-op for adventures without an owned source index.
@@ -170,17 +185,19 @@ export async function POST(req: Request) {
       mode: fallbackUsed ? 'table_rules' : 'ai_director',
       aiUsed,
       fallbackUsed,
-      physicalDice,
+      physicalDice: physicalDice || manualRoll !== undefined,
       manualRoll,
     });
 
-    if (turn.response.needsManualRoll) {
-      savePendingTurn(sessionId, rawTurn);
-    }
+    const rollId = turn.pendingTurn ? randomUUID() : undefined;
+    const nextPending = turn.pendingTurn && rollId && turn.response.manualRollContext
+      ? { rollId, context: turn.response.manualRollContext, playerInput, turn: turn.pendingTurn, aiUsed, fallbackUsed, systemPrompt }
+      : undefined;
+    if (!browserSave && nextPending) savePendingTurn(sessionId, nextPending);
 
     state = turn.state;
     let narration = turn.response.narration;
-    if (!fallbackUsed && aiUsed && turn.response.needsResultBeforeNarrating && systemPrompt) {
+    if (!turn.response.needsManualRoll && !fallbackUsed && aiUsed && turn.response.needsResultBeforeNarrating && systemPrompt) {
       const visibleState = `Party: ${state.party.map((p) => `${p.name} (${p.hp}/${p.maxHp})`).join('; ')}.`;
       const narrationRewrite = await generateNarration({
         systemPrompt,
@@ -247,8 +264,10 @@ export async function POST(req: Request) {
     // Deterministic pruning bounds canon-log growth over a long campaign.
     state = { ...state, canonLog: pruneCanonLog(state.canonLog) };
 
-    await saveSession(state);
-    const turnNumber = nextTurnNumber(sessionId);
+    if (!browserSave && !await saveSession(state, manualRoll === undefined ? undefined : pending?.rollId)) {
+      return NextResponse.json({ ok: false, error: 'This dice request is no longer active.' }, { status: 409 });
+    }
+    const turnNumber = browserSave ? browserSave.turnNumber + 1 : nextTurnNumber(sessionId);
 
     narration = fallbackUsed && shouldUseMockFlavorPrefix()
       ? `The wind shifts and the tale steadies itself. ${narration}`
@@ -270,18 +289,25 @@ export async function POST(req: Request) {
       aiUsed: turn.response.aiUsed,
       fallbackUsed: turn.response.fallbackUsed,
     });
-    await saveRecap(sessionId, recap);
+    if (!browserSave) await saveRecap(sessionId, recap);
+    const nextBrowserSave = browserSave
+      ? sealBrowserSave({ state, turnNumber, pending: nextPending, recaps: [...browserSave.recaps, recap].slice(-5) })
+      : undefined;
+    if (browserSave && !nextBrowserSave) {
+      return NextResponse.json({ ok: false, error: 'The updated campaign is too large to save on this browser.' }, { status: 507 });
+    }
 
     const response = {
       ...turn.response,
       narration,
       narrationWarnings,
+      rollId,
       sessionId,
       recap,
     };
 
     writeDevLog({ type: 'turn', sessionId, playerInput, response });
-    return NextResponse.json(response);
+    return NextResponse.json({ ...response, browserSave: nextBrowserSave });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown turn processing error';
     writeDevLog({

@@ -22,8 +22,11 @@ export function createInitialState(sessionId: string, options?: NewGameOptions):
     3;
   
   const background = options?.backgroundId ? getBackground(options.backgroundId) : undefined;
+  const usedCharacterIds = new Set<string>();
   const party = characterTemplateIds.map((id, i) => {
     const character = buildCharacter(id, { playerName: playerNames[i], level });
+    if (usedCharacterIds.has(character.id)) character.id = `${character.id}-${i + 1}`;
+    usedCharacterIds.add(character.id);
     return {
       ...character,
       inventory: [...character.inventory, ...(background?.equipment ?? [])],

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { PartyQuestRecap } from '@/lib/game/recap';
-import { clearClientSnapshot } from '@/lib/persistence/client-snapshot';
+import { clearClientSnapshot, loadClientSnapshot } from '@/lib/persistence/client-snapshot';
 
 type Props = {
   sessionId: string;
@@ -19,6 +19,12 @@ export function EndingScreen({ sessionId, adventureTitle, playerName, onNewGame,
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const snapshot = loadClientSnapshot(sessionId);
+    if (snapshot?.browserSave && snapshot.recap) {
+      setRecap(snapshot.recap);
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     (async () => {
       try {

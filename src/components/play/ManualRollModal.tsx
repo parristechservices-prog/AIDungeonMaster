@@ -39,12 +39,12 @@ export function ManualRollModal({ context, onSubmit }: Props) {
               <span>Formula: <code className="font-mono">{context.formula}</code></span>
               {context.dc && <span>Target DC: <code className="font-mono">{context.dc}</code></span>}
             </div>
-            {context.advantage && (
+            {context.advantage && !context.disadvantage && (
               <div className="text-green-600 dark:text-green-400 font-semibold">
                 ★ Rolling with ADVANTAGE (Roll twice, take highest)
               </div>
             )}
-            {context.disadvantage && (
+            {context.disadvantage && !context.advantage && (
               <div className="text-red-600 dark:text-red-400 font-semibold">
                 ⚠ Rolling with DISADVANTAGE (Roll twice, take lowest)
               </div>

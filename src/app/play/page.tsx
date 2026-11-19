@@ -59,6 +59,8 @@ export default function PlayPage() {
   const [physicalDice, setPhysicalDice] = useState(false);
   const [showExtras, setShowExtras] = useState(false);
   const [manualRollContext, setManualRollContext] = useState<TurnResponse['manualRollContext'] | null>(null);
+  const browserSave = useRef<string | undefined>(undefined);
+  const [rollId, setRollId] = useState<string>();
   const [showMobileCharacterSheet, setShowMobileCharacterSheet] = useState(false);
   const [showMobileMap, setShowMobileMap] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<'character' | 'map'>('character');
@@ -68,7 +70,7 @@ export default function PlayPage() {
   const showDmPanels = display.showDmViewButton && anyDevPanelSectionEnabled(devPanel);
   const visibleSidebarTab = sidebarTab === 'map' && display.showMapButton || !display.showCharacterButton ? 'map' : 'character';
 
-  async function hydrateSession(nextSessionId: string) {
+  async function hydrateSession(nextSessionId: string, hasSnapshot: boolean) {
     const res = await fetch(`/api/session?sessionId=${encodeURIComponent(nextSessionId)}`);
     const data = await res.json();
     if (!data.ok || !data.state) return;
@@ -78,10 +80,12 @@ export default function PlayPage() {
     setSceneId(data.sceneId);
     setSceneGoal(data.sceneGoal);
     setChoices(data.nextChoices ?? []);
-    setMode(data.mode ?? 'table_rules');
+    if (!hasSnapshot) setMode(data.mode ?? 'table_rules');
+    setRollId(data.rollId);
+    setManualRollContext(data.manualRollContext ?? null);
     setState(data.state);
     const hydratedOpening = data.sceneStarter ?? data.opening;
-    if (typeof hydratedOpening === 'string' && hydratedOpening.trim()) {
+    if (!hasSnapshot && typeof hydratedOpening === 'string' && hydratedOpening.trim()) {
       setHistory([hydratedOpening]);
       setVoiceNarration({ text: hydratedOpening });
     }
@@ -128,6 +132,7 @@ export default function PlayPage() {
     const boot = readPlayBootstrap();
     setSessionId(boot.sessionId);
     const last = isFeatureEnabled('clientSessionSnapshot') ? loadClientSnapshot(boot.sessionId) : null;
+    browserSave.current = last?.browserSave;
     setVoiceNarration({ text: last
       ? [last.sceneStarter, last.narration, last.nextHook].filter(Boolean).join(' ')
       : boot.history[0] ?? '' });
@@ -135,7 +140,7 @@ export default function PlayPage() {
     const openingRaw = sessionStorage.getItem('partyquest-opening');
     if (openingRaw) {
       try {
-        const { sessionId: openingSessionId, opening, title, adventureId: openingAdventureId, state: openingState, sceneId: openingSceneId, sceneGoal: openingSceneGoal, nextChoices } = JSON.parse(openingRaw) as {
+        const { sessionId: openingSessionId, opening, title, adventureId: openingAdventureId, state: openingState, sceneId: openingSceneId, sceneGoal: openingSceneGoal, nextChoices, browserSave: openingSave } = JSON.parse(openingRaw) as {
           sessionId?: string;
           opening: string;
           title: string;
@@ -144,8 +149,10 @@ export default function PlayPage() {
           sceneId?: TurnResponse['sceneId'];
           sceneGoal?: string;
           nextChoices?: string[];
+          browserSave?: string;
         };
         sessionStorage.removeItem('partyquest-opening');
+        browserSave.current = openingSave ?? browserSave.current;
         if (openingSessionId) setSessionId(openingSessionId);
         setAdventureTitle(title);
         setHistory([opening]);
@@ -178,9 +185,17 @@ export default function PlayPage() {
       setAdventureTitle(boot.adventureTitle ?? getAdventure(boot.adventureId).title);
       setSceneGoal(boot.sceneGoal);
     }
-    if (!boot.state && boot.sessionId) {
-      hydrateSession(boot.sessionId).catch(() => {
+    if (last?.browserSave) {
+      setRollId(last.rollId);
+      setManualRollContext(last.manualRollContext ?? null);
+    } else if (boot.sessionId) {
+      turnInFlight.current = true;
+      setBusy(true);
+      hydrateSession(boot.sessionId, Boolean(boot.state)).catch(() => {
         // Keep local bootstrap fallback if reconnect state is unavailable.
+      }).finally(() => {
+        turnInFlight.current = false;
+        setBusy(false);
       });
     }
   }, []);
@@ -214,10 +229,12 @@ export default function PlayPage() {
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
             sessionId,
+            browserSave: browserSave.current,
             adventureId,
             playerInput: nextInput,
             physicalDice,
-            manualRoll
+            manualRoll,
+            rollId: manualRoll === undefined ? undefined : rollId,
           }),
         });
         const contentType = res.headers.get('content-type') ?? '';
@@ -225,7 +242,14 @@ export default function PlayPage() {
           throw new Error('Non-JSON turn response');
         }
         const data = (await res.json()) as TurnResponse;
+        if (res.status === 409 && manualRoll !== undefined) {
+          setManualRollContext(null);
+          setRollId(undefined);
+          setHistory((h) => [...h, 'That dice request has expired. You can describe your next action.']);
+          return;
+        }
         if (!data.ok) throw new Error('Turn failed');
+        setRollId(data.rollId);
 
         setAdventureId(data.adventureId);
         setAdventureTitle(data.adventureTitle);
@@ -249,9 +273,8 @@ export default function PlayPage() {
           setManualRollContext(null);
         }
 
-        if (isFeatureEnabled('clientSessionSnapshot')) {
-          saveClientSnapshot(sessionId, data);
-        }
+        browserSave.current = data.browserSave;
+        const savedLocally = isFeatureEnabled('clientSessionSnapshot') && saveClientSnapshot(sessionId, data);
 
         // Internal engine availability refusals (e.g. an AI tactical request in a
         // non-combat scene) must not surface as player narration — they are not
@@ -265,6 +288,8 @@ export default function PlayPage() {
           ...(data.engineResults
             ?.filter((r) => !isInternalRefusal(r.summary) && r.kind !== 'end_turn' && !String(data.narration).includes(r.summary))
             .map((r) => `• ${r.summary}`) ?? []),
+          // Only mention saving when it's a warning the player needs.
+          ...(data.browserSave && !savedLocally ? ['Browser storage is unavailable. This turn can only continue in the current tab.'] : []),
           data.nextHook,
         ];
         setHistory((h) => [...h, ...lines]);
@@ -276,7 +301,7 @@ export default function PlayPage() {
         setBusy(false);
       }
     },
-    [adventureId, physicalDice, sessionId],
+    [adventureId, physicalDice, rollId, sessionId],
   );
 
   function handleNewGame() {

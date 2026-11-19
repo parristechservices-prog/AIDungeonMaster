@@ -50,7 +50,7 @@ function requestedCharacterId(characterId?: string): string | undefined {
 export function resolveEngineRequest(
   state: GameState,
   request: EngineRequest,
-  options?: { physicalDice?: boolean },
+  options?: { physicalDice?: boolean; advanceOnSkillSuccess?: boolean },
 ): { state: GameState; result: EngineResult } {
   const out = resolveEngineRequestInner(state, request, options);
   return { state: normaliseState(out.state), result: out.result };
@@ -75,7 +75,7 @@ function normaliseState(state: GameState): GameState {
 function resolveEngineRequestInner(
   state: GameState,
   request: EngineRequest,
-  options?: { physicalDice?: boolean }
+  options?: { physicalDice?: boolean; advanceOnSkillSuccess?: boolean }
 ): { state: GameState; result: EngineResult } {
   switch (request.kind) {
     case 'move_area':
@@ -166,12 +166,10 @@ function resolveEngineRequestInner(
       
       const advantage = request.advantage;
       let disadvantage = request.disadvantage;
-      let bonusFormula = undefined;
 
       if (hasCondition(char, 'poisoned')) disadvantage = true;
       if (hasCondition(char, 'restrained') && (request.skill === 'acrobatics' || request.skill === 'athletics')) disadvantage = true;
       if (hasCondition(char, 'blinded') && (request.skill === 'perception')) disadvantage = true;
-      if (hasCondition(char, 'blessed')) bonusFormula = '1d4';
 
       if (options?.physicalDice && request.manualRoll === undefined) {
         return {
@@ -182,7 +180,7 @@ function resolveEngineRequestInner(
             needsManualRoll: true,
             manualRollContext: {
               kind: 'skill_check',
-              formula: `1d20+${mod}${bonusFormula ? '+1d4' : ''}`,
+              formula: `1d20+${mod}`,
               dc: request.dc,
               advantage,
               disadvantage,
@@ -193,15 +191,18 @@ function resolveEngineRequestInner(
 
       const breakdown = request.manualRoll !== undefined 
         ? { formula: `1d20+${mod}`, rolls: [request.manualRoll], modifier: mod, total: request.manualRoll + mod }
-        : rollFormula('1d20', mod, { advantage, disadvantage, bonusFormula });
+        : rollFormula('1d20', mod, { advantage, disadvantage });
       
       const ok = breakdown.total >= request.dc;
       breakdown.dc = request.dc;
       breakdown.ok = ok;
-      // A check only moves the story on when the DM marks it as completing the
-      // scene goal; investigating, climbing or sneaking around stays in the scene.
-      // In a combat scene this only happens when the fight was avoided (e.g. sneaking past).
-      const next = ok && request.advancesScene && !state.combat.active ? advanceScene(state) : state;
+      // A check moves the story on when the DM marks it as completing the scene
+      // goal (advancesScene). If the DM doesn't say, Table Rules mode keeps its
+      // old default of advancing on success outside combat scenes.
+      const inCombatScene =
+        getSceneKind(getAdventure(state.adventureId), state.sceneId) === 'combat';
+      const advances = request.advancesScene ?? (options?.advanceOnSkillSuccess === true && !inCombatScene);
+      const next = ok && advances && !state.combat.active ? advanceScene(state) : state;
       return {
         state: appendLog(next, `${char.name}: ${request.skill} check ${ok ? 'passed' : 'failed'} (${breakdown.total} vs DC ${request.dc})`),
         result: { ok, summary: `${request.reason}: ${ok ? 'success' : 'failure'}`, breakdown },
@@ -509,6 +510,13 @@ function resolveEngineRequestInner(
       const approachNote = approach.note;
 
       const map = state.combat.battleMap;
+      if (map && !isRanged) {
+        const distance = distanceBetweenActors(map, char.id, target.id);
+        const reach = map.actors[char.id]?.reachFt ?? 5;
+        if (distance !== undefined && distance > reach) {
+          return { state, result: { ok: false, summary: `${target.name} is ${distance} ft away, outside your ${reach} ft melee reach.` } };
+        }
+      }
       let nextState = state;
       if (map) {
         const actor = map.actors[char.id];
@@ -623,7 +631,7 @@ function resolveEngineRequestInner(
       }
 
       const toHit = request.manualRoll !== undefined
-        ? { formula: `1d20+${attackMod}`, rolls: [request.manualRoll], modifier: attackMod, total: request.manualRoll + attackMod, dc: effectiveTargetAc }
+        ? { formula: `1d20+${attackMod}`, rolls: [request.manualRoll], modifier: attackMod, total: request.manualRoll + attackMod + (bonusFormula ? rollFormula(bonusFormula).total : 0), dc: effectiveTargetAc }
         : rollFormula('1d20', attackMod, { advantage, disadvantage, bonusFormula });
 
       toHit.dc = effectiveTargetAc;
@@ -648,6 +656,13 @@ function resolveEngineRequestInner(
       const damage = rollFormula(critical ? critFormula(weapon.damage) : weapon.damage);
       const monsters = nextState.monsters.map((m) => m.id === target.id ? { ...m, hp: Math.max(0, m.hp - damage.total) } : m);
       let next = { ...nextState, monsters };
+      // A felled creature leaves the battle map.
+      const battleMap = next.combat.battleMap;
+      if (battleMap && monsters.some((monster) => monster.id === target.id && monster.hp === 0)) {
+        const positions = { ...battleMap.positions };
+        delete positions[target.id];
+        next = { ...next, combat: { ...next.combat, battleMap: { ...battleMap, positions } } };
+      }
       if (monsters.some((m) => m.hp > 0) && !next.combat.active) {
         // Attacking living enemies starts combat, so initiative and enemy turns follow.
         next = beginCombat(next, next.monsters, []);
@@ -1461,7 +1476,7 @@ function resolveOpportunityAttacks(
     const toHit = rollFormula('1d20', attacker.attackBonus);
     const natural = toHit.keptRoll ?? toHit.rolls[0];
     const critical = natural === 20;
-    const hit = toHit.total >= target.ac || critical;
+    const hit = natural !== 1 && (toHit.total >= target.ac || critical);
     toHit.dc = target.ac;
     toHit.ok = hit;
 
@@ -2000,11 +2015,11 @@ function rollFormula(
   let keptRoll = rolls[0];
 
   if (count === 1 && sides === 20) {
-    if (options?.advantage) {
+    if (options?.advantage && !options.disadvantage) {
       const secondRoll = Math.floor(randomProvider() * sides) + 1;
       rolls = [rolls[0], secondRoll];
       keptRoll = Math.max(...rolls);
-    } else if (options?.disadvantage) {
+    } else if (options?.disadvantage && !options.advantage) {
       const secondRoll = Math.floor(randomProvider() * sides) + 1;
       rolls = [rolls[0], secondRoll];
       keptRoll = Math.min(...rolls);

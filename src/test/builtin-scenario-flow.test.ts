@@ -13,9 +13,10 @@ describe('built-in scenario offline flows', () => {
     (adventureId, scenario) => {
       setRandomProvider(() => 0.99);
       let state = createInitialState(`offline-${adventureId}`, { adventureId, characterId: 'fighter' });
-      // Max rolls let enemies win initiative and crit before the first swing (5e),
-      // so make the hero sturdy: this test is about scene flow, not survival.
-      state = { ...state, party: state.party.map((p) => ({ ...p, hp: 999, maxHp: 999 })) };
+      // This tests scenario completion. The fixed die also maximises enemy
+      // critical damage, so use a durable fixture to exercise all transitions.
+      const fighter = { ...state.party[0], hp: 300, maxHp: 300 };
+      state = { ...state, player: fighter, party: [fighter] };
       const actions = ['I ask the NPC what they know', 'I inspect the area', ...Array(12).fill('I attack')];
 
       for (const action of actions) {

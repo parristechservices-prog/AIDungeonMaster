@@ -43,6 +43,7 @@ describe('opportunity attack resolution', () => {
   it('a missed OA applies no damage but still consumes the reaction', () => {
     setRandomProvider(() => 0.0); // natural 1 → miss
     const state = combatState();
+    state.monsters[0].attackBonus = 30;
     const heroId = state.activeCharacterId;
     const startHp = state.party.find((p) => p.id === heroId)!.hp;
     const { state: next, result } = resolveEngineRequest(state, {

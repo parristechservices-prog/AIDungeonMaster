@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { FormEvent } from 'react';
 import { Suspense, useEffect, useState } from 'react';
-import { clearClientSnapshot } from '@/lib/persistence/client-snapshot';
+import { clearClientSnapshot, saveClientSnapshot } from '@/lib/persistence/client-snapshot';
 import { newSessionId } from '@/lib/play/bootstrap';
 
 type Catalog = {
@@ -122,6 +122,11 @@ function StartContent() {
       if (!res.ok || !data.ok) throw new Error('Failed to start');
       localStorage.setItem('partyquest-session-id', data.sessionId);
       clearClientSnapshot();
+      if (data.browserSave) {
+        saveClientSnapshot(data.sessionId, {
+          ...data, adventureTitle: data.title, narration: data.opening, mode: 'table_rules',
+        });
+      }
 
       sessionStorage.setItem(
         'partyquest-opening',
@@ -134,6 +139,7 @@ function StartContent() {
           sceneGoal: data.sceneGoal,
           nextChoices: data.nextChoices,
           state: data.state,
+          browserSave: data.browserSave,
         }),
       );
       router.push('/play');

@@ -1,9 +1,9 @@
 import { resolveEngineRequest, runEnemyTurns } from '@/lib/engine';
 import type { EngineRequest } from '@/lib/engine/types';
 import { dmTurnSchema, type DmTurn } from '@/lib/llm/contracts';
-import { getPlayableScene, getSceneChoices, getSceneGoal, getSceneKind } from '@/lib/game/adventures/helpers';
+import { getPlayableScene, getSceneChoices, getSceneGoal } from '@/lib/game/adventures/helpers';
 import { getAdventure } from '@/lib/game/adventures/registry.server';
-import { visibleNpcsForScene } from '@/lib/game/adventures/visibility';
+import { visibleMonstersForScene, visibleNpcsForScene } from '@/lib/game/adventures/visibility';
 import { ENDING_SCENE_ID } from '@/lib/game/adventures/types';
 import type { GameState } from '@/lib/game/types';
 import { mockNarrationAfterResult } from '@/lib/orchestrator/mock-dm';
@@ -101,7 +101,7 @@ export function runTurn(
   state: GameState,
   rawTurn: unknown,
   context: { mode: 'ai_director' | 'table_rules'; aiUsed: boolean; fallbackUsed: boolean; physicalDice?: boolean; manualRoll?: number },
-): { state: GameState; response: TurnResult } {
+): { state: GameState; response: TurnResult; pendingTurn?: DmTurn } {
   const prevScene = state.sceneId;
   const narrationState = state;
   const parsed = dmTurnSchema.safeParse(rawTurn);
@@ -134,8 +134,15 @@ export function runTurn(
   // Outcome of the most recent check this turn, for requests marked "when".
   let lastCheck: 'success' | 'failure' | undefined;
 
-  for (const request of limitedRequests) {
+  let pendingRequests: DmTurn['engineRequests'] | undefined;
+  let suppliedRoll = context.manualRoll;
+
+  for (const [index, request] of limitedRequests.entries()) {
     if (request.when && request.when !== lastCheck) continue;
+    // The Director separates resolving an approach from progressing the story.
+    if (request.kind === 'advance_scene' && (state.sceneId !== prevScene || state.combat.active)) continue;
+    if (context.mode === 'ai_director' && skipConsequencesAfterFailedCheck && request.when !== 'failure' &&
+        ['advance_scene', 'complete_objective', 'move_area'].includes(request.kind)) continue;
     if (request.kind === 'monster_turn') continue;
     if (request.kind === 'end_turn' && enemiesActed) continue;
     // A natural 20 on a death save brings the character back with 1 HP, and they
@@ -169,14 +176,16 @@ export function runTurn(
     }
 
     const manualRoll =
-      context.manualRoll !== undefined &&
+      suppliedRoll !== undefined &&
       (request.kind === 'skill_check' || request.kind === 'player_attack')
-        ? context.manualRoll
+        ? suppliedRoll
         : undefined;
 
     const sceneBefore = state.sceneId;
+    if (manualRoll !== undefined) suppliedRoll = undefined;
     const resolved = resolveEngineRequest(state, toEngineRequest(request, manualRoll), {
       physicalDice: context.physicalDice,
+      advanceOnSkillSuccess: context.mode === 'table_rules',
     });
     state = resolved.state;
     engineResults.push({ kind: request.kind, ...resolved.result });
@@ -188,6 +197,9 @@ export function runTurn(
     if (['skill_check', 'contest', 'ability_check', 'saving_throw'].includes(request.kind) && !resolved.result.needsManualRoll) {
       lastCheck = resolved.result.ok ? 'success' : 'failure';
     }
+    // Later requests describe the next steps of this action. If travel failed,
+    // those steps cannot use the intended destination as their starting point.
+    if (context.mode === 'ai_director' && request.kind === 'move_area' && !resolved.result.ok) break;
     if (['skill_check', 'contest', 'ability_check'].includes(request.kind) && !resolved.result.ok) {
       skipConsequencesAfterFailedCheck = true;
     }
@@ -195,6 +207,7 @@ export function runTurn(
     if (resolved.result.needsManualRoll) {
       needsManualRoll = true;
       manualRollContext = resolved.result.manualRollContext;
+      pendingRequests = limitedRequests.slice(index);
       break; // Stop processing further requests if we need a roll
     }
   }
@@ -239,13 +252,9 @@ export function runTurn(
   const recentRolls = engineResults
     .map((r) => r.breakdown)
     .filter((b): b is import('@/lib/engine/types').RollBreakdown => !!b);
-  const visibleMonsters =
-    state.combat.active || getSceneKind(adventure, state.sceneId) === 'combat'
-      ? state.monsters
-      : [];
-
   return {
     state,
+    pendingTurn: pendingRequests ? { ...turn, engineRequests: pendingRequests } : undefined,
     response: {
       ok: true,
       mode: context.mode,
@@ -289,7 +298,7 @@ export function runTurn(
           conditions: p.conditions,
         })),
         activeCharacterId: state.activeCharacterId,
-        monsters: visibleMonsters.map((m) => ({
+        monsters: visibleMonstersForScene(adventure, state).map((m) => ({
           id: m.id,
           name: m.name,
           hp: m.hp,

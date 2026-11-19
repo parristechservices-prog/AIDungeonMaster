@@ -20,6 +20,29 @@ describe('engine', () => {
     expect(out.result.breakdown?.formula).toBe('1d20');
   });
 
+  it('cancels advantage and disadvantage on the same check', () => {
+    const state = createInitialState('cancel-advantage');
+    setRandomProvider(seq([0, 0.99]));
+    const { result } = resolveEngineRequest(state, {
+      kind: 'skill_check', characterId: state.player.id, skill: 'history',
+      reason: 'Recall lore', dc: 10, advantage: true, disadvantage: true,
+    });
+    expect(result.breakdown?.rolls).toEqual([1]);
+    expect(result.ok).toBe(false);
+  });
+
+  it('does not add Bless to ability checks', () => {
+    const state = createInitialState('bless-ability');
+    state.player.conditions = ['blessed'];
+    setRandomProvider(seq([0, 0.99]));
+    const { result } = resolveEngineRequest(state, {
+      kind: 'skill_check', characterId: state.player.id, skill: 'history',
+      reason: 'Recall lore', dc: 4,
+    });
+    expect(result.breakdown?.total).toBe(3);
+    expect(result.ok).toBe(false);
+  });
+
   it('starts combat with initiative order', () => {
     const state = createInitialState('t2');
     const out = resolveEngineRequest(state, { kind: 'start_combat' });
@@ -38,6 +61,42 @@ describe('engine', () => {
       expect(next.combat.initiative.some((entry) => entry.actorId === monster.id)).toBe(true);
       expect(next.combat.battleMap?.positions[monster.id]).toBeDefined();
     }
+  });
+
+  it('refuses a distant worg melee target without using the fighter action', () => {
+    const state = createInitialState('nightstone-melee-reach', { adventureId: 'skt-nightstone-chapter1' });
+    const combat = resolveEngineRequest(state, { kind: 'start_combat' }).state;
+    const fighter = combat.party[0];
+    const worg = combat.monsters[0];
+    const map = combat.combat.battleMap!;
+    // Beyond movement + reach (60 ft away, 30 ft speed): no attack, action kept.
+    // (A target within movement range is closed on and attacked: 5e move-then-attack.)
+    map.width = Math.max(map.width, 14);
+    map.positions[fighter.id] = { x: 0, y: 0 };
+    map.positions[worg.id] = { x: 12, y: 0 };
+
+    const result = resolveEngineRequest(combat, {
+      kind: 'player_attack', characterId: fighter.id, targetId: worg.id, manualRoll: 20,
+    });
+    expect(result.result).toMatchObject({ ok: false, summary: expect.stringMatching(/still \d+ ft away/) });
+    expect(result.state.monsters[0].hp).toBe(worg.hp);
+    expect(result.state.combat.battleMap!.actors[fighter.id].actionUsed).toBeFalsy();
+  });
+
+  it('expires Dash and Disengage when the actor gets a fresh turn', () => {
+    const state = createInitialState('turn-reset');
+    const combat = resolveEngineRequest(state, { kind: 'start_combat' }).state;
+    const heroId = state.player.id;
+    const heroIndex = combat.combat.initiative.findIndex(({ actorId }) => actorId === heroId);
+    combat.combat.turnIndex = (heroIndex + combat.combat.initiative.length - 1) % combat.combat.initiative.length;
+    Object.assign(combat.combat.battleMap!.actors[heroId], {
+      extraMovementFt: 30, disengaged: true, movementSpentFt: 15, reactionAvailable: false,
+    });
+    const result = resolveEngineRequest(combat, { kind: 'end_turn' });
+    expect(result.state.activeCharacterId).toBe(heroId);
+    expect(result.state.combat.battleMap?.actors[heroId]).toMatchObject({
+      extraMovementFt: 0, disengaged: false, movementSpentFt: 0, reactionAvailable: true,
+    });
   });
 
   it('repairs a saved party-only Nightstone initiative without rerolling the party', () => {
