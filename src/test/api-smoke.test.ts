@@ -58,6 +58,21 @@ describe('no-key API smoke flow', () => {
     expect(silly.narration).toMatch(/not possible|choose an action/i);
   });
 
+  it('answers Nightstone bridge questions without moving or rolling', async () => {
+    const sessionId = 'api-nightstone-bridge-question';
+    const adventureId = 'skt-nightstone-chapter1';
+    for (const [playerInput, expectVillage] of [
+      ['tell me about the bridge', true],
+      ['tell me about the bridge to the keep', false],
+    ] as const) {
+      const response = await runApiTurn(jsonRequest('http://localhost/api/turn', { sessionId, adventureId, playerInput }));
+      const turn = await response.json();
+      expect(turn.narration).toContain('middle span is missing');
+      expect(turn.narration.includes('drawbridge spans the moat')).toBe(expectVillage);
+      expect(turn.engineResults).toEqual([]);
+    }
+  });
+
   it('rejects out-of-bounds manual rolls before processing a turn', async () => {
     const response = await runApiTurn(jsonRequest('http://localhost/api/turn', {
       sessionId: `api-manual-${Date.now()}`,

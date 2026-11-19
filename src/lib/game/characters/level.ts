@@ -30,9 +30,13 @@ export function applyCharacterLevel(character: Character, targetLevel: number): 
     maxHp,
     hp: Math.max(1, character.hp >= character.maxHp ? maxHp : hp),
     // Only keep class features the character has reached at this level.
-    features: character.features.filter((f) => (f.minLevel ?? 1) <= level),
+    // (Older saves lack minLevel; Action Surge is a level-2 feature.)
+    features: character.features.filter((f) => (f.minLevel ?? (f.id === 'action_surge' ? 2 : 1)) <= level),
     hitDice: { ...getHitDice(character), remaining: level, max: level },
     skills,
+    ...(character.className === 'Wizard' && level < 3
+      ? { subclass: undefined, spellSlots: { 1: { max: level === 1 ? 2 : 3, remaining: level === 1 ? 2 : 3 } } }
+      : {}),
     weapon: {
       ...character.weapon,
       attackBonus: character.weapon.attackBonus + weaponBonus,

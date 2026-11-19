@@ -4,6 +4,8 @@ export type Background = {
   description: string;
   /** Logged as a canon fact when the adventure begins */
   canonFact: string;
+  equipment?: string[];
+  gold?: number;
 };
 
 export const BACKGROUNDS: Background[] = [
@@ -27,6 +29,8 @@ export const BACKGROUNDS: Background[] = [
   },
   {
     id: 'acolyte',
+    equipment: ['Holy Symbol', 'Prayer Book', '5 Sticks of Incense', 'Vestments', 'Common Clothes', 'Belt Pouch'],
+    gold: 15,
     label: 'Acolyte',
     description: 'Faith guided you through famine and plague. Sacred symbols still steady your hand.',
     canonFact: 'The hero is an acolyte devoted to protecting the innocent from darkness.',

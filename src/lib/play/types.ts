@@ -49,6 +49,8 @@ export type TurnResponse = {
       maxHp: number;
       ac: number;
       proficiencyBonus: number;
+      abilities?: import('@/lib/game/types').Character['abilities'];
+      skills?: import('@/lib/game/types').Character['skills'];
       unconscious: boolean;
       deathSaves: { success: number; failure: number };
       features: import('@/lib/game/types').Character['features'];

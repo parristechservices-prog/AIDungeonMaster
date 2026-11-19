@@ -21,13 +21,17 @@ export function createInitialState(sessionId: string, options?: NewGameOptions):
     adventure.levelRange?.[0] ??
     3;
   
-  const party = characterTemplateIds.map((id, i) => buildCharacter(id, {
-    playerName: playerNames[i],
-    level,
-  }));
+  const background = options?.backgroundId ? getBackground(options.backgroundId) : undefined;
+  const party = characterTemplateIds.map((id, i) => {
+    const character = buildCharacter(id, { playerName: playerNames[i], level });
+    return {
+      ...character,
+      inventory: [...character.inventory, ...(background?.equipment ?? [])],
+      gold: character.gold + (background?.gold ?? 0),
+    };
+  });
 
   const canonLog: CanonFact[] = [];
-  const background = options?.backgroundId ? getBackground(options.backgroundId) : undefined;
   if (background) {
     canonLog.push({
       id: `fact-bg-${background.id}`,

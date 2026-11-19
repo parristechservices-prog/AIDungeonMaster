@@ -102,9 +102,6 @@ function StartContent() {
     setError('');
     try {
       const sessionId = newSessionId();
-      localStorage.setItem('partyquest-session-id', sessionId);
-      clearClientSnapshot();
-
       const res = await fetch('/api/session/start', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -119,7 +116,9 @@ function StartContent() {
         }),
       });
       const data = await res.json();
-      if (!data.ok) throw new Error('Failed to start');
+      if (!res.ok || !data.ok) throw new Error('Failed to start');
+      localStorage.setItem('partyquest-session-id', data.sessionId);
+      clearClientSnapshot();
 
       sessionStorage.setItem(
         'partyquest-opening',

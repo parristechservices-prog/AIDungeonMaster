@@ -190,14 +190,14 @@ describe('fighter features', () => {
     expect(buildCharacter('fighter', { level: 2 }).maxHp).toBe(20);
     expect(buildCharacter('fighter', { level: 3 }).maxHp).toBe(28);
     const f = buildCharacter('fighter');
-    expect(f.ac).toBe(17);
-    expect(f.inventory).toContain('Chain Mail');
+    expect(f.ac).toBe(18);
+    expect(f.inventory).toEqual(expect.arrayContaining(['Chain Mail', 'Shield']));
   });
 });
 
 describe('potions and rests', () => {
   it('a Healing Potion heals 2d4+2, is consumed and uses the action', () => {
-    const { state, hero } = setup({ heroPatch: { hp: 3 } });
+    const { state, hero } = setup({ heroPatch: { hp: 3, inventory: ['Longsword', 'Healing Potion'] } });
     dice([4, 4], [4, 4]);
     const { state: next, result } = resolveEngineRequest(state, { kind: 'use_item', characterId: hero.id, item: 'Healing Potion' });
     expect(result.ok).toBe(true);
@@ -208,7 +208,7 @@ describe('potions and rests', () => {
 
   it('a potion revives an unconscious ally', () => {
     const { state, hero } = setup({ heroPatch: { hp: 0, unconscious: true, deathSaves: { success: 1, failure: 2 } } });
-    const helper = { ...buildCharacter('fighter'), id: 'helper', hp: 20 };
+    const helper = { ...buildCharacter('fighter'), id: 'helper', hp: 20, inventory: ['Healing Potion'] };
     const st = { ...state, party: [state.party[0], helper] };
     st.combat.battleMap!.actors.helper = { ...st.combat.battleMap!.actors[hero.id], id: 'helper', actionUsed: false };
     const { state: next } = resolveEngineRequest(st, { kind: 'use_item', characterId: 'helper', item: 'Healing Potion', targetId: hero.id });

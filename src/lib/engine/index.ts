@@ -317,8 +317,10 @@ export function resolveEngineRequest(
       // with disadvantage the lower, so a natural 20 on a discarded die never crits.
       const naturalRoll = toHit.keptRoll ?? toHit.rolls[0];
       // 5e: a natural 1 always misses and a natural 20 always hits. A Champion's
-      // Improved Critical makes a hitting 19 a critical hit too.
-      const critMin = char.features.some((f) => f.id === 'improved_critical') ? 19 : 20;
+      // Improved Critical (level 3) makes a hitting 19 a critical hit too.
+      const champion = char.features.some((f) => f.id === 'improved_critical')
+        || (char.className === 'Fighter' && char.subclass === 'Champion' && char.level >= 3);
+      const critMin = champion ? 19 : 20;
       toHit.ok = naturalRoll !== 1 && (naturalRoll === 20 || toHit.total >= effectiveTargetAc);
       const critical = toHit.ok && naturalRoll >= critMin;
 
@@ -571,12 +573,23 @@ export function resolveEngineRequest(
       
       const map = state.combat.battleMap;
       let nextState = state;
-      const isBonusAction = feature.id === 'second_wind' || feature.id === 'rage'; // heuristic
-      // Action Surge costs no action: it grants one additional action this turn.
-      const isFree = feature.id === 'action_surge';
-      if (isFree && !state.combat.active) {
-        return { state, result: { ok: false, summary: 'Action Surge can only be used on your turn in combat.' } };
+      if (feature.id === 'action_surge') {
+        const actor = map?.actors[char.id];
+        const activeId = state.combat.initiative[state.combat.turnIndex]?.actorId;
+        if (!map || !actor?.actionUsed || activeId !== char.id) {
+          return { state, result: { ok: false, summary: 'Use Action Surge on your turn after spending your action.' } };
+        }
+        const restored = updateCharacterInParty({
+          ...state,
+          combat: { ...state.combat, battleMap: { ...map, actors: { ...map.actors, [char.id]: { ...actor, actionUsed: false } } } },
+        }, char.id, (c) => ({
+          ...c,
+          features: c.features.map((f) => f.id === feature.id ? { ...f, usesRemaining: f.usesRemaining - 1 } : f),
+        }));
+        const summary = `${char.name} uses Action Surge and gains another action.`;
+        return { state: appendLog(restored, summary), result: { ok: true, summary } };
       }
+      const isBonusAction = feature.id === 'second_wind' || feature.id === 'rage'; // heuristic
       
       if (map) {
         const actor = map.actors[char.id];
@@ -584,7 +597,7 @@ export function resolveEngineRequest(
           if (isBonusAction && actor.bonusActionUsed) {
             return { state, result: { ok: false, summary: `${char.name} has already used their bonus action this turn.` } };
           }
-          if (!isBonusAction && !isFree && actor.actionUsed) {
+          if (!isBonusAction && actor.actionUsed) {
             return { state, result: { ok: false, summary: `${char.name} has already used their action this turn.` } };
           }
           nextState = {
@@ -597,7 +610,7 @@ export function resolveEngineRequest(
                   ...map.actors,
                   [char.id]: {
                     ...actor,
-                    actionUsed: isFree ? false : isBonusAction ? actor.actionUsed : true,
+                    actionUsed: isBonusAction ? actor.actionUsed : true,
                     bonusActionUsed: isBonusAction ? true : actor.bonusActionUsed,
                   },
                 },
@@ -617,8 +630,6 @@ export function resolveEngineRequest(
         const hp = Math.min(char.maxHp, char.hp + breakdown.total);
         next = updateCharacterInParty(next, char.id, (c) => ({ ...c, hp }));
         summary = `${char.name} used Second Wind (bonus action) and restored ${breakdown.total} HP.`;
-      } else if (feature.id === 'action_surge') {
-        summary = `${char.name} used Action Surge and can take one additional action this turn.`;
       } else if (feature.id === 'lay_on_hands') {
           // Simplistic implementation for now
           const amount = Math.min(feature.usesRemaining, 5);
