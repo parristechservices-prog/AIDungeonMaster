@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CharacterSheet } from '@/components/play/CharacterSheet';
 import { ChoiceButtons } from '@/components/play/ChoiceButtons';
 import { CombatHUD } from '@/components/play/CombatHUD';
 import { DiceResults } from '@/components/play/DiceResults';
 import { EndingScreen } from '@/components/play/EndingScreen';
+import { VoiceDm } from '@/components/play/VoiceDm';
 import { InputBox } from '@/components/play/InputBox';
 import { NarrationPanel } from '@/components/play/NarrationPanel';
 import { OnboardingBanner } from '@/components/play/OnboardingBanner';
@@ -45,6 +46,8 @@ export default function PlayPage() {
     getSceneGoal(getAdventure(DEFAULT_ADVENTURE_ID), getFirstPlayableSceneId(getAdventure(DEFAULT_ADVENTURE_ID))),
   );
   const [busy, setBusy] = useState(false);
+  const turnInFlight = useRef(false);
+  const [voiceNarration, setVoiceNarration] = useState<{ text: string } | null>(null);
   const [mode, setMode] = useState<'ai_director' | 'table_rules'>('table_rules');
   const [choices, setChoices] = useState<string[]>([]);
   const [recentRolls, setRecentRolls] = useState<RollBreakdown[]>([]);
@@ -178,7 +181,7 @@ export default function PlayPage() {
     async (rawInput: string, manualRoll?: number) => {
       const nextInput = rawInput.trim();
       if (!nextInput && manualRoll === undefined) return;
-      if (busy || !sessionId) return;
+      if (turnInFlight.current || !sessionId) return;
 
       if (manualRoll === undefined) {
         if (nextInput.toLowerCase() === 'map') {
@@ -194,6 +197,7 @@ export default function PlayPage() {
         setInput('');
         setHistory((h) => [...h, `> ${nextInput}`]);
       }
+      turnInFlight.current = true;
       setBusy(true);
 
       try {
@@ -254,13 +258,15 @@ export default function PlayPage() {
           data.nextHook,
         ];
         setHistory((h) => [...h, ...lines]);
+        setVoiceNarration({ text: [data.sceneStarter, data.narration, data.nextHook].filter(Boolean).join(' ') });
       } catch {
         setHistory((h) => [...h, 'The guide pauses, then resumes. Try that action again.']);
       } finally {
+        turnInFlight.current = false;
         setBusy(false);
       }
     },
-    [adventureId, busy, physicalDice, sessionId],
+    [adventureId, physicalDice, sessionId],
   );
 
   function handleNewGame() {
@@ -402,6 +408,7 @@ export default function PlayPage() {
               {/* Docked ambient audio bar — in flow, never overlays input/suggestions */}
               {display.showAudio && <AmbientAudio type={ambient} />}
               {display.showAudio && <RecordedDungeonGuide adventureId={adventureId} sceneId={sceneId} turnCount={turnCount} characterClass={state?.party?.[0]?.className ?? ''} combatActive={state?.combat?.active ?? false} lowHealth={state?.party?.some(p=>p.maxHp>0&&p.hp/p.maxHp<=0.3) ?? false} pendingRoll={Boolean(manualRollContext)} engineResults={lastEngineResults} />}
+              <VoiceDm narration={voiceNarration} busy={busy || !sessionId} onDictate={setInput} />
               <InputBox
                 value={input}
                 busy={busy}
