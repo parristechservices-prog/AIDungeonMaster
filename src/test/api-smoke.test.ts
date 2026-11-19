@@ -86,6 +86,26 @@ describe('no-key API smoke flow', () => {
     });
   });
 
+  it('rejects a replayed physical die without saving another turn', async () => {
+    const sessionId = 'api-replayed-physical-die';
+    await startSession(jsonRequest('http://localhost/api/session/start', {
+      sessionId, adventureId: 'skt-nightstone-chapter1', characterId: 'fighter',
+    }));
+    const submit = (body: Record<string, unknown>) => runApiTurn(jsonRequest(
+      'http://localhost/api/turn', { sessionId, physicalDice: true, ...body },
+    ));
+    const request = await (await submit({ playerInput: 'I search for tracks.' })).json();
+    expect(request).toMatchObject({ needsManualRoll: true, rollId: expect.any(String) });
+
+    const payload = { manualRoll: 17, rollId: request.rollId };
+    const accepted = await (await submit(payload)).json();
+    expect(accepted).toMatchObject({ ok: true, recap: { turnNumber: 2 } });
+    const replay = await submit(payload);
+    expect(replay.status).toBe(409);
+    const next = await (await submit({ playerInput: 'Hello.' })).json();
+    expect(next.recap.turnNumber).toBe(3);
+  });
+
   it('reports secret-safe health information', async () => {
     const response = await getHealth();
     expect(await response.json()).toMatchObject({

@@ -75,3 +75,9 @@ Use disposable campaigns. Record the scenario, exact input, resulting game state
 - [ ] **48.** Complete a full Nightstone run
 - [ ] **49.** Submit a player action using voice input
 - [ ] **50.** Play the DM’s narration
+
+## Automated evidence
+
+- **37. Dice retry.** The API smoke test submits a real pending roll, retries the same payload, checks for a conflict response, and verifies that the retry did not increment the turn count.
+- **38–39. Refresh and restart.** A pending dice prompt currently lives in browser component state and server process memory. Recovery across a refresh or process restart remains open.
+- **46. Table Rules.** The API smoke suite starts Brindlehook, greets Mira, looks around, and safely rejects an impossible action with the AI provider disabled. Live UI coverage remains open.

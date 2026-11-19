@@ -16,6 +16,7 @@ export type TurnResponse = {
   narration: string;
   ambient?: 'none' | 'tavern' | 'dungeon' | 'combat' | 'exploration' | 'boss_fight';
   needsManualRoll?: boolean;
+  rollId?: string;
   manualRollContext?: {
     kind: 'skill_check' | 'player_attack';
     formula: string;

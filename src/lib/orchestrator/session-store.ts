@@ -16,7 +16,7 @@ import { getDb, hasDb } from '@/lib/db/client';
 const sessions = new Map<string, GameState>();
 const turnCounters = new Map<string, number>();
 const recapsCache = new Map<string, PartyQuestRecap[]>();
-type PendingTurn = { turn: import('@/lib/llm/contracts').DmTurn; aiUsed: boolean; fallbackUsed: boolean; systemPrompt: string };
+type PendingTurn = { rollId: string; turn: import('@/lib/llm/contracts').DmTurn; aiUsed: boolean; fallbackUsed: boolean; systemPrompt: string };
 const pendingTurns = new Map<string, PendingTurn>();
 
 /** Applies legacy field migrations to a loaded state blob, then normalizes it. */
@@ -45,6 +45,7 @@ export async function startNewGame(sessionId: string, options: NewGameOptions): 
   const state = createInitialState(sessionId, options);
   sessions.set(sessionId, state);
   turnCounters.set(sessionId, 0);
+  clearPendingTurn(sessionId);
   recapsCache.set(sessionId, []);
   await saveSession(state);
   const db = getDb();

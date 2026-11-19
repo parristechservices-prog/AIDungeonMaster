@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { repairMissingEncounter } from '@/lib/engine';
 import { NextResponse } from 'next/server';
 import { shouldUseMockFlavorPrefix } from '@/lib/llm/credentials';
@@ -61,7 +62,12 @@ export async function POST(req: Request) {
     const maxTurns = Number.isFinite(configuredMaxTurns) && configuredMaxTurns > 0
       ? Math.floor(configuredMaxTurns)
       : 0;
-    if (maxTurns > 0 && getTurnCount(sessionId) >= maxTurns) {
+    const pending = getPendingTurn(sessionId);
+    if (manualRoll !== undefined && (!pending || body.rollId !== pending.rollId ||
+        (requestedAdventureId && requestedAdventureId !== state.adventureId))) {
+      return NextResponse.json({ ok: false, error: 'This dice request is no longer active.' }, { status: 409 });
+    }
+    if (manualRoll === undefined && maxTurns > 0 && getTurnCount(sessionId) >= maxTurns) {
       return NextResponse.json({
         ok: false,
         sessionId,
@@ -92,8 +98,8 @@ export async function POST(req: Request) {
     let systemPrompt = '';
 
     // Check if we are resolving a pending turn with a manual roll.
-    const pending = getPendingTurn(sessionId);
-    const bridgeDescription = manualRoll === undefined && !pending
+    if (manualRoll === undefined) clearPendingTurn(sessionId);
+    const bridgeDescription = manualRoll === undefined
       ? describeNightstoneBridge(state.adventureId, playerInput)
       : undefined;
     if (pending && manualRoll !== undefined) {
@@ -170,12 +176,13 @@ export async function POST(req: Request) {
       mode: fallbackUsed ? 'table_rules' : 'ai_director',
       aiUsed,
       fallbackUsed,
-      physicalDice,
+      physicalDice: physicalDice || manualRoll !== undefined,
       manualRoll,
     });
 
-    if (turn.pendingTurn) {
-      savePendingTurn(sessionId, { turn: turn.pendingTurn, aiUsed, fallbackUsed, systemPrompt });
+    const rollId = turn.pendingTurn ? randomUUID() : undefined;
+    if (turn.pendingTurn && rollId) {
+      savePendingTurn(sessionId, { rollId, turn: turn.pendingTurn, aiUsed, fallbackUsed, systemPrompt });
     }
 
     state = turn.state;
@@ -276,6 +283,7 @@ export async function POST(req: Request) {
       ...turn.response,
       narration,
       narrationWarnings,
+      rollId,
       sessionId,
       recap,
     };
