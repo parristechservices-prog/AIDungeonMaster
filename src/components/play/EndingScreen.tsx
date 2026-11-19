@@ -74,7 +74,8 @@ export function EndingScreen({ sessionId, adventureTitle, playerName, onNewGame,
           </div>
         )}
 
-        <div className="mt-6 flex flex-wrap gap-3">
+        {/* Stays in view even when the recap is long (e.g. a phone held sideways). */}
+        <div className="sticky bottom-0 -mx-6 -mb-6 mt-6 flex flex-wrap gap-3 border-t border-zinc-200 bg-white px-6 pb-6 pt-4 dark:border-zinc-700 dark:bg-zinc-900">
           <button
             type="button"
             onClick={handleNewGame}
