@@ -68,7 +68,7 @@ export function VoiceDm({ narration, busy, onDictate, onSend }: {
           signal: request.signal,
         });
         if (!response.ok) throw new Error(response.status === 401
-          ? 'Check your Natter passcode.' : 'Voice unavailable. The turn is saved in AI DM.');
+          ? 'Check your Natter passcode.' : 'Hosted narration is unavailable. Select Read with browser voice.');
         const clip = await response.blob();
         if (request.signal.aborted) return;
         url = URL.createObjectURL(clip);

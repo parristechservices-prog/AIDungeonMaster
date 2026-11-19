@@ -189,3 +189,5 @@ A live observation records a particular outcome. Local verification uses the rul
 | 50 | Open: live audio playback remains unverified. |
 
 The production retest of build `5bdf527` opened 12 disposable campaigns. None retained the original campaign and actor IDs across both reconnect and the first turn. The health check reported the configured database as unreachable. This blocks multi-turn acceptance in production and explains why a wizard came back as a fighter. The local two-server tests use a separate database and remain useful for verifying the application paths.
+
+- **50. Hosted-voice diagnostic:** The primary Natter endpoint returned 404. The backup returned a Vercel deployment authentication response. The app now identifies that failure and points to its built-in browser voice, which does not use Natter. Hosted audio playback remains blocked.
