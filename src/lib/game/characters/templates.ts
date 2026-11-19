@@ -25,14 +25,20 @@ const fighter: Character = {
   abilities: { str: 16, dex: 12, con: 14, int: 10, wis: 11, cha: 13 },
   skills: { athletics: 5, perception: 2, intimidation: 3, history: 2 },
   features: [
-    { id: 'second_wind', name: 'Second Wind', usesMax: 1, usesRemaining: 1, rechargeOn: 'short_rest' },
-    { id: 'action_surge', name: 'Action Surge', usesMax: 1, usesRemaining: 1, rechargeOn: 'short_rest' },
+    { id: 'fighting_style_dueling', name: 'Fighting Style: Dueling (+2 damage, one-handed melee)', usesMax: 0, usesRemaining: 0, rechargeOn: 'long_rest', passive: true, minLevel: 1 },
+    { id: 'second_wind', name: 'Second Wind', usesMax: 1, usesRemaining: 1, rechargeOn: 'short_rest', minLevel: 1 },
+    { id: 'action_surge', name: 'Action Surge', usesMax: 1, usesRemaining: 1, rechargeOn: 'short_rest', minLevel: 2 },
+    { id: 'improved_critical', name: 'Improved Critical (crit on 19-20)', usesMax: 0, usesRemaining: 0, rechargeOn: 'long_rest', passive: true, minLevel: 3 },
   ],
   spellSlots: {},
   knownSpells: [],
+  // 1d8 + 3 Str + 2 Dueling.
   weapon: { name: 'Longsword', attackBonus: 5, damage: '1d8+5' },
   gold: 0,
+  // AC 18 = Chain Mail (16) + Shield (+2).
   inventory: ['Chain Mail', 'Shield', 'Longsword', 'Light Crossbow', '20 Crossbow Bolts', 'Explorer\'s Pack'],
+  savingThrowProficiencies: ['str', 'con'],
+  hitDice: { die: 10, remaining: 3, max: 3 },
   deathSaves: { success: 0, failure: 0 },
   unconscious: false,
   conditions: [],

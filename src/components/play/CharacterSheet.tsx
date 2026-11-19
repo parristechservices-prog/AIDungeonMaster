@@ -159,7 +159,7 @@ export function CharacterSheet({ state }: Props) {
           {char.features.map((f) => (
             <div key={f.id} className="flex justify-between items-center text-xs">
               <span>{f.name}</span>
-              <span className="font-mono text-zinc-500">{f.usesRemaining}/{f.usesMax}</span>
+              <span className="font-mono text-zinc-500">{f.passive ? 'passive' : `${f.usesRemaining}/${f.usesMax}`}</span>
             </div>
           ))}
           {char.spells?.map((s) => (

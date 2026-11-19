@@ -69,15 +69,18 @@ describe('engine', () => {
     const fighter = combat.party[0];
     const worg = combat.monsters[0];
     const map = combat.combat.battleMap!;
+    // Beyond movement + reach (60 ft away, 30 ft speed): no attack, action kept.
+    // (A target within movement range is closed on and attacked: 5e move-then-attack.)
+    map.width = Math.max(map.width, 14);
     map.positions[fighter.id] = { x: 0, y: 0 };
-    map.positions[worg.id] = { x: 4, y: 0 };
+    map.positions[worg.id] = { x: 12, y: 0 };
 
     const result = resolveEngineRequest(combat, {
       kind: 'player_attack', characterId: fighter.id, targetId: worg.id, manualRoll: 20,
     });
-    expect(result.result).toMatchObject({ ok: false, summary: expect.stringContaining('outside your 5 ft melee reach') });
-    expect(result.state).toBe(combat);
-    expect(map.actors[fighter.id].actionUsed).toBe(false);
+    expect(result.result).toMatchObject({ ok: false, summary: expect.stringMatching(/still \d+ ft away/) });
+    expect(result.state.monsters[0].hp).toBe(worg.hp);
+    expect(result.state.combat.battleMap!.actors[fighter.id].actionUsed).toBeFalsy();
   });
 
   it('expires Dash and Disengage when the actor gets a fresh turn', () => {
@@ -217,8 +220,8 @@ describe('engine', () => {
     const state = createInitialState('mon-dmg');
     state.combat = { active: true, initiative: [], turnIndex: 0 };
     state.monsters = [{ id: 'wolf-1', name: 'Wolf', ac: 13, maxHp: 11, hp: 11, attackBonus: 4, damage: '2d4+2', conditions: [] }];
-    // First value picks the (only) conscious target, then d20=19 (hit), then two d4 rolls.
-    setRandomProvider(seq([0, 0.9, 0.5, 0.5]));
+    // First value picks the (only) conscious target, then d20=19 (a hit, not a crit), then two d4 rolls.
+    setRandomProvider(seq([0, 0.92, 0.5, 0.5]));
     const out = resolveEngineRequest(state, { kind: 'monster_turn' });
     expect(out.result.ok).toBe(true);
     expect(out.result.breakdown?.formula).toBe('2d4+2');

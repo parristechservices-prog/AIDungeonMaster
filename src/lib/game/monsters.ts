@@ -65,6 +65,10 @@ export const MONSTER_LIBRARY: Record<string, MonsterTemplate> = {
     attackBonus: 4,
     damage: '2d4+2',
     cr: 0.25,
+    speedFt: 40,
+    attacks: [
+      { id: 'bite', name: 'Bite', kind: 'melee', attackBonus: 4, damage: '2d4+2', damageType: 'piercing', reachFt: 5, onHitSave: { ability: 'str', dc: 11, condition: 'prone' } },
+    ],
     conditions: [],
   },
   worg: {
@@ -74,6 +78,11 @@ export const MONSTER_LIBRARY: Record<string, MonsterTemplate> = {
     attackBonus: 5,
     damage: '2d6+3',
     cr: 0.5,
+    size: 'large',
+    speedFt: 50,
+    attacks: [
+      { id: 'bite', name: 'Bite', kind: 'melee', attackBonus: 5, damage: '2d6+3', damageType: 'piercing', reachFt: 5, onHitSave: { ability: 'str', dc: 13, condition: 'prone' } },
+    ],
     conditions: [],
   },
   orc: {
@@ -187,6 +196,15 @@ export const MONSTER_LIBRARY: Record<string, MonsterTemplate> = {
     conditions: [],
   },
 };
+
+/** SRD Dexterity modifiers, used for monster initiative (5e: d20 + Dex). */
+const INITIATIVE_BONUS: Record<string, number> = {
+  goblin: 2, goblin_archer: 2, skeleton: 2, wolf: 2, worg: 1, orc: 1, bugbear: 2, hobgoblin: 1, bandit: 1,
+  ogre: -1, hill_giant: -1, stone_giant: 2, frost_giant: -1, fire_giant: -1, cloud_giant: 0, storm_giant: 2, ape: 2,
+};
+for (const [id, bonus] of Object.entries(INITIATIVE_BONUS)) {
+  if (MONSTER_LIBRARY[id] && MONSTER_LIBRARY[id].initiativeBonus === undefined) MONSTER_LIBRARY[id].initiativeBonus = bonus;
+}
 
 export function getMonster(templateId: string): Monster {
   const template = MONSTER_LIBRARY[templateId] || MONSTER_LIBRARY.goblin;

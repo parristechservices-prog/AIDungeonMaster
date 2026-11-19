@@ -7,6 +7,7 @@ import type { EngineRequest, EngineResult, RollBreakdown, OpportunityAttackOutco
 import { resolveSpatialRequest, type SpatialEngineResult } from './spatial';
 import { resolveTacticalRequest, lineOfSight, coverAcBonus, reachableCells, resolveMove, distanceFt, distanceBetweenActors, type TacticalEngineRequest, type TacticalEngineResult, type BattleMap, type CoverKind, type GridCoord } from './spatial/tactical';
 import { monsterAttacks } from '@/lib/game/monsters';
+import { abilityMod, getHitDice, saveBonus } from '@/lib/game/rules';
 import type { Monster, MonsterAttack } from '@/lib/game/types';
 
 let randomProvider = Math.random;
@@ -210,6 +211,14 @@ export function resolveEngineRequest(
       const target = state.monsters.find((m) => m.id === request.targetId && m.hp > 0);
       if (!target) return { state, result: { ok: false, summary: 'No valid target.' } };
 
+      // 5e move-then-attack: a melee attacker out of reach first spends their
+      // remaining movement to close in (as monster turns already do). If they
+      // still can't reach, they end up as close as possible with the action unspent.
+      const approach = approachForMelee(state, char.id, target.id, Boolean(request.ranged));
+      if (approach.result) return { state: approach.state, result: approach.result };
+      state = approach.state;
+      const approachNote = approach.note;
+
       const map = state.combat.battleMap;
       if (map && !request.ranged) {
         const distance = distanceBetweenActors(map, char.id, target.id);
@@ -281,6 +290,10 @@ export function resolveEngineRequest(
       if (hasCondition(target, 'paralyzed') || hasCondition(target, 'stunned') || hasCondition(target, 'unconscious')) advantage = true;
       if (hasCondition(target, 'restrained')) advantage = true;
       if (hasCondition(target, 'guiding_bolt_target')) advantage = true;
+      // Prone target: advantage for melee, disadvantage for ranged (5e).
+      if (hasCondition(target, 'prone')) {
+        if (request.ranged) disadvantage = true; else advantage = true;
+      }
 
       if (options?.physicalDice && request.manualRoll === undefined) {
         return {
@@ -308,12 +321,17 @@ export function resolveEngineRequest(
       // Crit on the die actually KEPT: with advantage keptRoll is the higher die,
       // with disadvantage the lower, so a natural 20 on a discarded die never crits.
       const naturalRoll = toHit.keptRoll ?? toHit.rolls[0];
-      const critical = naturalRoll >= (char.className === 'Fighter' && char.subclass === 'Champion' && char.level >= 3 ? 19 : 20);
-      toHit.ok = naturalRoll !== 1 && (toHit.total >= effectiveTargetAc || critical);
+      // 5e: a natural 1 always misses and a natural 20 always hits. A Champion's
+      // Improved Critical (level 3) makes a hitting 19 a critical hit too.
+      const champion = char.features.some((f) => f.id === 'improved_critical')
+        || (char.className === 'Fighter' && char.subclass === 'Champion' && char.level >= 3);
+      const critMin = champion ? 19 : 20;
+      toHit.ok = naturalRoll !== 1 && (naturalRoll === 20 || toHit.total >= effectiveTargetAc);
+      const critical = toHit.ok && naturalRoll >= critMin;
 
       if (!toHit.ok) {
         const coverNote = coverOutcome ? ` (${coverOutcome.kind.replace('_', '-')} cover: AC ${coverOutcome.baseAc}+${coverOutcome.bonus})` : '';
-        return { state: appendLog(nextState, `${char.name} missed ${target.name}.`), result: { ok: false, summary: `Attack missed${coverNote}.`, breakdown: toHit, cover: coverOutcome } };
+        return { state: appendLog(nextState, `${char.name} missed ${target.name}.`), result: { ok: false, summary: `${approachNote}Attack missed${coverNote}.`, breakdown: toHit, cover: coverOutcome } };
       }
       // Use the attacker's actual weapon damage; a crit doubles the dice (5e).
       const damage = rollFormula(critical ? critFormula(char.weapon.damage) : char.weapon.damage);
@@ -345,7 +363,7 @@ export function resolveEngineRequest(
       }
       return {
         state: appendLog(next, `${char.name} hit ${target.name} for ${damage.total}.`),
-        result: { ok: true, summary: `Hit ${target.name} for ${damage.total} damage.${coverOutcome ? ` (${coverOutcome.kind.replace('_', '-')} cover applied, AC ${coverOutcome.effectiveAc})` : ''}`, breakdown: damage, critical, cover: coverOutcome },
+        result: { ok: true, summary: `${approachNote}Hit ${target.name} for ${damage.total} damage.${coverOutcome ? ` (${coverOutcome.kind.replace('_', '-')} cover applied, AC ${coverOutcome.effectiveAc})` : ''}`, breakdown: damage, critical, cover: coverOutcome },
       };
     }
     case 'end_turn': {
@@ -353,12 +371,19 @@ export function resolveEngineRequest(
       const init = state.combat.initiative;
       if (init.length === 0) return { state, result: { ok: false, summary: 'No initiative order.' } };
       
+      // Skip creatures that are dead (monsters at 0 HP, characters with 3 failed saves).
+      const canAct = (id: string) => {
+        const m = state.monsters.find((x) => x.id === id);
+        if (m) return m.hp > 0;
+        const p = state.party.find((x) => x.id === id);
+        return p ? p.deathSaves.failure < 3 : false;
+      };
       let nextTurnIndex = (state.combat.turnIndex + 1) % init.length;
-      while (nextTurnIndex !== state.combat.turnIndex &&
-        state.monsters.some((monster) => monster.id === init[nextTurnIndex].actorId && monster.hp <= 0)) {
+      for (let step = 0; step < init.length && !canAct(init[nextTurnIndex].actorId); step++) {
         nextTurnIndex = (nextTurnIndex + 1) % init.length;
       }
       const nextActorId = init[nextTurnIndex].actorId;
+      const standing = isProne(state, nextActorId);
       
       const nextState: GameState = {
         ...state,
@@ -377,22 +402,39 @@ export function resolveEngineRequest(
                 ...actor,
                 actionUsed: false,
                 bonusActionUsed: false,
-                movementSpentFt: 0,
+                // Standing up from prone costs half your speed (5e).
+                movementSpentFt: standing ? Math.floor(actor.speedFt / 2) : 0,
                 extraMovementFt: 0,
-                disengaged: false,
                 reactionAvailable: true,
+                disengaged: false,
               },
             },
           };
         }
       }
-      return { state: appendLog(nextState, `Turn ended. It is now ${nextActorId}'s turn.`), result: { ok: true, summary: `Ended turn. It is now ${nextActorId}'s turn.` } };
+      const afterStand = standing ? removeConditionFrom(nextState, nextActorId, 'prone') : nextState;
+      const standNote = standing ? ' They stand up from prone, using half their movement.' : '';
+      return { state: appendLog(afterStand, `Turn ended. It is now ${nextActorId}'s turn.${standNote}`), result: { ok: true, summary: `Ended turn. It is now ${nextActorId}'s turn.${standNote}` } };
     }
     case 'monster_turn': {
-      const currentActor = state.combat.initiative[state.combat.turnIndex]?.actorId;
-      const attacker = state.monsters.find((m) => m.id === currentActor) ?? state.monsters.find((m) => m.hp > 0);
-      if (attacker && attacker.hp <= 0) return { state, result: { ok: false, summary: `${attacker.name} cannot take a turn after defeat.` } };
-      if (!attacker) return { state, result: { ok: true, summary: 'No monsters remain.' } };
+      // 5e turn order: the monster that acts is the one whose initiative turn it is.
+      const currentId = state.combat.active ? state.combat.initiative[state.combat.turnIndex]?.actorId : undefined;
+      const currentIsMonster = Boolean(currentId && state.monsters.some((m) => m.id === currentId));
+      // Only enforce strict order when monsters are actually in the initiative list
+      // (legacy saves and some authored setups track the party alone).
+      const orderHasMonsters = state.combat.initiative.some((e) => state.monsters.some((m) => m.id === e.actorId));
+      if (orderHasMonsters && currentId && !currentIsMonster && !request.monsterId) {
+        const pc = state.party.find((p) => p.id === currentId);
+        return { state, result: { ok: false, summary: `It is ${pc?.name ?? currentId}'s turn, not a monster's. End the turn first.` } };
+      }
+      const wantedId = request.monsterId ?? (currentIsMonster ? currentId : undefined);
+      const attacker = wantedId
+        ? state.monsters.find((m) => m.id === wantedId && m.hp > 0)
+        : state.monsters.find((m) => m.hp > 0);
+      if (!attacker) {
+        const anyAlive = state.monsters.some((m) => m.hp > 0);
+        return { state, result: { ok: true, summary: anyAlive ? 'That monster is down and cannot act.' : 'No monsters remain.' } };
+      }
 
       const consciousPlayers = state.party.filter((p) => !p.unconscious);
       const battleMap = state.combat.battleMap;
@@ -410,7 +452,11 @@ export function resolveEngineRequest(
       }
 
       // Spatial path: target the nearest conscious, placed player.
-      const placed = consciousPlayers.filter((p) => battleMap.positions[p.id]);
+      // Prefer creatures still standing; with none left, attack the downed (not dead).
+      const standing = consciousPlayers.filter((p) => battleMap.positions[p.id]);
+      const placed = standing.length > 0
+        ? standing
+        : state.party.filter((p) => battleMap.positions[p.id] && p.deathSaves.failure < 3);
       if (placed.length === 0) {
         return { state, result: { ok: true, summary: `${attacker.name} has no reachable target.` } };
       }
@@ -466,6 +512,8 @@ export function resolveEngineRequest(
       const char = state.party.find((p) => p.id === requestedCharacterId(request.characterId));
       if (!char) return { state, result: { ok: false, summary: 'Character not found.' } };
       if (!char.unconscious) return { state, result: { ok: false, summary: `${char.name} is not unconscious.` } };
+      if (char.deathSaves.failure >= 3) return { state, result: { ok: false, summary: `${char.name} is dead.` } };
+      if (char.stable) return { state, result: { ok: true, summary: `${char.name} is stable and does not roll death saves.` } };
       if (!isValidD20Roll(request.manualRoll) && request.manualRoll !== undefined) {
         return { state, result: { ok: false, summary: 'Manual roll must be an integer between 1 and 20.' } };
       }
@@ -518,8 +566,9 @@ export function resolveEngineRequest(
         msg += ' Is now stable.';
       }
 
+      const stable = unconscious && failure < 3 && msg.includes('Is now stable');
       let next = updateCharacterInParty(state, char.id, (c) => ({ 
-        ...c, hp, unconscious, deathSaves: { success, failure } 
+        ...c, hp, unconscious, stable, deathSaves: { success, failure } 
       }));
 
       const allDead = next.party.every(p => p.hp <= 0 && p.deathSaves.failure >= 3);
@@ -540,6 +589,7 @@ export function resolveEngineRequest(
       const idx = char.features.findIndex((f) => f.id === request.featureId);
       if (idx < 0) return { state, result: { ok: false, summary: `Feature ${request.featureId} not found.` } };
       const feature = char.features[idx];
+      if (feature.passive) return { state, result: { ok: false, summary: `${feature.name} is always active; it isn't used.` } };
       if (feature.usesRemaining <= 0) return { state, result: { ok: false, summary: `No uses of ${feature.name} remaining.` } };
       
       const map = state.combat.battleMap;
@@ -599,12 +649,12 @@ export function resolveEngineRequest(
       if (feature.id === 'second_wind') {
         breakdown = rollFormula('1d10', char.level);
         const hp = Math.min(char.maxHp, char.hp + breakdown.total);
-        next = updateCharacterInParty(nextState, char.id, (c) => ({ ...c, hp }));
-        summary = `${char.name} used Second Wind and restored ${breakdown.total} HP.`;
+        next = updateCharacterInParty(next, char.id, (c) => ({ ...c, hp }));
+        summary = `${char.name} used Second Wind (bonus action) and restored ${breakdown.total} HP.`;
       } else if (feature.id === 'lay_on_hands') {
           // Simplistic implementation for now
           const amount = Math.min(feature.usesRemaining, 5);
-          next = updateCharacterInParty(state, char.id, (c) => ({ ...c, hp: Math.min(c.maxHp, c.hp + amount) }));
+          next = updateCharacterInParty(next, char.id, (c) => ({ ...c, hp: Math.min(c.maxHp, c.hp + amount) }));
           summary = `${char.name} used Lay on Hands and restored ${amount} HP.`;
       }
 
@@ -729,27 +779,83 @@ export function resolveEngineRequest(
 
       return { state: appendLog(next, summary), result: { ok: true, summary, breakdown } };
     }
-    case 'short_rest': {
-      const party = state.party.map(p => ({
-        ...p,
-        features: p.features.map(f => f.rechargeOn === 'short_rest' ? { ...f, usesRemaining: f.usesMax } : f)
+    case 'use_item': {
+      const user = state.party.find((p) => p.id === requestedCharacterId(request.characterId));
+      if (!user) return { state, result: { ok: false, summary: 'Character not found.' } };
+      if (user.unconscious) return { state, result: { ok: false, summary: `${user.name} is unconscious and cannot use an item.` } };
+      const recipient = request.targetId ? state.party.find((p) => p.id === request.targetId) : user;
+      if (!recipient) return { state, result: { ok: false, summary: 'Target not found.' } };
+      if (recipient.deathSaves.failure >= 3) return { state, result: { ok: false, summary: `${recipient.name} is dead; a potion cannot help.` } };
+      const itemIndex = user.inventory.findIndex((i) => i.toLowerCase() === request.item.toLowerCase());
+      if (itemIndex < 0) return { state, result: { ok: false, summary: `${user.name} has no ${request.item}.` } };
+      const item = user.inventory[itemIndex];
+      if (!/healing potion|potion of healing/i.test(item)) {
+        return { state, result: { ok: false, summary: `${item} has no automatic rules effect; narrate how it is used.` } };
+      }
+      const map = state.combat.battleMap;
+      const actor = state.combat.active ? map?.actors[user.id] : undefined;
+      if (actor?.actionUsed) return { state, result: { ok: false, summary: `${user.name} has already used their action this turn.` } };
+      let next: GameState = actor && map
+        ? { ...state, combat: { ...state.combat, battleMap: { ...map, actors: { ...map.actors, [user.id]: { ...actor, actionUsed: true } } } } }
+        : state;
+      // Potion of Healing: 2d4 + 2. Drinking or administering it takes an action.
+      const heal = rollFormula('2d4+2');
+      next = updateCharacterInParty(next, user.id, (c) => ({ ...c, inventory: c.inventory.filter((_, i) => i !== itemIndex) }));
+      next = updateCharacterInParty(next, recipient.id, (c) => ({
+        ...c,
+        hp: Math.min(c.maxHp, Math.max(0, c.hp) + heal.total),
+        unconscious: false,
+        stable: false,
+        deathSaves: { success: 0, failure: 0 },
       }));
+      const summary = `${recipient.name} ${recipient.id === user.id ? 'drinks' : 'is given'} a Potion of Healing and regains ${heal.total} HP.`;
+      return { state: appendLog(next, summary), result: { ok: true, summary, breakdown: heal } };
+    }
+    case 'short_rest': {
+      // 5e: short-rest features recharge, and each conscious character may spend
+      // Hit Dice (one die + Con modifier each) to recover HP.
+      const notes: string[] = [];
+      const party = state.party.map((p) => {
+        const features = p.features.map((f) => (f.rechargeOn === 'short_rest' && !f.passive ? { ...f, usesRemaining: f.usesMax } : f));
+        if (p.unconscious || p.hp <= 0) return { ...p, features };
+        const dice = { ...getHitDice(p) };
+        let hp = p.hp;
+        let spent = 0;
+        while (hp < p.maxHp && dice.remaining > 0) {
+          hp = Math.min(p.maxHp, hp + Math.max(0, rollFormula(`1d${dice.die}`, 0).total + abilityMod(p.abilities.con)));
+          dice.remaining -= 1;
+          spent += 1;
+        }
+        if (spent > 0) notes.push(`${p.name} spends ${spent} Hit ${spent === 1 ? 'Die' : 'Dice'} and recovers ${hp - p.hp} HP`);
+        return { ...p, features, hp, hitDice: dice };
+      });
       const next = {
         ...state,
         party,
         player: party[0],
       };
-      return { state: appendLog(next, 'The party took a short rest.'), result: { ok: true, summary: 'Short rest complete.' } };
+      const restNote = notes.length ? ` ${notes.join('; ')}.` : '';
+      return { state: appendLog(next, `The party took a short rest.${restNote}`), result: { ok: true, summary: `Short rest complete.${restNote}` } };
     }
     case 'long_rest': {
-      const party = state.party.map(p => ({
+      const party = state.party.map(p => {
+        const dead = p.deathSaves.failure >= 3;
+        const dice = getHitDice(p);
+        return {
         ...p,
-        hp: p.maxHp,
+        // Resting does not raise the dead.
+        hp: dead ? p.hp : p.maxHp,
+        unconscious: dead ? p.unconscious : false,
+        stable: false,
+        deathSaves: dead ? p.deathSaves : { success: 0, failure: 0 },
+        // Regain spent Hit Dice up to half your total (minimum 1).
+        hitDice: { ...dice, remaining: Math.min(dice.max, dice.remaining + Math.max(1, Math.floor(dice.max / 2))) },
         features: p.features.map(f => ({ ...f, usesRemaining: f.usesMax })),
         spellSlots: Object.fromEntries(
           Object.entries(p.spellSlots).map(([lvl, s]) => [lvl, { ...s, remaining: s.max }])
         )
-      }));
+      };
+      });
       const next = {
         ...state,
         party,
@@ -1071,6 +1177,81 @@ function resolveSpatialCover(
   return { available: true, blocked: false, cover: sight.cover, bonus: coverAcBonus(sight.cover) };
 }
 
+const PLAYER_MELEE_REACH_FT = 5;
+
+/**
+ * Moves a party member into melee reach of their target before an attack, using
+ * only the movement they have left this turn. Returns `result` when the attack
+ * cannot happen (action already used, still out of reach, or dropped by an
+ * opportunity attack); otherwise returns the moved state plus a short note.
+ */
+export function approachForMelee(
+  state: GameState,
+  charId: string,
+  targetId: string,
+  ranged: boolean,
+): { state: GameState; note: string; result?: EngineResult } {
+  const map = state.combat.battleMap;
+  if (ranged || !state.combat.active || !map || !map.positions[charId] || !map.positions[targetId]) {
+    return { state, note: '' };
+  }
+  const startDist = distanceBetweenActors(map, charId, targetId) ?? Infinity;
+  if (startDist <= PLAYER_MELEE_REACH_FT) return { state, note: '' };
+
+  const char = state.party.find((p) => p.id === charId);
+  const target = state.monsters.find((m) => m.id === targetId);
+  const name = char?.name ?? 'The attacker';
+  const targetName = target?.name ?? 'the target';
+  if (map.actors[charId]?.actionUsed) {
+    return { state, note: '', result: { ok: false, summary: `${name} has already used their action this turn.` } };
+  }
+  const spentBefore = map.actors[charId]?.movementSpentFt ?? 0;
+
+  const dest = bestReachableCellWithinReach(map, charId, targetId, PLAYER_MELEE_REACH_FT);
+  if (dest) {
+    const moved = resolveMove(map, charId, dest);
+    if (moved.result.ok) {
+      let next: GameState = { ...state, combat: { ...state.combat, battleMap: moved.map } };
+      const spent = moved.result.movementSpentFt - spentBefore;
+      let note = `${name} moves ${spent} ft into reach of ${targetName}. `;
+      if (moved.result.opportunityAttacks.length > 0) {
+        const oa = resolveOpportunityAttacks(next, charId, moved.result.opportunityAttacks);
+        next = oa.state;
+        for (const o of oa.outcomes) {
+          const line = o.warning ?? `${o.attackerName}'s opportunity attack ${o.hit ? `hits ${o.targetName} for ${o.damage} damage` : `misses ${o.targetName}`}.`;
+          next = appendLog(next, line);
+          note += `${line} `;
+        }
+        if (next.party.find((p) => p.id === charId)?.unconscious) {
+          return { state: next, note, result: { ok: false, summary: `${note}${name} falls before reaching ${targetName}.` } };
+        }
+      }
+      return { state: appendLog(next, `${name} closes ${spent} ft on ${targetName}.`), note };
+    }
+  }
+
+  // Can't reach this turn: move as close as possible and keep the action.
+  const targetPos = map.positions[targetId];
+  let best: GridCoord | undefined;
+  let bestDist = startDist;
+  for (const cell of reachableCells(map, charId)) {
+    const d = distanceFt(map, cell.coord, targetPos);
+    if (d < bestDist) { best = cell.coord; bestDist = d; }
+  }
+  let next = state;
+  let spent = 0;
+  if (best) {
+    const moved = resolveMove(map, charId, best);
+    if (moved.result.ok) {
+      next = { ...state, combat: { ...state.combat, battleMap: moved.map } };
+      spent = moved.result.movementSpentFt - spentBefore;
+    }
+  }
+  const remaining = distanceBetweenActors(next.combat.battleMap ?? map, charId, targetId) ?? bestDist;
+  const summary = `${name} moves ${spent} ft toward ${targetName} but is still ${remaining} ft away, out of melee reach. Their action is unspent: they can Dash to cover more ground or end their turn.`;
+  return { state: appendLog(next, summary), note: '', result: { ok: false, summary } };
+}
+
 /** Least-cost reachable cell that puts the mover within `reachFt` of the target. */
 function bestReachableCellWithinReach(
   battleMap: BattleMap,
@@ -1117,6 +1298,12 @@ function resolveMonsterStrike(
   if (hasCondition(target, 'blinded')) advantage = true;
   if (hasCondition(target, 'paralyzed') || hasCondition(target, 'stunned') || hasCondition(target, 'unconscious')) advantage = true;
   if (hasCondition(target, 'restrained')) advantage = true;
+  // Prone target: melee attacks have advantage, ranged attacks disadvantage (5e).
+  if (hasCondition(target, 'prone')) {
+    if (attack.kind === 'ranged') disadvantage = true; else advantage = true;
+  }
+  // Attacks against an unconscious creature have advantage.
+  if (target.unconscious || target.hp <= 0) advantage = true;
 
   const baseAc = hasCondition(target, 'shielded') ? target.ac + 5 : target.ac;
   const coverBonus = opts.coverBonus ?? 0;
@@ -1127,8 +1314,11 @@ function resolveMonsterStrike(
 
   const toHit = rollFormula('1d20', attack.attackBonus, { advantage, disadvantage, bonusFormula });
   const natural = toHit.keptRoll ?? toHit.rolls[0];
-  const critical = natural === 20;
-  if (natural === 1 || (!critical && toHit.total < effectiveAc)) {
+  const hits = natural !== 1 && (natural === 20 || toHit.total >= effectiveAc);
+  // A melee hit on an unconscious creature within 5 ft is automatically a critical hit.
+  const meleeOnDowned = attack.kind === 'melee' && (target.unconscious || target.hp <= 0);
+  const critical = hits && (natural === 20 || meleeOnDowned);
+  if (!hits) {
     return {
       state: appendLog(state, `${attacker.name} missed ${target.name}.`),
       result: { ok: false, summary: `${attacker.name} missed${coverNote}.`, breakdown: toHit, cover },
@@ -1136,24 +1326,57 @@ function resolveMonsterStrike(
   }
 
   if (target.unconscious || target.hp <= 0) {
-    const failure = Math.min(3, target.deathSaves.failure + 2);
+    // Damage at 0 HP: one death-save failure, or two on a critical hit (5e).
+    const failure = Math.min(3, target.deathSaves.failure + (critical ? 2 : 1));
     const died = failure >= 3;
-    let next = updateCharacterInParty(state, target.id, (c) => ({ ...c, deathSaves: { ...c.deathSaves, failure } }));
+    let next = updateCharacterInParty(state, target.id, (c) => ({ ...c, stable: false, deathSaves: { ...c.deathSaves, failure } }));
     if (died && next.party.every((p) => p.hp <= 0 && p.deathSaves.failure >= 3)) next = { ...next, sceneId: 'ending' };
-    const note = died ? `${target.name} has died!` : `${target.name} suffers two death-save failures (${failure}/3).`;
+    const note = died
+      ? `${target.name} has died!`
+      : `${target.name} suffers ${critical ? 'two death-save failures' : 'a death-save failure'} (${failure}/3).`;
     return {
       state: appendLog(next, `${attacker.name} strikes the fallen ${target.name}. ${note}`),
       result: { ok: true, summary: `${attacker.name} strikes the fallen ${target.name}. ${note}`, breakdown: toHit },
     };
   }
 
+  // A critical hit doubles the damage dice (5e).
   const dmg = rollFormula(critical ? critFormula(attack.damage) : attack.damage);
   const hp = Math.max(0, target.hp - dmg.total);
   const unconscious = hp === 0;
-  const next = updateCharacterInParty(state, target.id, (c) => ({ ...c, hp, unconscious }));
+  // Massive damage: if the damage left over after dropping to 0 HP equals or
+  // exceeds the character's HP maximum, they die outright.
+  const instantDeath = unconscious && dmg.total - target.hp >= target.maxHp;
+  let next = updateCharacterInParty(state, target.id, (c) => ({
+    ...c,
+    hp,
+    unconscious,
+    stable: false,
+    deathSaves: instantDeath ? { success: 0, failure: 3 } : c.deathSaves,
+  }));
+  const critNote = critical ? ' Critical hit!' : '';
+  let fallNote = '';
+  if (instantDeath) {
+    fallNote = ` ${target.name} is killed outright by massive damage!`;
+    if (next.party.every((p) => p.hp <= 0 && p.deathSaves.failure >= 3)) next = { ...next, sceneId: 'ending' };
+  } else if (unconscious) {
+    fallNote = ` ${target.name} has fallen unconscious!`;
+  }
+
+  // Riders such as a worg's bite: Strength save or be knocked prone.
+  let riderNote = '';
+  if (attack.onHitSave && !unconscious && !hasCondition(target, attack.onHitSave.condition)) {
+    const save = rollFormula('1d20', saveBonus(target, attack.onHitSave.ability));
+    if (save.total < attack.onHitSave.dc) {
+      next = updateCharacterInParty(next, target.id, (c) => ({ ...c, conditions: [...c.conditions, attack.onHitSave!.condition] }));
+      riderNote = ` ${target.name} fails a DC ${attack.onHitSave.dc} ${attack.onHitSave.ability.toUpperCase()} save (${save.total}) and is knocked ${attack.onHitSave.condition}!`;
+    } else {
+      riderNote = ` ${target.name} makes the DC ${attack.onHitSave.dc} ${attack.onHitSave.ability.toUpperCase()} save (${save.total}) and stays standing.`;
+    }
+  }
   return {
-    state: appendLog(next, `${attacker.name} hit ${target.name} for ${dmg.total}.${unconscious ? ` ${target.name} has fallen unconscious!` : ''}`),
-    result: { ok: true, summary: `${attacker.name} hit ${target.name}.${coverNote}${unconscious ? ` ${target.name} is unconscious!` : ''}`, breakdown: dmg, cover },
+    state: appendLog(next, `${attacker.name} hit ${target.name} for ${dmg.total}.${critNote}${fallNote}${riderNote}`),
+    result: { ok: true, summary: `${attacker.name} hit ${target.name} for ${dmg.total}.${critNote}${coverNote}${fallNote}${riderNote}`, breakdown: dmg, cover, critical },
   };
 }
 
@@ -1181,6 +1404,20 @@ function tacticalResultToEngineResult(tactical: TacticalEngineResult): EngineRes
     case 'check_line_of_sight':
       return { ok: tactical.ok, summary: tactical.ok ? `Line of sight clear${tactical.cover && tactical.cover !== 'none' ? ` (${tactical.cover} cover)` : ''}.` : `No clear shot: ${tactical.reason}.`, tactical };
   }
+}
+
+function isProne(state: GameState, actorId: string): boolean {
+  const pc = state.party.find((p) => p.id === actorId);
+  if (pc) return hasCondition(pc, 'prone') && !pc.unconscious;
+  const m = state.monsters.find((x) => x.id === actorId);
+  return Boolean(m && hasCondition(m, 'prone'));
+}
+
+function removeConditionFrom(state: GameState, actorId: string, condition: 'prone'): GameState {
+  if (state.party.some((p) => p.id === actorId)) {
+    return updateCharacterInParty(state, actorId, (c) => ({ ...c, conditions: c.conditions.filter((x) => x !== condition) }));
+  }
+  return { ...state, monsters: state.monsters.map((m) => (m.id === actorId ? { ...m, conditions: m.conditions.filter((x) => x !== condition) } : m)) };
 }
 
 function appendLog(state: GameState, line: string): GameState {
@@ -1234,7 +1471,7 @@ export function repairMissingEncounter(state: GameState): GameState {
   const currentActor = state.combat.initiative[state.combat.turnIndex]?.actorId;
   const initiative = [
     ...state.combat.initiative,
-    ...monsters.map((monster) => ({ actorId: monster.id, roll: d20() + 1 })),
+    ...monsters.map((monster) => ({ actorId: monster.id, roll: d20() + (monster.initiativeBonus ?? 0) })),
   ].sort((a, b) => b.roll - a.roll);
   const draft = {
     ...state, monsters,
@@ -1246,7 +1483,7 @@ export function repairMissingEncounter(state: GameState): GameState {
 function rollInitiative(state: GameState): { actorId: string; roll: number }[] {
   return [
     ...state.party.map((p) => ({ actorId: p.id, roll: d20() + Math.floor((p.abilities.dex - 10) / 2) })),
-    ...state.monsters.map((m) => ({ actorId: m.id, roll: d20() + 1 })),
+    ...state.monsters.map((m) => ({ actorId: m.id, roll: d20() + (m.initiativeBonus ?? 0) })),
   ].sort((a, b) => b.roll - a.roll);
 }
 

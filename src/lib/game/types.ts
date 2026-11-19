@@ -21,7 +21,17 @@ export type Character = {
   proficiencyBonus: number;
   abilities: Record<'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha', number>;
   skills: Partial<Record<string, number>>;
-  features: { id: string; name: string; usesMax: number; usesRemaining: number; rechargeOn: 'short_rest' | 'long_rest' }[];
+  features: {
+    id: string;
+    name: string;
+    usesMax: number;
+    usesRemaining: number;
+    rechargeOn: 'short_rest' | 'long_rest';
+    /** Always-on feature with no uses (e.g. Fighting Style, Improved Critical). */
+    passive?: boolean;
+    /** Class level at which the feature is gained (used when scaling templates). */
+    minLevel?: number;
+  }[];
   spells?: { id: string; name: string; level: number; school?: string; description?: string }[];
   spellSlots: Record<number, { max: number; remaining: number }>;
   knownSpells?: string[];
@@ -29,9 +39,17 @@ export type Character = {
   gold: number;
   inventory: string[];
   deathSaves: { success: number; failure: number };
+  /** At 0 HP but stabilised: no more death saves until damaged or healed. */
+  stable?: boolean;
+  /** Saving throws the character is proficient in (defaults by class when omitted). */
+  savingThrowProficiencies?: Ability[];
+  /** Hit Dice for short-rest healing (defaults by class and level when omitted). */
+  hitDice?: { die: number; remaining: number; max: number };
   unconscious: boolean;
   conditions: Condition[];
 };
+
+export type Ability = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha';
 
 export type MonsterAttackKind = 'melee' | 'ranged';
 
@@ -48,6 +66,8 @@ export type MonsterAttack = {
   rangeFt?: number;
   /** Long range in feet (tracked; no disadvantage applied yet). */
   longRangeFt?: number;
+  /** Rider on a hit, e.g. a worg's bite: Strength save or be knocked prone. */
+  onHitSave?: { ability: Ability; dc: number; condition: Condition };
 };
 
 export type Monster = {
@@ -67,6 +87,8 @@ export type Monster = {
   speedFt?: number;
   /** Tactical footprint size (defaults to medium / single cell). */
   size?: CreatureSize;
+  /** Initiative modifier (the creature's Dex modifier; defaults to +0). */
+  initiativeBonus?: number;
   conditions: Condition[];
 };
 

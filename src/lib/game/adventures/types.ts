@@ -25,6 +25,8 @@ export type Adventure = {
   playConfig?: {
     defaultLevel: number;
     partySize: number;
+    /** Trim fixed book encounters to a "hard" XP budget for parties under four. */
+    scaleFixedEncounters?: boolean;
     defaultDifficulty: Difficulty;
     spawnMonstersOnCombatOnly: boolean;
     preferredMonsterTemplates: string[];

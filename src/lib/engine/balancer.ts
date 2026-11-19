@@ -78,3 +78,40 @@ export function buildBalancedEncounter(
 
   return monsters;
 }
+
+/** DMG encounter multiplier by number of monsters. */
+function encounterMultiplier(count: number): number {
+  if (count <= 1) return 1;
+  if (count === 2) return 1.5;
+  if (count <= 6) return 2;
+  if (count <= 10) return 2.5;
+  return 3;
+}
+
+/** Adjusted XP of a group of monsters (DMG: total XP x group multiplier). */
+export function adjustedEncounterXp(monsters: Monster[]): number {
+  const total = monsters.reduce((sum, m) => sum + (CR_TO_XP[MONSTER_LIBRARY[templateIdOf(m)]?.cr ?? -1] ?? 0), 0);
+  return total * encounterMultiplier(monsters.length);
+}
+
+function templateIdOf(m: Monster): string {
+  const match = Object.keys(MONSTER_LIBRARY).find((id) => m.id === id || m.id.startsWith(`${id}-`));
+  return match ?? m.id;
+}
+
+/**
+ * Book encounters assume a party of four. For smaller parties, drop monsters
+ * (from the end of the list) until the adjusted XP fits the given difficulty
+ * budget, always keeping at least one.
+ */
+export function scaleEncounterForParty(
+  monsters: Monster[],
+  playerLevel: number,
+  partySize: number,
+  cap: Difficulty = 'hard',
+): Monster[] {
+  const budget = (XP_THRESHOLDS[playerLevel] || XP_THRESHOLDS[1])[cap] * partySize;
+  const kept = [...monsters];
+  while (kept.length > 1 && adjustedEncounterXp(kept) > budget) kept.pop();
+  return kept;
+}
