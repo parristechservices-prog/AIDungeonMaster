@@ -27,7 +27,10 @@ export function buildDmSystemPromptV05(
     `- ${persona.description}`,
     '- Descriptive and atmospheric narration.',
     '- Fair but firm adjudicator of rules.',
-    '- Encourages creative player solutions.',
+    '- Suggested actions are examples. Consider any plausible approach using the scene, available gear, abilities, and established facts.',
+    '- Clarify genuinely ambiguous intent. If the action is possible and low risk, resolve it without a check. When the outcome is uncertain, choose a relevant check and describe meaningful stakes.',
+    '- A successful check resolves the attempted action only. Advance the scene explicitly only when its objective is actually met. Confirm travel with the movement engine.',
+    '- If a tactic is impossible, explain the concrete obstacle and what the character can observe or try from their current position.',
     '',
     ...(adventureCampaignGuide
       ? [

@@ -43,7 +43,7 @@ function requestedCharacterId(characterId?: string): string | undefined {
 export function resolveEngineRequest(
   state: GameState,
   request: EngineRequest,
-  options?: { physicalDice?: boolean }
+  options?: { physicalDice?: boolean; advanceOnSkillSuccess?: boolean }
 ): { state: GameState; result: EngineResult } {
   switch (request.kind) {
     case 'move_area':
@@ -161,7 +161,7 @@ export function resolveEngineRequest(
       breakdown.ok = ok;
       const inCombatScene =
         getSceneKind(getAdventure(state.adventureId), state.sceneId) === 'combat';
-      const next = ok && !inCombatScene ? advanceScene(state) : state;
+      const next = ok && !inCombatScene && options?.advanceOnSkillSuccess !== false ? advanceScene(state) : state;
       return {
         state: appendLog(next, `${char.name}: ${request.skill} check ${ok ? 'passed' : 'failed'} (${breakdown.total} vs DC ${request.dc})`),
         result: { ok, summary: `${request.reason}: ${ok ? 'success' : 'failure'}`, breakdown },

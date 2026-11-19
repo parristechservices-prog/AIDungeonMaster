@@ -16,7 +16,8 @@ import { getDb, hasDb } from '@/lib/db/client';
 const sessions = new Map<string, GameState>();
 const turnCounters = new Map<string, number>();
 const recapsCache = new Map<string, PartyQuestRecap[]>();
-const pendingTurns = new Map<string, unknown>();
+type PendingTurn = { turn: import('@/lib/llm/contracts').DmTurn; aiUsed: boolean; fallbackUsed: boolean; systemPrompt: string };
+const pendingTurns = new Map<string, PendingTurn>();
 
 /** Applies legacy field migrations to a loaded state blob, then normalizes it. */
 function migrateLoaded(sessionId: string, raw: unknown): GameState {
@@ -134,11 +135,11 @@ export async function saveRecap(sessionId: string, recap: PartyQuestRecap): Prom
   }
 }
 
-export function savePendingTurn(sessionId: string, turn: unknown): void {
+export function savePendingTurn(sessionId: string, turn: PendingTurn): void {
   pendingTurns.set(sessionId, turn);
 }
 
-export function getPendingTurn(sessionId: string): unknown {
+export function getPendingTurn(sessionId: string): PendingTurn | undefined {
   return pendingTurns.get(sessionId);
 }
 

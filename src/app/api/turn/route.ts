@@ -97,7 +97,7 @@ export async function POST(req: Request) {
       ? describeNightstoneBridge(state.adventureId, playerInput)
       : undefined;
     if (pending && manualRoll !== undefined) {
-      rawTurn = pending;
+      ({ turn: rawTurn, aiUsed, fallbackUsed, systemPrompt } = pending);
       clearPendingTurn(sessionId);
     } else if (bridgeDescription) {
       rawTurn = { engineRequests: [], narration: bridgeDescription, needsResultBeforeNarrating: false };
@@ -174,13 +174,13 @@ export async function POST(req: Request) {
       manualRoll,
     });
 
-    if (turn.response.needsManualRoll) {
-      savePendingTurn(sessionId, rawTurn);
+    if (turn.pendingTurn) {
+      savePendingTurn(sessionId, { turn: turn.pendingTurn, aiUsed, fallbackUsed, systemPrompt });
     }
 
     state = turn.state;
     let narration = turn.response.narration;
-    if (!fallbackUsed && aiUsed && turn.response.needsResultBeforeNarrating && systemPrompt) {
+    if (!turn.response.needsManualRoll && !fallbackUsed && aiUsed && turn.response.needsResultBeforeNarrating && systemPrompt) {
       const visibleState = `Party: ${state.party.map((p) => `${p.name} (${p.hp}/${p.maxHp})`).join('; ')}.`;
       const narrationRewrite = await generateNarration({
         systemPrompt,

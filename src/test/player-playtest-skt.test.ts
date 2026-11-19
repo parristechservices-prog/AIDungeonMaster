@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { runTurn } from '@/lib/orchestrator/run-turn';
 import { createInitialState, advanceScene } from '@/lib/game/state';
 import { deriveDmTurnFromInput } from '@/lib/orchestrator/mock-dm';
 import { resetServerAdventureRegistry } from '@/lib/game/adventures/registry.server';
@@ -82,4 +83,50 @@ describe('SKT — movement legality', () => {
     const turn = deriveDmTurnFromInput(next, 'how far is the drawbridge');
     expect(turn.narration).toMatch(/\d+\s*feet/);
   });
+});
+
+describe('Nightstone open-ended Director actions', () => {
+  const mode = { mode: 'ai_director', aiUsed: true, fallbackUsed: false } as const;
+
+  it('lets a successful improvised check reveal something without changing scenes', () => {
+    const state = nightstone();
+    const turn = runTurn(state, {
+      narration: 'You use a bit of chalk to mark the tracks.',
+      engineRequests: [{ kind: 'skill_check', characterId: state.activeCharacterId, skill: 'investigation', dc: 10, reason: 'Compare the tracks' }],
+    }, { ...mode, manualRoll: 20 });
+    expect(turn.response.engineResults[0]?.ok).toBe(true);
+    expect(turn.state.sceneId).toBe(state.sceneId);
+  });
+
+  it('does not move or advance after a failed attempt to sneak', () => {
+    const state = nightstone();
+    const turn = runTurn(state, {
+      narration: 'You try using the shadows to reach the square.',
+      engineRequests: [
+        { kind: 'skill_check', characterId: state.activeCharacterId, skill: 'stealth', dc: 15, reason: 'Sneak into the square' },
+        { kind: 'move_area', actorId: state.activeCharacterId, targetAreaId: 'south_square' },
+        { kind: 'advance_scene' },
+      ],
+    }, { ...mode, manualRoll: 1 });
+    expect(turn.response.engineResults).toHaveLength(1);
+    expect(turn.response.engineResults[0]?.ok).toBe(false);
+    expect(turn.state.sceneId).toBe(state.sceneId);
+    expect(turn.state.exploration?.locations).toEqual(state.exploration?.locations);
+  });
+});
+
+it('resumes a compound action at the pending die without replaying earlier requests', () => {
+  const state = nightstone();
+  const mode = { mode: 'ai_director', aiUsed: true, fallbackUsed: false, physicalDice: true } as const;
+  const check = { kind: 'skill_check', characterId: state.activeCharacterId, skill: 'investigation', dc: 10, reason: 'Examine the debris' };
+  const first = runTurn(state, {
+    narration: 'You look for a way through.',
+    engineRequests: [{ kind: 'query_current_area', actorId: state.activeCharacterId }, check, check],
+  }, mode);
+  expect(first.response.engineResults).toHaveLength(2);
+  expect(first.pendingTurn?.engineRequests).toEqual([check, check]);
+  const resumed = runTurn(first.state, first.pendingTurn, { ...mode, manualRoll: 20 });
+  expect(resumed.response.engineResults.map(result => result.kind)).toEqual(['skill_check', 'skill_check']);
+  expect(resumed.response.needsManualRoll).toBe(true);
+  expect(resumed.pendingTurn?.engineRequests).toEqual([check]);
 });

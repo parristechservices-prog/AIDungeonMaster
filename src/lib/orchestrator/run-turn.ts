@@ -101,7 +101,7 @@ export function runTurn(
   state: GameState,
   rawTurn: unknown,
   context: { mode: 'ai_director' | 'table_rules'; aiUsed: boolean; fallbackUsed: boolean; physicalDice?: boolean; manualRoll?: number },
-): { state: GameState; response: TurnResult } {
+): { state: GameState; response: TurnResult; pendingTurn?: DmTurn } {
   const prevScene = state.sceneId;
   const narrationState = state;
   const parsed = dmTurnSchema.safeParse(rawTurn);
@@ -118,8 +118,14 @@ export function runTurn(
   let needsManualRoll = false;
   let manualRollContext: TurnResult['manualRollContext'] | undefined;
   let skipConsequencesAfterFailedCheck = false;
+  let pendingRequests: DmTurn['engineRequests'] | undefined;
+  let suppliedRoll = context.manualRoll;
 
-  for (const request of limitedRequests) {
+  for (const [index, request] of limitedRequests.entries()) {
+    // The Director separates resolving an approach from progressing the story.
+    if (request.kind === 'advance_scene' && (state.sceneId !== prevScene || state.combat.active)) continue;
+    if (context.mode === 'ai_director' && skipConsequencesAfterFailedCheck &&
+        ['advance_scene', 'complete_objective', 'move_area'].includes(request.kind)) continue;
     if (
       skipConsequencesAfterFailedCheck &&
       ['update_npc', 'add_canon_fact', 'update_inventory', 'apply_condition', 'remove_condition'].includes(request.kind)
@@ -128,13 +134,15 @@ export function runTurn(
     }
 
     const manualRoll =
-      context.manualRoll !== undefined &&
+      suppliedRoll !== undefined &&
       (request.kind === 'skill_check' || request.kind === 'player_attack')
-        ? context.manualRoll
+        ? suppliedRoll
         : undefined;
 
+    if (manualRoll !== undefined) suppliedRoll = undefined;
     const resolved = resolveEngineRequest(state, toEngineRequest(request, manualRoll), {
       physicalDice: context.physicalDice,
+      advanceOnSkillSuccess: context.mode === 'table_rules',
     });
     state = resolved.state;
     engineResults.push({ kind: request.kind, ...resolved.result });
@@ -145,6 +153,7 @@ export function runTurn(
     if (resolved.result.needsManualRoll) {
       needsManualRoll = true;
       manualRollContext = resolved.result.manualRollContext;
+      pendingRequests = limitedRequests.slice(index);
       break; // Stop processing further requests if we need a roll
     }
   }
@@ -188,6 +197,7 @@ export function runTurn(
 
   return {
     state,
+    pendingTurn: pendingRequests ? { ...turn, engineRequests: pendingRequests } : undefined,
     response: {
       ok: true,
       mode: context.mode,
