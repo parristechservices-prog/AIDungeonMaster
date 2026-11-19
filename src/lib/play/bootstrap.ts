@@ -81,7 +81,7 @@ export function readPlayBootstrap(): PlayBootstrap {
           sessionId: id,
           adventureId: aid,
           adventureTitle: snapshot.adventureTitle ?? getAdventure(aid).title,
-          history: [defaultStarter(aid), '(Resumed from last visit.)'],
+          history: ['(Resumed from last visit.)', snapshot.narration].filter(Boolean),
           state: migratedState,
           sceneId: snapshot.sceneId,
           sceneGoal: snapshot.sceneGoal,
