@@ -1,7 +1,9 @@
 const origin = 'https://ai-dungeon-master-azure.vercel.app';
+// natter-narration-backup currently serves the narrate endpoint; natter-two's
+// production deploy doesn't, so try the working one first.
 const endpoints = [
-  'https://natter-two.vercel.app/api/narrate',
   'https://natter-narration-backup.vercel.app/api/narrate',
+  'https://natter-two.vercel.app/api/narrate',
 ];
 
 export async function POST(request: Request) {
