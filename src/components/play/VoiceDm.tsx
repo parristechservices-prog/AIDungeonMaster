@@ -16,6 +16,14 @@ type RecognitionWindow = Window & {
   webkitSpeechRecognition?: new () => Recognition;
 };
 
+function spokenNarration(text: string): string {
+  return text
+    .replace(/\\([*_-])/g, '$1')
+    .replace(/\*{2,3}/g, '')
+    .replace(/(^|[\s(])\*([^*\n]+)\*(?=$|[\s.,!?;:)])/g, '$1$2')
+    .replace(/^\s*[-*+]\s+/gm, '');
+}
+
 export function VoiceDm({ narration, busy, onDictate, onSend }: {
   narration: { text: string } | null;
   busy: boolean;
@@ -56,7 +64,7 @@ export function VoiceDm({ narration, busy, onDictate, onSend }: {
         const response = await fetch('/api/voice-narration', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ voice, passcode, narration: narration.text.slice(0, 2000) }),
+          body: JSON.stringify({ voice, passcode, narration: spokenNarration(narration.text).slice(0, 2000) }),
           signal: request.signal,
         });
         if (!response.ok) throw new Error(response.status === 401
@@ -99,7 +107,7 @@ export function VoiceDm({ narration, busy, onDictate, onSend }: {
       return;
     }
     audio.current?.pause();
-    const line = new SpeechSynthesisUtterance(narration.text);
+    const line = new SpeechSynthesisUtterance(spokenNarration(narration.text));
     line.lang = 'en-AU';
     browserSpeech.current = line;
     const finish = (message: string) => {
