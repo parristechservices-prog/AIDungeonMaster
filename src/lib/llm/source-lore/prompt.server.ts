@@ -40,7 +40,9 @@ export async function buildSourceLoreSection(
 
   if (hits.length === 0 && entities.length === 0) return EMPTY;
 
-  const blocks: string[] = ['', `## OFFICIAL SOURCE — ${loaded.index.title} (authoritative; defer to this)`];
+  const blocks: string[] = ['', `## OFFICIAL SOURCE — ${loaded.index.title} (DM-only canonical reference)`];
+
+  blocks.push('Keep these notes private. Reveal only what the party has learned or can perceive from its current position. Do not expose hidden occupants, room contents, treasure, or future events from these notes unless discovered in play.');
 
   if (entities.length > 0) {
     blocks.push(
