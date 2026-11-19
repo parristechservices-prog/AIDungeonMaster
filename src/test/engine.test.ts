@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { listAdventures } from '@/lib/game/adventures/registry.server';
 import { createInitialState } from '@/lib/game/state';
 import { repairMissingEncounter, resolveEngineRequest, setRandomProvider, resetRandomProvider } from '@/lib/engine';
 import { createExplorationState, type AreaGraph } from '@/lib/engine/spatial';
@@ -49,6 +50,25 @@ describe('engine', () => {
     expect(repaired.monsters).toHaveLength(2);
     expect(repaired.combat.initiative[repaired.combat.turnIndex]).toEqual(partyRoll);
     expect(repairMissingEncounter(repaired)).toBe(repaired);
+  });
+
+  const registeredEncounters = listAdventures().flatMap((adventure) =>
+    adventure.sceneOrder.filter((sceneId) => adventure.scenes[sceneId]?.kind === 'combat')
+      .map((sceneId) => [adventure.id, sceneId] as const),
+  );
+
+  it.each(registeredEncounters)('matches enemies, initiative and map tokens for %s / %s', (adventureId, sceneId) => {
+    const state = createInitialState('encounter-matrix', { adventureId });
+    state.sceneId = sceneId;
+    state.monsters = [];
+
+    const { state: next, result } = resolveEngineRequest(state, { kind: 'start_combat' });
+    expect(result.ok).toBe(true);
+    expect(next.sceneId).toBe(sceneId);
+    expect(next.monsters.length).toBeGreaterThan(0);
+    const combatantIds = [...next.party, ...next.monsters].map((actor) => actor.id).sort();
+    expect(next.combat.initiative.map((entry) => entry.actorId).sort()).toEqual(combatantIds);
+    expect(Object.keys(next.combat.battleMap?.positions ?? {}).sort()).toEqual(combatantIds);
   });
 
   it('handles spell slots correctly', () => {

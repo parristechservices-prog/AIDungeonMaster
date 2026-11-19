@@ -177,8 +177,8 @@ export function resolveEngineRequest(
       const combatSceneId = getSceneKind(adventure, state.sceneId) === 'combat'
         ? state.sceneId
         : adventure.sceneOrder.find((id) => adventure.scenes[id]?.kind === 'combat') ?? 'combat';
-      const monsters = adventure.sceneEncounters?.[combatSceneId] &&
-          (state.sceneId !== combatSceneId || state.monsters.length === 0)
+      const monsters = getSceneKind(adventure, combatSceneId) === 'combat' &&
+          (state.monsters.length === 0 || (state.sceneId !== combatSceneId && adventure.sceneEncounters?.[combatSceneId]))
         ? resolveCombatMonsters(adventure, combatSceneId, state.party[0].level)
         : state.monsters;
       if (!monsters.some((monster) => monster.hp > 0)) {
@@ -1181,8 +1181,9 @@ function d20() {
 export function repairMissingEncounter(state: GameState): GameState {
   if (!state.combat.active || state.monsters.length > 0 || !state.party[0]) return state;
   const adventure = getAdventure(state.adventureId);
-  if (!adventure.sceneEncounters?.[state.sceneId]?.templates?.length) return state;
+  if (getSceneKind(adventure, state.sceneId) !== 'combat') return state;
   const monsters = resolveCombatMonsters(adventure, state.sceneId, state.party[0].level);
+  if (monsters.length === 0) return state;
   const currentActor = state.combat.initiative[state.combat.turnIndex]?.actorId;
   const initiative = [
     ...state.combat.initiative,
