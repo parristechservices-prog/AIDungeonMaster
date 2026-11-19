@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { runTurn } from '@/lib/orchestrator/run-turn';
 import { createInitialState, advanceScene } from '@/lib/game/state';
 import { deriveDmTurnFromInput } from '@/lib/orchestrator/mock-dm';
@@ -96,6 +96,27 @@ describe('Nightstone open-ended Director actions', () => {
     }, { ...mode, manualRoll: 20 });
     expect(turn.response.engineResults[0]?.ok).toBe(true);
     expect(turn.state.sceneId).toBe(state.sceneId);
+  });
+
+  it('keeps two heroes of the same class separate when only one scouts ahead', () => {
+    vi.spyOn(Date, 'now').mockReturnValueOnce(12345).mockReturnValueOnce(12345);
+    const state = createInitialState('nightstone-two-fighters', {
+      adventureId: 'skt-nightstone-chapter1',
+      characterIds: ['fighter', 'fighter'],
+      playerNames: ['Arden', 'Bryn'],
+    });
+    vi.restoreAllMocks();
+    const [first, second] = state.party;
+    expect(first.id).not.toBe(second.id);
+    const turn = runTurn(state, {
+      narration: 'Bryn scouts ahead while Arden waits.',
+      engineRequests: [{ kind: 'move_area', actorId: second.id, targetAreaId: 'drawbridge' }],
+    }, mode);
+    expect(turn.response.engineResults).toMatchObject([{ kind: 'move_area', ok: true }]);
+    expect(turn.state.exploration?.locations).toEqual({
+      [first.id]: 'nightstone_road',
+      [second.id]: 'drawbridge',
+    });
   });
 
   it('does not resolve a follow-up stealth check at an unreachable destination', () => {

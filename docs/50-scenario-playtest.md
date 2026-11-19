@@ -110,3 +110,7 @@ These are direct production API observations from disposable games. The checkbox
 - **19, 23–26, 35:** Tried to reach the square and start the worg encounter. A compound request attempted to resolve stealth after movement to the square failed. Added an engine regression that stops the remaining steps after a failed exploration move in AI Director mode. Initiative and targeting still need a fresh live run once the session survives between requests.
 - **37–38:** A production API test recovered a pending Perception roll through the session endpoint, submitted a 17, and rejected the identical retry with HTTP 409. Browser reload and cross-instance database recovery still require verification.
 - **47:** Crypt of Whispers opened and the DM described a successful investigation of the chapel. The configured wizard and cleric were lost between requests, so this is partial coverage.
+
+### Local rules-engine playtest
+
+- **4, 45.** Reproduced a same-class party collision: two fighters created in the same millisecond could share an actor ID. The regression creates both on the same clock tick and sends only one to the drawbridge. It verifies both map positions independently. Multiple browsers and existing saves with duplicate IDs remain unverified.
