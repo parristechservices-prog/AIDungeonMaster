@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getOpeningNarration } from '@/lib/game/state';
 import { getAdventure } from '@/lib/game/adventures/registry.server';
 import { getSceneChoices, getSceneGoal } from '@/lib/game/adventures/helpers';
-import { visibleNpcsForScene } from '@/lib/game/adventures/visibility';
+import { visibleMonstersForScene, visibleNpcsForScene } from '@/lib/game/adventures/visibility';
 import { getOrCreateSession, getPendingTurn } from '@/lib/orchestrator/session-store';
 
 /** GET session state for reconnect / debug (V0: no auth). */
@@ -55,7 +55,7 @@ export async function GET(req: Request) {
         conditions: p.conditions,
       })),
       activeCharacterId: state.activeCharacterId,
-      monsters: state.monsters.map((m) => ({
+      monsters: visibleMonstersForScene(adventure, state).map((m) => ({
         id: m.id,
         name: m.name,
         hp: m.hp,

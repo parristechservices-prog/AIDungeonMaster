@@ -130,3 +130,62 @@ These are direct production API observations from disposable games. The checkbox
 - **48.** A deterministic local Table Rules run reached all eight authored scenes and the ending. It used fixed rolls and a higher-HP test hero to exercise progression. A live AI Director playthrough at ordinary character stats remains open.
 - **23, 25, 31, 34.** Additional local combat regressions verify that initiative dispatches the actual acting enemy, Dash and Disengage expire between turns, and a natural 1 misses even with a high attack bonus.
 - **23, 31, 34.** Checked natural die outcomes across player attacks, enemy attacks and reactions. Enemy natural 20s now hit and double damage dice, and natural 1s miss even with high modifiers. Advantage and disadvantage cancel. Bless no longer applies to ability checks and applies to physical attack rolls.
+
+## Scenario-by-scenario verification
+
+A live observation records a particular outcome. Local verification uses the rules engine or two app processes sharing a test database. A blocked check still requires live confirmation. This table records every item, including the ones with no verification yet.
+
+| # | Result and scope |
+|---|---|
+| 1 | Live: survey from cover resolved without travel. |
+| 2 | Live: climb and survey resolved without changing scenes. |
+| 3 | Live: failed tracking stopped progress. Successful tracking still needs a live check. |
+| 4 | Live failure: a reconnect lost the rogue. Local split-party movement passes. |
+| 5 | Live partial: narrated retreat, but the original actor ID did not survive across requests. |
+| 6 | Live partial: failed search left the party in place. A completed alternate route remains open. |
+| 7 | Live partial: refused a jump attempted from the exterior road. Jumping at the gap remains open. |
+| 8 | Live partial: recognised the rope in the explorer’s pack and required reaching the bridge first. |
+| 9 | Live partial: found a fallen log and branches from the road. Building the crossing remains open. |
+| 10 | Live partial: explained that the gap could not be climbed from the road. Climbing at the gap remains open. |
+| 11 | Live failure: the wizard was replaced by a fighter. Crossing with an available spell remains open. |
+| 12 | Live: refused the missing Helm of Teleportation and kept the party in place. |
+| 13 | Live: bargaining for the courier lead succeeded. |
+| 14 | Live partial: Mira refused the offer. Successful payment and affordability remain open. |
+| 15 | Live: the courier-inspector bluff earned a lead. |
+| 16 | Live: intimidation earned a lead. |
+| 17 | Live: the disguise failed and the scene stayed put. Successful disguise remains open. |
+| 18 | Live partial: spoke to Mira twice. Recall of a previously discovered lead remains open. |
+| 19 | Live partial: tried to sneak into the square. Local test verifies failed prerequisite movement stops dependent checks. |
+| 20 | Live partial: refused a stone throw from outside line of sight but narrated undiscovered worg activity. Distracting an engaged worg remains open. |
+| 21 | Live partial: no worg was visible or within reach from the road. Feeding an encountered worg remains open. |
+| 22 | Live partial: narrated backing away on the road. Retreating from an active encounter remains open. |
+| 23 | Local: fought the worgs through the HTTP turn API and completed the scripted chapter. |
+| 24 | Local: both worg tokens were present immediately and after reload. |
+| 25 | Local: both worgs and both heroes appeared in initiative, with the same order after reload. |
+| 26 | Local: attacked a worg and verified melee reach rejects a distant target. |
+| 27 | Open: no live improvised attack verified. |
+| 28 | Capability gap: no dedicated grapple resolution. |
+| 29 | Capability gap: no dedicated shove resolution. |
+| 30 | Local: validated half, three-quarters and total cover in tactical attacks. |
+| 31 | Local: opportunity attacks consume reactions, respect Disengage and miss on natural 1. |
+| 32 | Local: spell slot and invalid-spell checks pass. Live targeted casting remains open. |
+| 33 | Capability gap: no dedicated concentration workflow. |
+| 34 | Local: checked action use, movement reset, spell slots and reaction consumption. |
+| 35 | Local: checked that failed movement stops dependent steps. Full successful action chain remains open. |
+| 36 | Local: compound action resumes at the pending die without replaying preceding steps. |
+| 37 | Live and local: resolved the roll and rejected a repeat. Local check also rejects replay via a different app process. |
+| 38 | Open: browser reload of the pending-roll dialog remains unverified. |
+| 39 | Local: fresh app process recovered the pending roll through the shared test database. |
+| 40 | Local: fresh app process reloaded the mid-encounter state. Production lost campaign continuity. |
+| 41 | Local: party IDs, locations and inventories survived reconnect. Production lost party state. |
+| 42 | Live partial: described the exterior road and drawbridge exit. Agreement across travel remains open. |
+| 43 | Live: declined direct spoiler requests in earlier testing. Local API regression covers undiscovered monsters on start and reconnect. |
+| 44 | Local: fighter, rogue and wizard loaded across app processes. Production wizard and cleric continuity failed. |
+| 45 | Capability gap: shared campaign supports multiple heroes. Multi-client rooms are disabled. |
+| 46 | Local: Table Rules passed the HTTP and scripted adventure runs. |
+| 47 | Local: the four built-in Table Rules completion flows passed. |
+| 48 | Local: completed all eight authored Nightstone scenes and the ending with fixed rolls and a higher-HP hero. |
+| 49 | Open: real speech recognition remains unverified. |
+| 50 | Open: live audio playback remains unverified. |
+
+The production retest of build `5bdf527` opened 12 disposable campaigns. None retained the original campaign and actor IDs across both reconnect and the first turn. The health check reported the configured database as unreachable. This blocks multi-turn acceptance in production and explains why a wizard came back as a fighter. The local two-server tests use a separate database and remain useful for verifying the application paths.

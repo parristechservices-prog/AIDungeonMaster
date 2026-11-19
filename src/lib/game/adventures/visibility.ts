@@ -1,4 +1,6 @@
-import type { NPC } from '@/lib/game/types';
+import { getSceneKind } from './helpers';
+import type { Adventure } from './types';
+import type { GameState, NPC } from '@/lib/game/types';
 
 const SKT_NIGHTSTONE_VISIBLE_NPCS: Record<string, string[]> = {
   'settlement-arrival': [],
@@ -53,4 +55,11 @@ export function visibleNpcsForScene(
   if (!visibleIds) return [];
   const visible = new Set(visibleIds);
   return npcs.filter((npc) => visible.has(npc.id));
+}
+
+
+export function visibleMonstersForScene(adventure: Adventure, state: GameState): GameState['monsters'] {
+  return state.combat.active || getSceneKind(adventure, state.sceneId) === 'combat'
+    ? state.monsters
+    : [];
 }

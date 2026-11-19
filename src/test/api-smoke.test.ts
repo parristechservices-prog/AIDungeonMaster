@@ -29,6 +29,9 @@ describe('no-key API smoke flow', () => {
     const started = await startResponse.json();
     expect(started.ok).toBe(true);
     expect(started.sceneId).toBe('social');
+    expect(started.state.monsters).toEqual([]);
+    const restored = await reconnectSession(new Request(`http://localhost/api/session?sessionId=${sessionId}`));
+    expect((await restored.json()).state.monsters).toEqual([]);
 
     const greetingResponse = await runApiTurn(jsonRequest('http://localhost/api/turn', {
       sessionId,

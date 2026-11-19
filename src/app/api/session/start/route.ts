@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getOpeningNarration } from '@/lib/game/state';
 import { getAdventure, isValidAdventureId } from '@/lib/game/adventures/registry.server';
 import { getSceneChoices, getSceneGoal } from '@/lib/game/adventures/helpers';
-import { visibleNpcsForScene } from '@/lib/game/adventures/visibility';
+import { visibleMonstersForScene, visibleNpcsForScene } from '@/lib/game/adventures/visibility';
 import { startNewGame } from '@/lib/orchestrator/session-store';
 
 const VALID_CHARACTERS = new Set(['fighter', 'wizard', 'rogue', 'cleric', 'paladin', 'ranger']);
@@ -113,7 +113,7 @@ export async function POST(req: Request) {
         conditions: p.conditions,
       })),
       activeCharacterId: state.activeCharacterId,
-      monsters: state.monsters.map((m) => ({
+      monsters: visibleMonstersForScene(adventure, state).map((m) => ({
         id: m.id,
         name: m.name,
         hp: m.hp,

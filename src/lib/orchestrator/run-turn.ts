@@ -1,9 +1,9 @@
 import { resolveEngineRequest } from '@/lib/engine';
 import type { EngineRequest } from '@/lib/engine/types';
 import { dmTurnSchema, type DmTurn } from '@/lib/llm/contracts';
-import { getPlayableScene, getSceneChoices, getSceneGoal, getSceneKind } from '@/lib/game/adventures/helpers';
+import { getPlayableScene, getSceneChoices, getSceneGoal } from '@/lib/game/adventures/helpers';
 import { getAdventure } from '@/lib/game/adventures/registry.server';
-import { visibleNpcsForScene } from '@/lib/game/adventures/visibility';
+import { visibleMonstersForScene, visibleNpcsForScene } from '@/lib/game/adventures/visibility';
 import { ENDING_SCENE_ID } from '@/lib/game/adventures/types';
 import type { GameState } from '@/lib/game/types';
 import { mockNarrationAfterResult } from '@/lib/orchestrator/mock-dm';
@@ -193,11 +193,6 @@ export function runTurn(
   const recentRolls = engineResults
     .map((r) => r.breakdown)
     .filter((b): b is import('@/lib/engine/types').RollBreakdown => !!b);
-  const visibleMonsters =
-    state.combat.active || getSceneKind(adventure, state.sceneId) === 'combat'
-      ? state.monsters
-      : [];
-
   return {
     state,
     pendingTurn: pendingRequests ? { ...turn, engineRequests: pendingRequests } : undefined,
@@ -243,7 +238,7 @@ export function runTurn(
           conditions: p.conditions,
         })),
         activeCharacterId: state.activeCharacterId,
-        monsters: visibleMonsters.map((m) => ({
+        monsters: visibleMonstersForScene(adventure, state).map((m) => ({
           id: m.id,
           name: m.name,
           hp: m.hp,
