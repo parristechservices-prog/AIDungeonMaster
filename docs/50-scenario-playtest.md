@@ -127,4 +127,4 @@ These are direct production API observations from disposable games. The checkbox
 
 - **28–29, 33.** The turn contract supports applying conditions. It has no dedicated grapple, shove or concentration resolution. These scenarios still need rules work and gameplay verification.
 - **45.** Multiple heroes can share a campaign. Multiplayer rooms are disabled, so a multi-client party has no supported room flow to verify.
-- **48.** The local HTTP run reached and reloaded the square encounter. It did not finish all of Nightstone Chapter 1.
+- **48.** A deterministic local Table Rules run reached all eight authored scenes and the ending. It used fixed rolls and a higher-HP test hero to exercise progression. A live AI Director playthrough at ordinary character stats remains open.
