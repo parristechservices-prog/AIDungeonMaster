@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { createInitialState } from '@/lib/game/state';
-import { resolveEngineRequest, setRandomProvider, resetRandomProvider } from '@/lib/engine';
+import { repairMissingEncounter, resolveEngineRequest, setRandomProvider, resetRandomProvider } from '@/lib/engine';
 import { createExplorationState, type AreaGraph } from '@/lib/engine/spatial';
 
 /** Scripted random provider: each call returns the next value (then repeats). */
@@ -24,6 +24,31 @@ describe('engine', () => {
     const out = resolveEngineRequest(state, { kind: 'start_combat' });
     expect(out.state.combat.active).toBe(true);
     expect(out.state.combat.initiative.length).toBe(3);
+  });
+
+  it('starts the Nightstone square encounter with two worgs on the map', () => {
+    const state = createInitialState('nightstone-start', { adventureId: 'skt-nightstone-chapter1' });
+    expect(state.monsters).toHaveLength(0);
+
+    const { state: next } = resolveEngineRequest(state, { kind: 'start_combat' });
+    expect(next.sceneId).toBe('village-square');
+    expect(next.monsters.map((monster) => monster.name)).toEqual(['Worg', 'Worg']);
+    for (const monster of next.monsters) {
+      expect(next.combat.initiative.some((entry) => entry.actorId === monster.id)).toBe(true);
+      expect(next.combat.battleMap?.positions[monster.id]).toBeDefined();
+    }
+  });
+
+  it('repairs a saved party-only Nightstone initiative without rerolling the party', () => {
+    const state = createInitialState('nightstone-repair', { adventureId: 'skt-nightstone-chapter1' });
+    state.sceneId = 'village-square';
+    const partyRoll = { actorId: state.player.id, roll: 3 };
+    state.combat = { active: true, initiative: [partyRoll], turnIndex: 0 };
+
+    const repaired = repairMissingEncounter(state);
+    expect(repaired.monsters).toHaveLength(2);
+    expect(repaired.combat.initiative[repaired.combat.turnIndex]).toEqual(partyRoll);
+    expect(repairMissingEncounter(repaired)).toBe(repaired);
   });
 
   it('handles spell slots correctly', () => {

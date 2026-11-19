@@ -1,3 +1,4 @@
+import { repairMissingEncounter } from '@/lib/engine';
 import { NextResponse } from 'next/server';
 import { shouldUseMockFlavorPrefix } from '@/lib/llm/credentials';
 import { generateDmTurn, generateNarration } from '@/lib/llm/provider';
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    let state = await getOrCreateSession(sessionId);
+    let state = repairMissingEncounter(await getOrCreateSession(sessionId));
     const configuredMaxTurns = Number(process.env.PARTYQUEST_MAX_TURNS_PER_SESSION ?? 0);
     const maxTurns = Number.isFinite(configuredMaxTurns) && configuredMaxTurns > 0
       ? Math.floor(configuredMaxTurns)

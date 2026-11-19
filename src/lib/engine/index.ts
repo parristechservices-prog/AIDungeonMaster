@@ -1,6 +1,6 @@
 import { getSceneKind } from '@/lib/game/adventures/helpers';
 import { getAdventure } from '@/lib/game/adventures/registry.server';
-import { encounterBattleMap } from '@/lib/game/adventures/encounters';
+import { encounterBattleMap, resolveCombatMonsters } from '@/lib/game/adventures/encounters';
 import type { GameState, Character } from '@/lib/game/types';
 import { advanceScene, buildBattleMap } from '@/lib/game/state';
 import type { EngineRequest, EngineResult, RollBreakdown, OpportunityAttackOutcome, CoverOutcome } from './types';
@@ -168,14 +168,26 @@ export function resolveEngineRequest(
       };
     }
     case 'start_combat': {
-      const init = rollInitiative(state);
-
+      if (state.combat.active) {
+        const repaired = repairMissingEncounter(state);
+        return { state: repaired, result: { ok: repaired !== state, summary: repaired !== state
+          ? 'Missing enemies restored to initiative.' : 'Combat is already active.' } };
+      }
       const adventure = getAdventure(state.adventureId);
-      const combatSceneId =
-        adventure.sceneOrder.find((id) => adventure.scenes[id]?.kind === 'combat') ?? 'combat';
-
+      const combatSceneId = getSceneKind(adventure, state.sceneId) === 'combat'
+        ? state.sceneId
+        : adventure.sceneOrder.find((id) => adventure.scenes[id]?.kind === 'combat') ?? 'combat';
+      const monsters = adventure.sceneEncounters?.[combatSceneId] &&
+          (state.sceneId !== combatSceneId || state.monsters.length === 0)
+        ? resolveCombatMonsters(adventure, combatSceneId, state.party[0].level)
+        : state.monsters;
+      if (!monsters.some((monster) => monster.hp > 0)) {
+        return { state, result: { ok: false, summary: 'No active enemies to roll initiative for.' } };
+      }
+      const init = rollInitiative({ ...state, monsters });
       const draft = {
         ...state,
+        monsters,
         combat: { active: true, initiative: init, turnIndex: 0 },
         sceneId: combatSceneId,
         activeCharacterId: init[0].actorId,
@@ -1165,6 +1177,24 @@ function d20() {
 }
 
 /** Rolls initiative for the whole party and all monsters, highest first. */
+// Older saves could enter an authored encounter with only party initiative.
+export function repairMissingEncounter(state: GameState): GameState {
+  if (!state.combat.active || state.monsters.length > 0 || !state.party[0]) return state;
+  const adventure = getAdventure(state.adventureId);
+  if (!adventure.sceneEncounters?.[state.sceneId]?.templates?.length) return state;
+  const monsters = resolveCombatMonsters(adventure, state.sceneId, state.party[0].level);
+  const currentActor = state.combat.initiative[state.combat.turnIndex]?.actorId;
+  const initiative = [
+    ...state.combat.initiative,
+    ...monsters.map((monster) => ({ actorId: monster.id, roll: d20() + 1 })),
+  ].sort((a, b) => b.roll - a.roll);
+  const draft = {
+    ...state, monsters,
+    combat: { ...state.combat, initiative, turnIndex: Math.max(0, initiative.findIndex((entry) => entry.actorId === currentActor)) },
+  };
+  return { ...draft, combat: { ...draft.combat, battleMap: buildBattleMap(draft, undefined, encounterBattleMap(adventure, state.sceneId)) } };
+}
+
 function rollInitiative(state: GameState): { actorId: string; roll: number }[] {
   return [
     ...state.party.map((p) => ({ actorId: p.id, roll: d20() + Math.floor((p.abilities.dex - 10) / 2) })),
