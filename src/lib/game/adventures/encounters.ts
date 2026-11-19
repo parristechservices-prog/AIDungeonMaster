@@ -1,4 +1,4 @@
-import { buildBalancedEncounter, type Difficulty } from '@/lib/engine/balancer';
+import { buildBalancedEncounter, scaleEncounterForParty, type Difficulty } from '@/lib/engine/balancer';
 import { getMonster } from '@/lib/game/monsters';
 import type { Monster } from '@/lib/game/types';
 import type { AuthoredBattleMap } from '@/lib/engine/spatial/tactical';
@@ -8,6 +8,8 @@ export type SceneEncounterSpec = {
   difficulty?: Difficulty;
   /** Explicit template ids — spawns one of each */
   templates?: string[];
+  /** Keep the explicit templates even for parties smaller than four. */
+  unscaled?: boolean;
   /** Build from CR budget using these ids */
   auto?: boolean;
   preferredTemplates?: string[];
@@ -30,10 +32,14 @@ export function resolveCombatMonsters(
   const difficulty = spec?.difficulty ?? adventure.playConfig?.defaultDifficulty ?? 'medium';
 
   if (spec?.templates?.length) {
-    return spec.templates.map((templateId, i) => {
+    const fixed = spec.templates.map((templateId, i) => {
       const m = getMonster(templateId);
       return { ...m, id: `${templateId}-${sceneId}-${i}` };
     });
+    // Published encounters assume four characters. When a module opts in, scale
+    // fixed fights down for smaller parties so they are at most "hard" (DMG XP).
+    const scale = adventure.playConfig?.scaleFixedEncounters && partySize < 4 && !spec.unscaled;
+    return scale ? scaleEncounterForParty(fixed, playerLevel, partySize) : fixed;
   }
 
   if (spec?.auto || !spec) {

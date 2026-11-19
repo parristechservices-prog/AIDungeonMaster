@@ -1,4 +1,5 @@
 import type { Character } from '../types';
+import { getHitDice, maxHpForLevel } from '../rules';
 
 /** Scale a level-3 template toward another level (solo SKT tables). */
 export function applyCharacterLevel(character: Character, targetLevel: number): Character {
@@ -7,7 +8,9 @@ export function applyCharacterLevel(character: Character, targetLevel: number): 
 
   const ratio = level / character.level;
   const proficiencyBonus = 2 + Math.floor((level - 1) / 4);
-  const maxHp = Math.max(level, Math.round(character.maxHp * ratio));
+  // Prefer the real 5e HP formula for known classes; fall back to scaling.
+  const maxHp = maxHpForLevel(character.className, character.abilities.con, level)
+    ?? Math.max(level, Math.round(character.maxHp * ratio));
   const hp = Math.min(character.hp, maxHp);
 
   const skills: Character['skills'] = {};
@@ -25,7 +28,10 @@ export function applyCharacterLevel(character: Character, targetLevel: number): 
     level,
     proficiencyBonus,
     maxHp,
-    hp: Math.max(1, hp),
+    hp: Math.max(1, character.hp >= character.maxHp ? maxHp : hp),
+    // Only keep class features the character has reached at this level.
+    features: character.features.filter((f) => (f.minLevel ?? 1) <= level),
+    hitDice: { ...getHitDice(character), remaining: level, max: level },
     skills,
     weapon: {
       ...character.weapon,

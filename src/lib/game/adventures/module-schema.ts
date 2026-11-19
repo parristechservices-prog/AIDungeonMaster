@@ -42,6 +42,7 @@ const chapterSchema = z.object({
 const sceneEncounterSchema = z.object({
   difficulty: z.enum(['easy', 'medium', 'hard', 'deadly']).optional(),
   templates: z.array(z.string()).max(12).optional(),
+  unscaled: z.boolean().optional(),
   auto: z.boolean().optional(),
   preferredTemplates: z.array(z.string()).max(8).optional(),
 });
@@ -49,6 +50,7 @@ const sceneEncounterSchema = z.object({
 const playConfigSchema = z.object({
   defaultLevel: z.number().int().min(1).max(20).default(3),
   partySize: z.number().int().min(1).max(6).default(1),
+  scaleFixedEncounters: z.boolean().optional(),
   defaultDifficulty: z.enum(['easy', 'medium', 'hard', 'deadly']).default('medium'),
   spawnMonstersOnCombatOnly: z.boolean().default(true),
   preferredMonsterTemplates: z.array(z.string()).default(['goblin', 'orc', 'hobgoblin']),

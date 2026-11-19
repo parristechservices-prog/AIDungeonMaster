@@ -13,11 +13,12 @@ export type EngineRequest =
   | { kind: 'skill_check'; characterId: string; skill: Skill; dc: number; reason: string; manualRoll?: number; advantage?: boolean; disadvantage?: boolean }
   | { kind: 'start_combat' }
   | { kind: 'player_attack'; characterId: string; targetId: string; manualRoll?: number; advantage?: boolean; disadvantage?: boolean; ranged?: boolean }
-  | { kind: 'monster_turn' }
+  | { kind: 'monster_turn'; monsterId?: string }
   | { kind: 'end_turn' }
   | { kind: 'death_save'; characterId: string; manualRoll?: number }
   | { kind: 'use_feature'; characterId: string; featureId: string }
   | { kind: 'cast_spell'; characterId: string; spellName: string; level: number; targetId?: string }
+  | { kind: 'use_item'; characterId: string; item: string; targetId?: string }
   | { kind: 'short_rest' }
   | { kind: 'long_rest' }
   | { kind: 'advance_scene' }

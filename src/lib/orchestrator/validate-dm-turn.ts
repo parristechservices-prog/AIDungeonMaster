@@ -21,6 +21,7 @@ const PLAYER_OWNED_KINDS = new Set([
   'death_save',
   'use_feature',
   'cast_spell',
+  'use_item',
   'update_inventory',
 ]);
 
@@ -103,9 +104,15 @@ export function validateDmTurn(turn: DmTurn, state: GameState): DmTurnValidation
       const feature = character.features.find((candidate) => candidate.id === request.featureId);
       if (!feature) {
         addError('unknown_feature', `${character.name} does not have feature ${request.featureId}.`, requestIndex);
+      } else if (feature.passive) {
+        addError('feature_passive', `${feature.name} is always on and is not "used".`, requestIndex);
       } else if (feature.usesRemaining <= 0) {
         addError('feature_unavailable', `${feature.name} has no uses remaining.`, requestIndex);
       }
+    }
+
+    if (request.kind === 'use_item' && character && !character.inventory.some((i) => i.toLowerCase() === request.item.toLowerCase())) {
+      addError('inventory_item_missing', `${character.name} does not have ${request.item}.`, requestIndex);
     }
 
     if (request.kind === 'update_inventory') {

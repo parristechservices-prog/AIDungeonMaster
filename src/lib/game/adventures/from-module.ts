@@ -30,6 +30,7 @@ export function moduleFileToAdventure(
     playConfig: {
       defaultLevel: module.playConfig?.defaultLevel ?? module.levelRange?.[0] ?? 3,
       partySize: module.playConfig?.partySize ?? 1,
+      scaleFixedEncounters: module.playConfig?.scaleFixedEncounters,
       defaultDifficulty: module.playConfig?.defaultDifficulty ?? 'medium',
       spawnMonstersOnCombatOnly: module.playConfig?.spawnMonstersOnCombatOnly ?? false,
       preferredMonsterTemplates: module.playConfig?.preferredMonsterTemplates ?? [
