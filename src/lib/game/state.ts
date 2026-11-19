@@ -234,9 +234,17 @@ export function advanceScene(state: GameState): GameState {
     combat: { active: false, initiative: [], turnIndex: 0 },
   };
   if (getSceneKind(adventure, nextSceneId) === 'combat') {
+    // Creatures waiting in reserve that belong to this fight (e.g. pre-placed
+    // ones) rejoin as themselves, wounds and all, rather than being duplicated.
+    const reserve = next.reserveMonsters ?? [];
+    const spawned = resolveCombatMonsters(adventure, nextSceneId, state.party[0].level).map((m) => {
+      const waiting = reserve.find((r) => r.id === m.id);
+      return waiting ? { ...waiting, homeSceneId: undefined } : m;
+    });
     next = {
       ...next,
-      monsters: resolveCombatMonsters(adventure, nextSceneId, state.party[0].level),
+      monsters: spawned,
+      reserveMonsters: reserve.filter((r) => !spawned.some((m) => m.id === r.id)),
     };
   }
   return next;

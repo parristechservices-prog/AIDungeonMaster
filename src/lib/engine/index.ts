@@ -42,7 +42,37 @@ function requestedCharacterId(characterId?: string): string | undefined {
   return characterId;
 }
 
+/**
+ * Every engine action goes through here, then a consistency pass: an
+ * unconscious character is prone and can't stay hidden or dodging (5e), and a
+ * party wipe ends the fight, however the last blow landed.
+ */
 export function resolveEngineRequest(
+  state: GameState,
+  request: EngineRequest,
+  options?: { physicalDice?: boolean },
+): { state: GameState; result: EngineResult } {
+  const out = resolveEngineRequestInner(state, request, options);
+  return { state: normaliseState(out.state), result: out.result };
+}
+
+function normaliseState(state: GameState): GameState {
+  let next = state;
+  for (const p of next.party) {
+    if (p.unconscious && p.conditions.some((c) => c === 'hidden' || c === 'dodging' || c === 'helped' || c === 'surprised')) {
+      next = updateCharacterInParty(next, p.id, (c) => ({ ...c, conditions: c.conditions.filter((x) => !['hidden', 'dodging', 'helped', 'surprised'].includes(x)) }));
+    }
+    if (p.unconscious && !p.conditions.includes('prone')) {
+      next = updateCharacterInParty(next, p.id, (c) => ({ ...c, conditions: [...c.conditions, 'prone'] }));
+    }
+  }
+  if (next.party.length > 0 && next.party.every((p) => p.deathSaves.failure >= 3)) {
+    if (next.combat.active || next.sceneId !== 'ending') next = { ...next, sceneId: 'ending', combat: { ...next.combat, active: false } };
+  }
+  return next;
+}
+
+function resolveEngineRequestInner(
   state: GameState,
   request: EngineRequest,
   options?: { physicalDice?: boolean }
@@ -235,12 +265,12 @@ export function resolveEngineRequest(
         monsters = reserve.filter((m) => m.hp > 0 && m.homeSceneId === state.sceneId);
         reserve = reserve.filter((m) => !monsters.includes(m));
       } else if ((adventure.sceneEncounters?.[state.sceneId] || getSceneKind(adventure, state.sceneId) === 'combat') && !state.monsters.some((m) => m.hp <= 0)) {
-        monsters = resolveCombatMonsters(adventure, state.sceneId, state.party[0].level);
+        ({ monsters, reserve } = claimFromReserve(resolveCombatMonsters(adventure, state.sceneId, state.party[0].level), reserve));
       } else if (getSceneKind(adventure, state.sceneId) !== 'combat' && state.monsters.length === 0) {
         const from = Math.max(0, adventure.sceneOrder.indexOf(state.sceneId));
         const nextCombat = adventure.sceneOrder.slice(from).find((id) => adventure.scenes[id]?.kind === 'combat');
         if (!nextCombat) return { state, result: { ok: false, summary: 'No enemies are present. Name the combatants (start_combat.combatants).' } };
-        monsters = resolveCombatMonsters(adventure, nextCombat, state.party[0].level);
+        ({ monsters, reserve } = claimFromReserve(resolveCombatMonsters(adventure, nextCombat, state.party[0].level), reserve));
         sceneId = nextCombat;
       } else {
         return { state, result: { ok: false, summary: 'No active enemies to roll initiative for. Name the combatants (start_combat.combatants).' } };
@@ -845,6 +875,7 @@ export function resolveEngineRequest(
         msg = 'Failure. Marks 1 failure.';
       }
 
+      failure = Math.min(3, failure);
       if (failure >= 3) {
         msg += ' Has died.';
       } else if (success >= 3) {
@@ -1823,6 +1854,15 @@ function resolveSurpriseIds(state: GameState, monsters: Monster[], surprised: st
   if (surprised === 'monsters') return monsters.map((m) => m.id);
   if (surprised === 'party') return state.party.map((p) => p.id);
   return surprised.filter((id) => monsters.some((m) => m.id === id) || state.party.some((p) => p.id === id));
+}
+
+/** Spawned creatures already waiting in reserve rejoin as themselves (wounds and all). */
+function claimFromReserve(spawned: Monster[], reserve: Monster[]): { monsters: Monster[]; reserve: Monster[] } {
+  const monsters = spawned
+    .map((m) => reserve.find((r) => r.id === m.id) ?? m)
+    .filter((m) => m.hp > 0)
+    .map((m) => ({ ...m, homeSceneId: undefined }));
+  return { monsters, reserve: reserve.filter((r) => !spawned.some((m) => m.id === r.id)) };
 }
 
 function uniqueMonsterId(state: GameState, base: string, pending: Monster[]): string {
