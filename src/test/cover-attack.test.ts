@@ -35,6 +35,15 @@ describe('cover in ranged attack resolution', () => {
     expect(result.cover).toBeUndefined();
   });
 
+  it('treats a natural 1 as a miss even when the attack bonus beats AC', () => {
+    const { state, heroId } = rangedSetup();
+    state.party[0].weapon.attackBonus = 20;
+    const { result } = resolveEngineRequest(state, {
+      kind: 'player_attack', characterId: heroId, targetId: 'goblin', ranged: true, manualRoll: 1,
+    });
+    expect(result.summary).toMatch(/missed/i);
+  });
+
   it('half cover raises AC by 2 and turns the same hit into a miss', () => {
     const { state, heroId } = rangedSetup({ terrain: 'normal', cover: 'half' });
     const { result, state: afterAttack } = resolveEngineRequest(state, { kind: 'player_attack', characterId: heroId, targetId: 'goblin', ranged: true, manualRoll: 8 });

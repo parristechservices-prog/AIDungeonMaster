@@ -311,7 +311,7 @@ export function resolveEngineRequest(
       // with disadvantage the lower, so a natural 20 on a discarded die never crits.
       const naturalRoll = toHit.keptRoll ?? toHit.rolls[0];
       const critical = naturalRoll >= (char.className === 'Fighter' && char.subclass === 'Champion' && char.level >= 3 ? 19 : 20);
-      toHit.ok = toHit.total >= effectiveTargetAc || critical;
+      toHit.ok = naturalRoll !== 1 && (toHit.total >= effectiveTargetAc || critical);
 
       if (!toHit.ok) {
         const coverNote = coverOutcome ? ` (${coverOutcome.kind.replace('_', '-')} cover: AC ${coverOutcome.baseAc}+${coverOutcome.bonus})` : '';
@@ -380,6 +380,8 @@ export function resolveEngineRequest(
                 actionUsed: false,
                 bonusActionUsed: false,
                 movementSpentFt: 0,
+                extraMovementFt: 0,
+                disengaged: false,
                 reactionAvailable: true,
               },
             },
@@ -389,7 +391,9 @@ export function resolveEngineRequest(
       return { state: appendLog(nextState, `Turn ended. It is now ${nextActorId}'s turn.`), result: { ok: true, summary: `Ended turn. It is now ${nextActorId}'s turn.` } };
     }
     case 'monster_turn': {
-      const attacker = state.monsters.find((m) => m.hp > 0);
+      const currentActor = state.combat.initiative[state.combat.turnIndex]?.actorId;
+      const attacker = state.monsters.find((m) => m.id === currentActor) ?? state.monsters.find((m) => m.hp > 0);
+      if (attacker && attacker.hp <= 0) return { state, result: { ok: false, summary: `${attacker.name} cannot take a turn after defeat.` } };
       if (!attacker) return { state, result: { ok: true, summary: 'No monsters remain.' } };
 
       const consciousPlayers = state.party.filter((p) => !p.unconscious);

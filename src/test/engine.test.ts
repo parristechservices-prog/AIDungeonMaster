@@ -57,6 +57,22 @@ describe('engine', () => {
     expect(map.actors[fighter.id].actionUsed).toBe(false);
   });
 
+  it('expires Dash and Disengage when the actor gets a fresh turn', () => {
+    const state = createInitialState('turn-reset');
+    const combat = resolveEngineRequest(state, { kind: 'start_combat' }).state;
+    const heroId = state.player.id;
+    const heroIndex = combat.combat.initiative.findIndex(({ actorId }) => actorId === heroId);
+    combat.combat.turnIndex = (heroIndex + combat.combat.initiative.length - 1) % combat.combat.initiative.length;
+    Object.assign(combat.combat.battleMap!.actors[heroId], {
+      extraMovementFt: 30, disengaged: true, movementSpentFt: 15, reactionAvailable: false,
+    });
+    const result = resolveEngineRequest(combat, { kind: 'end_turn' });
+    expect(result.state.activeCharacterId).toBe(heroId);
+    expect(result.state.combat.battleMap?.actors[heroId]).toMatchObject({
+      extraMovementFt: 0, disengaged: false, movementSpentFt: 0, reactionAvailable: true,
+    });
+  });
+
   it('repairs a saved party-only Nightstone initiative without rerolling the party', () => {
     const state = createInitialState('nightstone-repair', { adventureId: 'skt-nightstone-chapter1' });
     state.sceneId = 'village-square';
