@@ -102,6 +102,8 @@ export async function POST(req: Request) {
         maxHp: p.maxHp,
         ac: p.ac,
         proficiencyBonus: p.proficiencyBonus,
+        abilities: p.abilities,
+        skills: p.skills,
         unconscious: p.unconscious,
         deathSaves: p.deathSaves,
         features: p.features,

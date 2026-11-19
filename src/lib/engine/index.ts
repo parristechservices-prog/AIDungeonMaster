@@ -303,7 +303,7 @@ export function resolveEngineRequest(
       // Crit on the die actually KEPT: with advantage keptRoll is the higher die,
       // with disadvantage the lower, so a natural 20 on a discarded die never crits.
       const naturalRoll = toHit.keptRoll ?? toHit.rolls[0];
-      const critical = naturalRoll === 20;
+      const critical = naturalRoll >= (char.className === 'Fighter' && char.subclass === 'Champion' && char.level >= 3 ? 19 : 20);
       toHit.ok = toHit.total >= effectiveTargetAc || critical;
 
       if (!toHit.ok) {
@@ -515,6 +515,22 @@ export function resolveEngineRequest(
       
       const map = state.combat.battleMap;
       let nextState = state;
+      if (feature.id === 'action_surge') {
+        const actor = map?.actors[char.id];
+        const activeId = state.combat.initiative[state.combat.turnIndex]?.actorId;
+        if (!map || !actor?.actionUsed || activeId !== char.id) {
+          return { state, result: { ok: false, summary: 'Use Action Surge on your turn after spending your action.' } };
+        }
+        const restored = updateCharacterInParty({
+          ...state,
+          combat: { ...state.combat, battleMap: { ...map, actors: { ...map.actors, [char.id]: { ...actor, actionUsed: false } } } },
+        }, char.id, (c) => ({
+          ...c,
+          features: c.features.map((f) => f.id === feature.id ? { ...f, usesRemaining: f.usesRemaining - 1 } : f),
+        }));
+        const summary = `${char.name} uses Action Surge and gains another action.`;
+        return { state: appendLog(restored, summary), result: { ok: true, summary } };
+      }
       const isBonusAction = feature.id === 'second_wind' || feature.id === 'rage'; // heuristic
       
       if (map) {
@@ -554,7 +570,7 @@ export function resolveEngineRequest(
       if (feature.id === 'second_wind') {
         breakdown = rollFormula('1d10', char.level);
         const hp = Math.min(char.maxHp, char.hp + breakdown.total);
-        next = updateCharacterInParty(state, char.id, (c) => ({ ...c, hp }));
+        next = updateCharacterInParty(nextState, char.id, (c) => ({ ...c, hp }));
         summary = `${char.name} used Second Wind and restored ${breakdown.total} HP.`;
       } else if (feature.id === 'lay_on_hands') {
           // Simplistic implementation for now

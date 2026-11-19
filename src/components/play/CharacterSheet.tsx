@@ -118,6 +118,21 @@ export function CharacterSheet({ state }: Props) {
           )}
         </div>
 
+        {char.abilities && (
+          <details className="mt-4 text-xs">
+            <summary className="cursor-pointer font-semibold">Abilities &amp; proficiencies</summary>
+            <dl className="mt-2 grid grid-cols-3 gap-2">
+              {Object.entries(char.abilities).map(([ability, score]) => {
+                const mod = Math.floor((score - 10) / 2);
+                return <div key={ability}><dt className="uppercase">{ability}</dt><dd>{score} ({mod >= 0 ? '+' : ''}{mod})</dd></div>;
+              })}
+            </dl>
+            <p className="mt-2">Proficiency bonus: +{char.proficiencyBonus}</p>
+            {char.className === 'Fighter' && <p>Saving throw proficiencies: Strength, Constitution</p>}
+            {char.className === 'Wizard' && <p>Saving throw proficiencies: Intelligence, Wisdom</p>}
+            {char.skills && <p className="mt-1 capitalize">{Object.entries(char.skills).map(([skill, mod]) => `${skill.replaceAll('_', ' ')} ${Number(mod) >= 0 ? '+' : ''}${mod}`).join(' · ')}</p>}
+          </details>
+        )}
         <p className="mt-4 font-bold text-xs uppercase text-zinc-400 tracking-widest">Inventory</p>
         <div className="mt-1 max-h-32 overflow-y-auto text-xs">
           {char.inventory?.length > 0 ? (
@@ -135,6 +150,12 @@ export function CharacterSheet({ state }: Props) {
 
         <p className="mt-4 font-bold text-xs uppercase text-zinc-400 tracking-widest">Features & Spells</p>
         <div className="mt-1 space-y-1">
+          {char.className === 'Fighter' && char.inventory.includes('Shield') && char.inventory.includes('Longsword') && (
+            <p className="text-xs">Fighting Style: Dueling</p>
+          )}
+          {char.className === 'Fighter' && char.subclass === 'Champion' && char.level >= 3 && (
+            <p className="text-xs">Improved Critical (19–20)</p>
+          )}
           {char.features.map((f) => (
             <div key={f.id} className="flex justify-between items-center text-xs">
               <span>{f.name}</span>

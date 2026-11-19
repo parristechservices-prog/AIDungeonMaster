@@ -27,6 +27,10 @@ export function applyCharacterLevel(character: Character, targetLevel: number): 
     maxHp,
     hp: Math.max(1, hp),
     skills,
+    features: character.features.filter((feature) => feature.id !== 'action_surge' || level >= 2),
+    ...(character.className === 'Wizard' && level < 3
+      ? { subclass: undefined, spellSlots: { 1: { max: level === 1 ? 2 : 3, remaining: level === 1 ? 2 : 3 } } }
+      : {}),
     weapon: {
       ...character.weapon,
       attackBonus: character.weapon.attackBonus + weaponBonus,

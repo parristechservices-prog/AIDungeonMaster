@@ -143,8 +143,8 @@ describe('engine', () => {
     setRandomProvider(seq([0.7, 0.99]));
     const out = resolveEngineRequest(state, { kind: 'player_attack', characterId: state.player.id, targetId: 'goblin-1' });
     expect(out.result.ok).toBe(true);
-    // Fighter wields a Longsword (1d8+3): the breakdown formula proves weapon damage is used.
-    expect(out.result.breakdown?.formula).toBe('1d8+3');
+    // Fighter wields a Longsword with Dueling (1d8+5): the breakdown formula proves weapon damage is used.
+    expect(out.result.breakdown?.formula).toBe('1d8+5');
   });
 
   it('doubles the weapon dice on a critical hit', () => {
@@ -154,7 +154,7 @@ describe('engine', () => {
     setRandomProvider(seq([0.99, 0.99, 0.99]));
     const out = resolveEngineRequest(state, { kind: 'player_attack', characterId: state.player.id, targetId: 'goblin-1' });
     expect(out.result.critical).toBe(true);
-    expect(out.result.breakdown?.formula).toBe('2d8+3');
+    expect(out.result.breakdown?.formula).toBe('2d8+5');
   });
 
   it('uses the monster damage dice on its turn, not a flat 1d6', () => {

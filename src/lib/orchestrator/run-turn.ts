@@ -219,6 +219,8 @@ export function runTurn(
           maxHp: p.maxHp,
           ac: p.ac,
           proficiencyBonus: p.proficiencyBonus,
+          abilities: p.abilities,
+          skills: p.skills,
           unconscious: p.unconscious,
           deathSaves: p.deathSaves,
           features: p.features,
