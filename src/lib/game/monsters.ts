@@ -197,10 +197,83 @@ export const MONSTER_LIBRARY: Record<string, MonsterTemplate> = {
   },
 };
 
+/** Extra SRD stat blocks so the DM can fight whoever the players pick a fight with. */
+Object.assign(MONSTER_LIBRARY, {
+  spy: {
+    name: 'Spy', ac: 12, maxHp: 27, attackBonus: 4, damage: '1d6+2', cr: 1, conditions: [],
+    attacks: [
+      { id: 'shortsword', name: 'Shortsword', kind: 'melee', attackBonus: 4, damage: '1d6+2', damageType: 'piercing', reachFt: 5 },
+      { id: 'hand_crossbow', name: 'Hand Crossbow', kind: 'ranged', attackBonus: 4, damage: '1d6+2', damageType: 'piercing', rangeFt: 30, longRangeFt: 120 },
+    ],
+  },
+  bandit_captain: {
+    name: 'Bandit Captain', ac: 15, maxHp: 65, attackBonus: 5, damage: '1d6+3', cr: 2, conditions: [],
+    attacks: [
+      { id: 'scimitar', name: 'Scimitar', kind: 'melee', attackBonus: 5, damage: '1d6+3', damageType: 'slashing', reachFt: 5 },
+      { id: 'dagger', name: 'Dagger (thrown)', kind: 'ranged', attackBonus: 5, damage: '1d4+3', damageType: 'piercing', rangeFt: 20, longRangeFt: 60 },
+    ],
+  },
+  guard: { name: 'Guard', ac: 16, maxHp: 11, attackBonus: 3, damage: '1d6+1', cr: 0.125, conditions: [] },
+  scout: {
+    name: 'Scout', ac: 13, maxHp: 16, attackBonus: 4, damage: '1d6+2', cr: 0.5, conditions: [],
+    attacks: [
+      { id: 'shortsword', name: 'Shortsword', kind: 'melee', attackBonus: 4, damage: '1d6+2', damageType: 'piercing', reachFt: 5 },
+      { id: 'longbow', name: 'Longbow', kind: 'ranged', attackBonus: 4, damage: '1d8+2', damageType: 'piercing', rangeFt: 150, longRangeFt: 600 },
+    ],
+  },
+  commoner: { name: 'Commoner', ac: 10, maxHp: 4, attackBonus: 2, damage: '1d4', cr: 0, conditions: [] },
+} satisfies Record<string, MonsterTemplate>);
+
+/** SRD size, speed and reach for the giants (all Huge, 10 ft reach). */
+const GIANT_BODY: Record<string, { speedFt: number }> = {
+  hill_giant: { speedFt: 40 }, stone_giant: { speedFt: 40 }, frost_giant: { speedFt: 40 },
+  fire_giant: { speedFt: 30 }, cloud_giant: { speedFt: 40 }, storm_giant: { speedFt: 50 },
+};
+for (const [id, body] of Object.entries(GIANT_BODY)) {
+  const t = MONSTER_LIBRARY[id];
+  if (!t) continue;
+  t.size ??= 'huge';
+  t.speedFt ??= body.speedFt;
+  t.reachFt ??= 10;
+}
+
+/** SRD ability scores (STR, DEX, CON, INT, WIS, CHA) and notable skills. */
+const STATS: Record<string, [[number, number, number, number, number, number], Record<string, number>?]> = {
+  goblin: [[8, 14, 10, 10, 8, 8], { stealth: 6 }],
+  goblin_archer: [[8, 14, 10, 10, 8, 8], { stealth: 6 }],
+  skeleton: [[10, 14, 15, 6, 8, 5]],
+  wolf: [[12, 15, 12, 3, 12, 6], { perception: 3, stealth: 4 }],
+  worg: [[16, 13, 13, 7, 11, 8], { perception: 4 }],
+  orc: [[16, 12, 16, 7, 11, 10], { intimidation: 2 }],
+  bugbear: [[15, 14, 13, 8, 11, 9], { stealth: 6, survival: 2 }],
+  hobgoblin: [[13, 12, 12, 10, 10, 9]],
+  bandit: [[11, 12, 12, 10, 10, 10]],
+  ogre: [[19, 8, 16, 5, 7, 7]],
+  hill_giant: [[21, 8, 19, 5, 9, 6], { perception: 2 }],
+  stone_giant: [[23, 15, 20, 10, 12, 9], { athletics: 12, perception: 4 }],
+  frost_giant: [[23, 9, 21, 9, 10, 12], { athletics: 9, perception: 3 }],
+  fire_giant: [[25, 9, 23, 10, 14, 13], { athletics: 11, perception: 6 }],
+  cloud_giant: [[27, 10, 22, 12, 16, 16], { insight: 7, perception: 7 }],
+  storm_giant: [[29, 14, 20, 16, 18, 18], { arcana: 8, athletics: 14, history: 8, perception: 9 }],
+  ape: [[16, 14, 14, 6, 12, 7], { athletics: 5, perception: 3 }],
+  spy: [[10, 15, 10, 12, 14, 16], { deception: 5, insight: 4, investigation: 5, perception: 6, persuasion: 5, sleight_of_hand: 4, stealth: 4 }],
+  bandit_captain: [[15, 16, 14, 14, 11, 14], { athletics: 4, deception: 4 }],
+  guard: [[13, 12, 12, 10, 11, 10], { perception: 2 }],
+  scout: [[11, 14, 12, 11, 13, 11], { nature: 4, perception: 5, stealth: 6, survival: 5 }],
+  commoner: [[10, 10, 10, 10, 10, 10]],
+};
+for (const [id, [[str, dex, con, int, wis, cha], skills]] of Object.entries(STATS)) {
+  const t = MONSTER_LIBRARY[id];
+  if (!t) continue;
+  t.abilities ??= { str, dex, con, int, wis, cha };
+  if (skills) t.skills ??= skills;
+}
+
 /** SRD Dexterity modifiers, used for monster initiative (5e: d20 + Dex). */
 const INITIATIVE_BONUS: Record<string, number> = {
   goblin: 2, goblin_archer: 2, skeleton: 2, wolf: 2, worg: 1, orc: 1, bugbear: 2, hobgoblin: 1, bandit: 1,
   ogre: -1, hill_giant: -1, stone_giant: 2, frost_giant: -1, fire_giant: -1, cloud_giant: 0, storm_giant: 2, ape: 2,
+  spy: 2, bandit_captain: 3, guard: 1, scout: 2, commoner: 0,
 };
 for (const [id, bonus] of Object.entries(INITIATIVE_BONUS)) {
   if (MONSTER_LIBRARY[id] && MONSTER_LIBRARY[id].initiativeBonus === undefined) MONSTER_LIBRARY[id].initiativeBonus = bonus;

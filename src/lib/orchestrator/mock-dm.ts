@@ -55,7 +55,7 @@ const MOVEMENT_PHRASES = [
 ];
 const ACTIVE_SEARCH_PHRASES = ['inspect', 'track', 'search', 'scout', 'examine', 'investigate', 'trail'];
 const STEALTH_PHRASES = ['sneak', 'hide', 'stealth', 'quietly', 'silent', 'creep'];
-const RETREAT_PHRASES = ['retreat', 'withdraw', 'back away', 'fall back', 'disengage', 'flee', 'run away'];
+const RETREAT_PHRASES = ['retreat', 'withdraw', 'back away', 'fall back', 'disengage', 'flee', 'run away', 'run back', 'go back', 'back to the gate', 'escape', 'get away'];
 const COVER_PHRASES = ['cover', 'duck behind', 'take shelter', 'circle', 'flank', 'left', 'right'];
 
 const SOCIAL_RETRY_HINT =
@@ -305,7 +305,7 @@ function sneakingRouteTarget(input: string): string {
   if (wantsInn) return 'east toward the inn';
   if (wantsGraveyard) return 'behind the temple into the graveyard and Nandar crypt area';
   if (wantsTemple) return 'toward the temple and its ringing steeple';
-  return 'toward cover or the bell';
+  return 'into cover among the rubble';
 }
 
 type DistanceHint = {
@@ -513,6 +513,18 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
   const mock = adventure.mock;
   const sceneKind = getSceneKind(adventure, state.sceneId);
   const ambient = mockAmbientForKind(sceneKind);
+
+  // A dying character's turn is a death saving throw, whatever they say (5e).
+  const turnHolderId = state.combat.active ? state.combat.initiative[state.combat.turnIndex]?.actorId : state.activeCharacterId;
+  const dying = state.party.find((p) => p.id === turnHolderId && p.unconscious && !p.stable && p.deathSaves.failure < 3);
+  if (dying) {
+    return {
+      engineRequests: [{ kind: 'death_save', characterId: dying.id }, ...(state.combat.active ? [{ kind: 'end_turn' as const }] : [])],
+      narration: `${dying.name} lies bleeding and clings to life.`,
+      needsResultBeforeNarrating: true,
+      ambient: state.combat.active ? 'combat' : ambient,
+    };
+  }
 
   if (/\b(moon|machine gun|nuclear|infinite gold|gravity|final boss|every monster dead|skip (?:to|the)|invent the king|king'?s crown|final boss password|solve the puzzle|fly away|fireball|seduce the (?:locked )?door)\b/.test(input)) {
     return {
@@ -772,6 +784,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
             skill: mock.socialSkill,
             dc: mock.socialDc,
             reason: `Convince ${mock.socialNpcName} to share what they know.`,
+            advancesScene: true,
           },
           { kind: 'update_npc', npcId: mock.socialNpcId, disposition: 'friendly' },
           {
@@ -916,6 +929,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
           skill: mock.explorationSkill,
           dc: mock.explorationDc,
           reason: 'Search the area for a lead.',
+          advancesScene: true,
         },
       ],
       narration: 'You work the scene for anything out of place.',
@@ -953,6 +967,83 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
 
   const living = state.monsters.filter((m) => m.hp > 0);
   const livingNames = living.map((m) => m.name).join(' and ');
+
+  // Free-form combat approaches (5e): the engine resolves each, and enemy turns
+  // follow automatically once the hero's turn ends.
+  const firstFoe = living[0];
+  const inFight = state.combat.active;
+  const endTurn = inFight ? [{ kind: 'end_turn' as const }] : [];
+  if (firstFoe && /\b(shoot|fire|loose|crossbow|bow|sling)\b/.test(input)) {
+    return {
+      engineRequests: [{ kind: 'player_attack', characterId: activeChar.id, targetId: firstFoe.id, ranged: true }, { kind: 'end_turn' }],
+      narration: `You level your ranged weapon at the ${firstFoe.name}.`,
+      needsResultBeforeNarrating: true,
+      ambient: 'combat',
+    };
+  }
+  if (firstFoe && /\b(grapple|grab|wrestle|tackle|pin)\b/.test(input)) {
+    return {
+      engineRequests: [{ kind: 'grapple', characterId: activeChar.id, targetId: firstFoe.id }, { kind: 'end_turn' }],
+      narration: `You lunge to seize the ${firstFoe.name}.`,
+      needsResultBeforeNarrating: true,
+      ambient: 'combat',
+    };
+  }
+  if (firstFoe && /\b(shove|push|trip|knock (?:it |him |her |them )?(?:down|over|prone))\b/.test(input)) {
+    return {
+      engineRequests: [{ kind: 'shove', characterId: activeChar.id, targetId: firstFoe.id, effect: /\b(push|away|back)\b/.test(input) ? 'push' : 'prone' }, { kind: 'end_turn' }],
+      narration: `You throw your weight into the ${firstFoe.name}.`,
+      needsResultBeforeNarrating: true,
+      ambient: 'combat',
+    };
+  }
+  if (inFight && /\b(dodge|defensive|parry|brace)\b/.test(input)) {
+    return {
+      engineRequests: [{ kind: 'take_action', characterId: activeChar.id, action: 'dodge' }, { kind: 'end_turn' }],
+      narration: 'You raise your shield and focus entirely on defence.',
+      needsResultBeforeNarrating: true,
+      ambient: 'combat',
+    };
+  }
+  if (inFight && /\bhide\b/.test(input)) {
+    return {
+      engineRequests: [{ kind: 'take_action', characterId: activeChar.id, action: 'hide' }, { kind: 'end_turn' }],
+      narration: 'You duck behind broken masonry and go still.',
+      needsResultBeforeNarrating: true,
+      ambient: 'combat',
+    };
+  }
+  if (firstFoe && /\b(surrender|yield|give up|drop (?:your|the) weapons?|intimidat|threaten|scare)\b/.test(input)) {
+    return {
+      engineRequests: [
+        { kind: 'contest', characterId: activeChar.id, skill: 'intimidation', targetId: firstFoe.id, reason: `Cow the ${firstFoe.name} into backing down`, usesAction: inFight },
+        { kind: 'remove_combatant', targetId: firstFoe.id, outcome: /\bsurrender|yield|drop\b/.test(input) ? 'surrendered' : 'fled' },
+        ...endTurn,
+      ],
+      narration: `You bellow at the ${firstFoe.name}, weapon raised.`,
+      needsResultBeforeNarrating: true,
+      ambient: 'combat',
+    };
+  }
+  if (firstFoe && /\b(meat|food|feed|calm|soothe|tame)\b/.test(input)) {
+    return {
+      engineRequests: [
+        { kind: 'skill_check' as const, characterId: activeChar.id, skill: 'animal_handling' as const, dc: 15, reason: `Calm the ${livingNames} with food and a steady voice` },
+        ...living.map((m) => ({ kind: 'remove_combatant' as const, targetId: m.id, outcome: 'calmed' as const })),
+      ].slice(0, 5),
+      narration: `You try to settle the ${livingNames}, moving slowly and offering food.`,
+      needsResultBeforeNarrating: true,
+      ambient: 'combat',
+    };
+  }
+  if (inFight && isRetreatIntent(input)) {
+    return {
+      engineRequests: [{ kind: 'disengage', actorId: activeChar.id }, { kind: 'end_turn' }],
+      narration: 'You give ground carefully, keeping your guard up as you pull back.',
+      needsResultBeforeNarrating: true,
+      ambient: 'combat',
+    };
+  }
 
   if (isStealthIntent(input)) {
     const routeTarget = sneakingRouteTarget(input);
@@ -1042,10 +1133,11 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
     };
   }
 
-  if (input.includes('attack') || input.includes('strike') || input.includes('hit')) {
+  if (/\b(attack|strike|hit|stab|slash|swing|charge|cut|punch|kick|fight)\b/.test(input)) {
     const living = state.monsters.find((m) => m.hp > 0);
+    const unarmed = /\b(punch|kick)\b/.test(input);
     return {
-      engineRequests: living ? [{ kind: 'player_attack', characterId: activeChar.id, targetId: living.id }, { kind: 'end_turn' }, { kind: 'monster_turn' }, { kind: 'end_turn' }] : [],
+      engineRequests: living ? [{ kind: 'player_attack', characterId: activeChar.id, targetId: living.id, ...(unarmed ? { weapon: 'unarmed' } : {}) }, { kind: 'end_turn' }] : [],
       narration: 'You lunge forward.',
       needsResultBeforeNarrating: true,
       ambient: 'combat',

@@ -1,4 +1,4 @@
-import type { NPC, CanonFact, Condition } from '../game/types';
+import type { NPC, CanonFact, Condition, Ability } from '../game/types';
 import type { SpatialEngineRequest, SpatialEngineResult } from './spatial';
 import type { TacticalEngineRequest, TacticalEngineResult } from './spatial/tactical';
 
@@ -10,9 +10,23 @@ export type Skill =
   | 'stealth' | 'survival';
 
 export type EngineRequest =
-  | { kind: 'skill_check'; characterId: string; skill: Skill; dc: number; reason: string; manualRoll?: number; advantage?: boolean; disadvantage?: boolean }
-  | { kind: 'start_combat' }
-  | { kind: 'player_attack'; characterId: string; targetId: string; manualRoll?: number; advantage?: boolean; disadvantage?: boolean; ranged?: boolean }
+  | { kind: 'skill_check'; characterId: string; skill: Skill; dc: number; reason: string; manualRoll?: number; advantage?: boolean; disadvantage?: boolean; advancesScene?: boolean }
+  | {
+      kind: 'start_combat';
+      /** Who is fighting: library templates (spawned) or existing monster ids. */
+      combatants?: Array<{ template?: string; name?: string; count?: number; monsterId?: string }>;
+      /** Creature ids caught unaware, or 'monsters' / 'party'. */
+      surprised?: string[] | 'monsters' | 'party';
+    }
+  | { kind: 'end_combat'; reason?: string }
+  | { kind: 'remove_combatant'; targetId: string; outcome?: 'fled' | 'surrendered' | 'captured' | 'calmed' | 'dismissed' | 'befriended' }
+  | { kind: 'contest'; characterId: string; skill: Skill; targetId: string; targetSkill?: Skill; targetBonus?: number; passive?: boolean; reason: string; advantage?: boolean; disadvantage?: boolean; usesAction?: boolean }
+  | { kind: 'ability_check'; characterId: string; ability: Ability; dc: number; reason: string; advantage?: boolean; disadvantage?: boolean; damage?: string; damageType?: string; halfOnSuccess?: boolean; conditionOnFail?: Condition }
+  | { kind: 'saving_throw'; characterId: string; ability: Ability; dc: number; reason: string; advantage?: boolean; disadvantage?: boolean; damage?: string; damageType?: string; halfOnSuccess?: boolean; conditionOnFail?: Condition }
+  | { kind: 'grapple'; characterId: string; targetId: string }
+  | { kind: 'shove'; characterId: string; targetId: string; effect?: 'prone' | 'push' }
+  | { kind: 'take_action'; characterId: string; action: 'dodge' | 'help' | 'hide' | 'ready' | 'search' | 'use_object'; targetId?: string; reason?: string; dc?: number }
+  | { kind: 'player_attack'; characterId: string; targetId: string; manualRoll?: number; advantage?: boolean; disadvantage?: boolean; ranged?: boolean; weapon?: string }
   | { kind: 'monster_turn'; monsterId?: string }
   | { kind: 'end_turn' }
   | { kind: 'death_save'; characterId: string; manualRoll?: number }

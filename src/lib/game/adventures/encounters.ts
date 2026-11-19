@@ -8,6 +8,8 @@ export type SceneEncounterSpec = {
   difficulty?: Difficulty;
   /** Explicit template ids — spawns one of each */
   templates?: string[];
+  /** Optional proper names, index-aligned with `templates` (e.g. Beedo, Vark). */
+  names?: string[];
   /** Keep the explicit templates even for parties smaller than four. */
   unscaled?: boolean;
   /** Build from CR budget using these ids */
@@ -34,7 +36,8 @@ export function resolveCombatMonsters(
   if (spec?.templates?.length) {
     const fixed = spec.templates.map((templateId, i) => {
       const m = getMonster(templateId);
-      return { ...m, id: `${templateId}-${sceneId}-${i}` };
+      const name = spec.names?.[i];
+      return { ...m, id: `${templateId}-${sceneId}-${i}`, ...(name ? { name } : {}) };
     });
     // Published encounters assume four characters. When a module opts in, scale
     // fixed fights down for smaller parties so they are at most "hard" (DMG XP).

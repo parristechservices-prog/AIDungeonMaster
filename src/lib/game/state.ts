@@ -221,9 +221,16 @@ export function advanceScene(state: GameState): GameState {
   const i = order.indexOf(state.sceneId);
   if (i < 0 || i >= order.length - 1) return state;
   const nextSceneId = order[i + 1];
+  // Hostiles still alive in the scene being left (snuck past, fled from, or
+  // never fought) stay behind there, rather than following the party along.
+  const leftBehind = state.monsters
+    .filter((m) => m.hp > 0)
+    .map((m) => ({ ...m, conditions: [], homeSceneId: m.homeSceneId ?? state.sceneId }));
   let next: GameState = {
     ...state,
     sceneId: nextSceneId,
+    monsters: [],
+    reserveMonsters: [...(state.reserveMonsters ?? []).filter((m) => !leftBehind.some((x) => x.id === m.id)), ...leftBehind],
     combat: { active: false, initiative: [], turnIndex: 0 },
   };
   if (getSceneKind(adventure, nextSceneId) === 'combat') {

@@ -6,7 +6,27 @@ export type SceneId = string;
 export const BUILTIN_SCENE_IDS = ['social', 'exploration', 'combat', 'ending'] as const;
 export type BuiltinSceneId = (typeof BUILTIN_SCENE_IDS)[number];
 
-export type Condition = 'blinded' | 'charmed' | 'deafened' | 'frightened' | 'grappled' | 'incapacitated' | 'invisible' | 'paralyzed' | 'petrified' | 'poisoned' | 'prone' | 'restrained' | 'stunned' | 'unconscious' | 'blessed' | 'shielded' | 'guiding_bolt_target';
+export type Condition = 'blinded' | 'charmed' | 'deafened' | 'frightened' | 'grappled' | 'incapacitated' | 'invisible' | 'paralyzed' | 'petrified' | 'poisoned' | 'prone' | 'restrained' | 'stunned' | 'unconscious' | 'blessed' | 'shielded' | 'guiding_bolt_target'
+  /** Caught off guard at the start of combat: loses its first turn and reactions. */
+  | 'surprised'
+  /** Took the Dodge action: attacks against it have disadvantage until its next turn. */
+  | 'dodging'
+  /** Successfully hidden: unseen by enemies until it attacks or is found. */
+  | 'hidden'
+  /** Being helped by an ally: advantage on its next attack roll or ability check. */
+  | 'helped';
+
+export type Weapon = {
+  name: string;
+  attackBonus: number;
+  damage: string;
+  kind: 'melee' | 'ranged';
+  /** Normal / long range in feet for ranged weapons. */
+  rangeFt?: number;
+  longRangeFt?: number;
+  /** Inventory item consumed per shot, e.g. "Crossbow Bolts". */
+  ammo?: string;
+};
 
 export type Character = {
   id: string;
@@ -36,6 +56,8 @@ export type Character = {
   spellSlots: Record<number, { max: number; remaining: number }>;
   knownSpells?: string[];
   weapon: { name: string; attackBonus: number; damage: string };
+  /** Every weapon the character can attack with (defaults to `weapon`). */
+  weapons?: Weapon[];
   gold: number;
   inventory: string[];
   deathSaves: { success: number; failure: number };
@@ -87,8 +109,14 @@ export type Monster = {
   speedFt?: number;
   /** Tactical footprint size (defaults to medium / single cell). */
   size?: CreatureSize;
+  /** Scene the creature belongs to while waiting in reserve. */
+  homeSceneId?: string;
   /** Initiative modifier (the creature's Dex modifier; defaults to +0). */
   initiativeBonus?: number;
+  /** Ability scores (SRD), used for contests, saves and passive Perception. */
+  abilities?: Partial<Record<Ability, number>>;
+  /** Skill bonuses from the stat block, e.g. { perception: 4, stealth: 6 }. */
+  skills?: Record<string, number>;
   conditions: Condition[];
 };
 
@@ -146,6 +174,8 @@ export type GameState = {
   party: Character[];
   activeCharacterId: string;
   monsters: Monster[];
+  /** Living hostiles not in the current fight (bystanders, ones that fled). */
+  reserveMonsters?: Monster[];
   npcs: NPC[];
   combat: CombatState;
   exploration?: import('@/lib/engine/spatial/types').ExplorationState;

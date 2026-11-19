@@ -34,6 +34,11 @@ const fighter: Character = {
   knownSpells: [],
   // 1d8 + 3 Str + 2 Dueling.
   weapon: { name: 'Longsword', attackBonus: 5, damage: '1d8+5' },
+  weapons: [
+    { name: 'Longsword', attackBonus: 5, damage: '1d8+5', kind: 'melee' },
+    // +1 Dex +2 proficiency; two-handed, loading. Dueling does not apply.
+    { name: 'Light Crossbow', attackBonus: 3, damage: '1d8+1', kind: 'ranged', rangeFt: 80, longRangeFt: 320, ammo: 'Crossbow Bolts' },
+  ],
   gold: 0,
   // AC 18 = Chain Mail (16) + Shield (+2).
   inventory: ['Chain Mail', 'Shield', 'Longsword', 'Light Crossbow', '20 Crossbow Bolts', 'Explorer\'s Pack'],
