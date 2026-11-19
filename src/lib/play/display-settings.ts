@@ -20,6 +20,11 @@ export type PlayDisplaySettings = {
   showAppealDm: boolean;
   showPhysicalDiceToggle: boolean;
   showAudio: boolean;
+  showFailedCheckRecovery: boolean;
+  showCampaignMemory: boolean;
+  showVoiceDm: boolean;
+  showRecordedGuide: boolean;
+  showOnboarding: boolean;
   showCharacterButton: boolean;
   showMapButton: boolean;
   showDmViewButton: boolean;
@@ -40,6 +45,11 @@ export const DEFAULT_PLAY_DISPLAY_SETTINGS: PlayDisplaySettings = {
   showAppealDm: true,
   showPhysicalDiceToggle: true,
   showAudio: true,
+  showOnboarding: true,
+  showRecordedGuide: true,
+  showVoiceDm: true,
+  showCampaignMemory: true,
+  showFailedCheckRecovery: true,
   showCharacterButton: true,
   showMapButton: true,
   showDmViewButton: true,
@@ -71,13 +81,18 @@ export const DISPLAY_SECTIONS: { group: string; items: { key: keyof PlayDisplayS
       { key: 'showPhysicalDiceToggle', label: 'Physical dice toggle' },
       { key: 'showAppealDm', label: 'Appeal the DM' },
       { key: 'showAudio', label: 'Ambient audio' },
+      { key: 'showOnboarding', label: 'How to play' },
+      { key: 'showRecordedGuide', label: 'Recorded Dungeon Master' },
+      { key: 'showVoiceDm', label: 'Voice DM' },
+      { key: 'showCampaignMemory', label: 'Campaign memory' },
+      { key: 'showFailedCheckRecovery', label: 'Failed-check suggestions' },
     ],
   },
   {
     group: 'Tools',
     items: [
-      { key: 'showCharacterButton', label: 'Character button' },
-      { key: 'showMapButton', label: 'Map button' },
+      { key: 'showCharacterButton', label: 'Character panel' },
+      { key: 'showMapButton', label: 'Map panel' },
       { key: 'showDmViewButton', label: 'DM View button' },
       { key: 'showExportButton', label: 'Export recap' },
       { key: 'showThemeButton', label: 'Theme toggle' },
@@ -94,6 +109,7 @@ export function applyPreset(preset: DisplayPreset, current: PlayDisplaySettings)
     showSceneMeta: v, showModePill: v, showActiveCharacter: v, showTurnNumber: v, showNarration: v,
     showDicePanel: v, showSuggestedActions: v, showAppealDm: v, showPhysicalDiceToggle: v, showAudio: v,
     showCharacterButton: v, showMapButton: v, showDmViewButton: v, showExportButton: v, showThemeButton: v,
+    showOnboarding: v, showRecordedGuide: v, showVoiceDm: v, showCampaignMemory: v, showFailedCheckRecovery: v,
     showBackButton: v, compactMode: current.compactMode,
   });
   switch (preset) {
@@ -118,6 +134,7 @@ export function mergePlayDisplaySettings(raw: unknown): PlayDisplaySettings {
   for (const key of Object.keys(DEFAULT_PLAY_DISPLAY_SETTINGS) as (keyof PlayDisplaySettings)[]) {
     if (typeof record[key] === 'boolean') out[key] = record[key] as boolean;
   }
+  if (typeof record.showRecordedGuide !== 'boolean' && record.showAudio === false) out.showRecordedGuide = false;
   return out;
 }
 

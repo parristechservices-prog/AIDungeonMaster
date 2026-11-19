@@ -64,7 +64,8 @@ export default function PlayPage() {
   const { settings: display, toggle: toggleDisplay, reset: resetDisplay, setPreset: setDisplayPreset } = usePlayDisplaySettings();
   const { settings: devPanel, setSetting: setDevPanel } = useDevPanelSettings();
   const [engineLog, setEngineLog] = useState<EngineLogEntry[]>([]);
-  const showDmPanels = anyDevPanelSectionEnabled(devPanel);
+  const showDmPanels = display.showDmViewButton && anyDevPanelSectionEnabled(devPanel);
+  const visibleSidebarTab = sidebarTab === 'map' && display.showMapButton || !display.showCharacterButton ? 'map' : 'character';
 
   async function hydrateSession(nextSessionId: string) {
     const res = await fetch(`/api/session?sessionId=${encodeURIComponent(nextSessionId)}`);
@@ -364,7 +365,7 @@ export default function PlayPage() {
 
             {/* Scrollable story area */}
             <div className={`flex flex-col flex-1 min-h-0 px-4 overflow-hidden gap-2 ${display.compactMode ? 'py-1.5' : 'py-3'}`}>
-              {showOnboarding && turnCount === 0 && (
+              {display.showOnboarding && showOnboarding && turnCount === 0 && (
                 <div className="shrink-0">
                   <OnboardingBanner
                     sceneId={sceneId}
@@ -387,10 +388,10 @@ export default function PlayPage() {
 
               <div className="shrink-0">
                 {display.showDicePanel && <DiceResults rolls={recentRolls} />}
-                <FailedCheckRecovery
+                {display.showFailedCheckRecovery && <FailedCheckRecovery
                   failedResult={lastEngineResults.find((r) => r.kind === 'skill_check' && !r.ok)}
                   choices={choices}
-                />
+                />}
                 <CombatHUD
                   combat={state?.combat ?? { active: false, initiative: [], turnIndex: 0 }}
                   party={state?.party ?? []}
@@ -407,8 +408,8 @@ export default function PlayPage() {
             >
               {/* Docked ambient audio bar — in flow, never overlays input/suggestions */}
               {display.showAudio && <AmbientAudio type={ambient} />}
-              {display.showAudio && <RecordedDungeonGuide adventureId={adventureId} sceneId={sceneId} turnCount={turnCount} characterClass={state?.party?.[0]?.className ?? ''} combatActive={state?.combat?.active ?? false} lowHealth={state?.party?.some(p=>p.maxHp>0&&p.hp/p.maxHp<=0.3) ?? false} pendingRoll={Boolean(manualRollContext)} engineResults={lastEngineResults} />}
-              <VoiceDm narration={voiceNarration} busy={busy || !sessionId} onDictate={setInput} />
+              {display.showRecordedGuide && <RecordedDungeonGuide adventureId={adventureId} sceneId={sceneId} turnCount={turnCount} characterClass={state?.party?.[0]?.className ?? ''} combatActive={state?.combat?.active ?? false} lowHealth={state?.party?.some(p=>p.maxHp>0&&p.hp/p.maxHp<=0.3) ?? false} pendingRoll={Boolean(manualRollContext)} engineResults={lastEngineResults} />}
+              {display.showVoiceDm && <VoiceDm narration={voiceNarration} busy={busy || !sessionId} onDictate={setInput} />}
               <InputBox
                 value={input}
                 busy={busy}
@@ -447,14 +448,14 @@ export default function PlayPage() {
           </section>
 
           {/* ── RIGHT: Sidebar ── */}
-          <aside className="hidden md:flex flex-col w-72 lg:w-96 shrink-0 min-h-0 rounded-lg border border-zinc-300 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900 overflow-hidden">
+          {(display.showCharacterButton || display.showMapButton) && <aside className="hidden md:flex flex-col w-72 lg:w-96 shrink-0 min-h-0 rounded-lg border border-zinc-300 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900 overflow-hidden">
             <div className="shrink-0 flex gap-1 px-2 pt-2 pb-1 border-b border-zinc-200 dark:border-zinc-700">
-              {(['character', 'map'] as const).map((tab) => (
+              {(['character', 'map'] as const).filter((tab) => tab === 'character' ? display.showCharacterButton : display.showMapButton).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setSidebarTab(tab)}
                   className={`flex-1 rounded px-2 py-1 text-xs font-semibold capitalize ${
-                    sidebarTab === tab
+                    visibleSidebarTab === tab
                       ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900'
                       : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
                   }`}
@@ -464,10 +465,10 @@ export default function PlayPage() {
               ))}
             </div>
             <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 text-sm space-y-4">
-              {sidebarTab === 'character' ? (
+              {visibleSidebarTab === 'character' ? (
                 <>
                   <CharacterSheet state={state} />
-                  <CampaignMemory state={state} sceneGoal={sceneGoal} choices={choices} />
+                  {display.showCampaignMemory && <CampaignMemory state={state} sceneGoal={sceneGoal} choices={choices} />}
                   {process.env.NODE_ENV !== 'production' && warnings.length > 0 && (
                     <p className="text-xs text-amber-700 dark:text-amber-300" title={warnings.join(' ')}>
                       Narration checked against engine state.
@@ -479,7 +480,7 @@ export default function PlayPage() {
                 <Battlemap state={state} showTerrainOverlay={devPanel.showTerrainOverlay} onSuggestCommand={setInput} />
               )}
             </div>
-          </aside>
+          </aside>}
 
         </div>
       </div>
@@ -492,7 +493,7 @@ export default function PlayPage() {
       )}
 
       {/* Mobile character sheet drawer */}
-      {showMobileCharacterSheet && (
+      {display.showCharacterButton && showMobileCharacterSheet && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 md:hidden">
           <div className="w-full max-w-lg rounded-t-3xl bg-white p-6 dark:bg-zinc-900 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
@@ -505,7 +506,7 @@ export default function PlayPage() {
               </button>
             </div>
             <CharacterSheet state={state} />
-            <CampaignMemory state={state} sceneGoal={sceneGoal} choices={choices} />
+            {display.showCampaignMemory && <CampaignMemory state={state} sceneGoal={sceneGoal} choices={choices} />}
             {process.env.NODE_ENV !== 'production' && warnings.length > 0 && (
               <p className="mt-3 text-xs text-amber-700 dark:text-amber-300" title={warnings.join(' ')}>
                 Narration checked against engine state.
@@ -517,7 +518,7 @@ export default function PlayPage() {
       )}
 
       {/* Mobile battle map drawer */}
-      {showMobileMap && (
+      {display.showMapButton && showMobileMap && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 md:hidden">
           <div className="w-full max-w-lg rounded-t-3xl bg-white p-6 dark:bg-zinc-900 max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
