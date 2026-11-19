@@ -20,6 +20,29 @@ describe('engine', () => {
     expect(out.result.breakdown?.formula).toBe('1d20');
   });
 
+  it('cancels advantage and disadvantage on the same check', () => {
+    const state = createInitialState('cancel-advantage');
+    setRandomProvider(seq([0, 0.99]));
+    const { result } = resolveEngineRequest(state, {
+      kind: 'skill_check', characterId: state.player.id, skill: 'history',
+      reason: 'Recall lore', dc: 10, advantage: true, disadvantage: true,
+    });
+    expect(result.breakdown?.rolls).toEqual([1]);
+    expect(result.ok).toBe(false);
+  });
+
+  it('does not add Bless to ability checks', () => {
+    const state = createInitialState('bless-ability');
+    state.player.conditions = ['blessed'];
+    setRandomProvider(seq([0, 0.99]));
+    const { result } = resolveEngineRequest(state, {
+      kind: 'skill_check', characterId: state.player.id, skill: 'history',
+      reason: 'Recall lore', dc: 4,
+    });
+    expect(result.breakdown?.total).toBe(3);
+    expect(result.ok).toBe(false);
+  });
+
   it('starts combat with initiative order', () => {
     const state = createInitialState('t2');
     const out = resolveEngineRequest(state, { kind: 'start_combat' });
@@ -194,8 +217,8 @@ describe('engine', () => {
     const state = createInitialState('mon-dmg');
     state.combat = { active: true, initiative: [], turnIndex: 0 };
     state.monsters = [{ id: 'wolf-1', name: 'Wolf', ac: 13, maxHp: 11, hp: 11, attackBonus: 4, damage: '2d4+2', conditions: [] }];
-    // First value picks the (only) conscious target, then d20=20 (hit), then two d4 rolls.
-    setRandomProvider(seq([0, 0.99, 0.5, 0.5]));
+    // First value picks the (only) conscious target, then d20=19 (hit), then two d4 rolls.
+    setRandomProvider(seq([0, 0.9, 0.5, 0.5]));
     const out = resolveEngineRequest(state, { kind: 'monster_turn' });
     expect(out.result.ok).toBe(true);
     expect(out.result.breakdown?.formula).toBe('2d4+2');

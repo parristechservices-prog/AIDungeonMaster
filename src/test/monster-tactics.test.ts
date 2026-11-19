@@ -41,6 +41,22 @@ describe('monster melee reach', () => {
     expect(result.summary).toMatch(/^Second Goblin hit/);
   });
 
+  it('misses on a natural 1 even against low AC', () => {
+    setRandomProvider(() => 0);
+    const { state, heroId } = setup([{ ...meleeGoblin(), attackBonus: 20 }], { gob: { x: 0, y: 0 } });
+    state.combat.battleMap!.positions[heroId] = { x: 1, y: 0 };
+    const { result } = resolveEngineRequest(state, { kind: 'monster_turn' });
+    expect(result.summary).toMatch(/missed/i);
+  });
+
+  it('hits on a natural 20 and doubles damage dice even against high AC', () => {
+    setRandomProvider(() => 0.99);
+    const { state, heroId } = setup([meleeGoblin()], { gob: { x: 0, y: 0 } }, { heroAc: 30 });
+    state.combat.battleMap!.positions[heroId] = { x: 1, y: 0 };
+    const { state: next } = resolveEngineRequest(state, { kind: 'monster_turn' });
+    expect(next.party[0].hp).toBe(18);
+  });
+
   it('hits when adjacent', () => {
     setRandomProvider(() => 0.5); // d20 -> 11, +4 = 15 vs AC 15 hits
     const { state, heroId } = setup([meleeGoblin()], { gob: { x: 0, y: 0, z: 0 }, [`__h`]: { x: 0, y: 0, z: 0 } });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveEngineRequest } from '@/lib/engine';
+import { resetRandomProvider, resolveEngineRequest, setRandomProvider } from '@/lib/engine';
 import { createInitialState, buildBattleMap } from '@/lib/game/state';
 import type { GameState } from '@/lib/game/types';
 import type { Cell } from '@/lib/engine/spatial/tactical';
@@ -42,6 +42,20 @@ describe('cover in ranged attack resolution', () => {
       kind: 'player_attack', characterId: heroId, targetId: 'goblin', ranged: true, manualRoll: 1,
     });
     expect(result.summary).toMatch(/missed/i);
+  });
+
+  it('applies Bless to a physical attack roll', () => {
+    const { state, heroId } = rangedSetup();
+    state.party[0].conditions = ['blessed'];
+    setRandomProvider(() => 0.99);
+    try {
+      const { result } = resolveEngineRequest(state, {
+        kind: 'player_attack', characterId: heroId, targetId: 'goblin', ranged: true, manualRoll: 4,
+      });
+      expect(result.ok).toBe(true);
+    } finally {
+      resetRandomProvider();
+    }
   });
 
   it('half cover raises AC by 2 and turns the same hit into a miss', () => {
