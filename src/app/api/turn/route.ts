@@ -26,6 +26,18 @@ import {
 } from '@/lib/orchestrator/session-store';
 import { writeDevLog } from '@/lib/logging/dev-log';
 
+function describeNightstoneBridge(adventureId: string, input: string): string | undefined {
+  if (!adventureId.startsWith('skt-nightstone-')) return;
+  const question = input.trim().replace(/[?.!]+$/, '').trim();
+  if (!/^(?:tell me about|describe|what (?:can i see|do i see|is visible) (?:of|at|on)|what(?:'s| is))\s+.*\b(?:drawbridge|bridge)\b/i.test(question) ||
+      /\b(?:then|and)\s+(?:i\s+)?(?:cross|jump|attack|move|run|walk)\b/i.test(question)) return;
+  const keep = 'The stone bridge south of the village leads towards Nandar Keep. Its middle span is missing, leaving a gap between the village and the keep. There is no intact crossing.';
+  const village = 'At the village entrance, the lowered wooden drawbridge spans the moat beside the open palisade gate.';
+  if (/\b(?:keep|nandar|stone|broken|south)\b/i.test(question)) return keep;
+  if (/\b(?:drawbridge|palisade|moat|wooden)\b/i.test(question)) return village;
+  return `Nightstone has two bridges. ${village} ${keep}`;
+}
+
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const sessionId = typeof body?.sessionId === 'string' && body.sessionId.length > 0 ? body.sessionId : 'local-default';
@@ -81,9 +93,14 @@ export async function POST(req: Request) {
 
     // Check if we are resolving a pending turn with a manual roll.
     const pending = getPendingTurn(sessionId);
+    const bridgeDescription = manualRoll === undefined && !pending
+      ? describeNightstoneBridge(state.adventureId, playerInput)
+      : undefined;
     if (pending && manualRoll !== undefined) {
       rawTurn = pending;
       clearPendingTurn(sessionId);
+    } else if (bridgeDescription) {
+      rawTurn = { engineRequests: [], narration: bridgeDescription, needsResultBeforeNarrating: false };
     } else {
       const recentRecaps = (await getRecaps(sessionId)).slice(-5);
       // Ground the DM in the table's owned sourcebook (e.g. Storm King's Thunder):
@@ -103,6 +120,7 @@ export async function POST(req: Request) {
       }
       systemPrompt =
         buildSystemPrompt(state) +
+        '\nFor a description or information question, answer directly from known or visible facts. Use no engine requests unless the player attempts an action or the answer requires an engine query. A successful check does not move anyone unless movement is separately confirmed.' +
         sourceLore.section +
         (recentRecaps.length > 0
           ? `\n\n## RECENT CONVERSATION HISTORY\n${recentRecaps.map((r) => `Turn ${r.turnNumber} Narration: ${r.narration}`).join('\n')}`
@@ -212,6 +230,8 @@ export async function POST(req: Request) {
           usedEngineSafeFallback: healed.usedEngineSafeFallback,
         });
       }
+    } else if (bridgeDescription) {
+      narrationWarnings = [];
     } else {
       narrationWarnings = detectNarrationWarnings(narration, state, turn.response.engineResults);
       if (narrationWarnings.length > 0) {
