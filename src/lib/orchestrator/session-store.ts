@@ -10,13 +10,16 @@ import { getDb, hasDb } from '@/lib/db/client';
  * no filesystem writes.
  *
  * Read-through cache: `sessions`/`recapsCache` are checked first; on a miss we
- * load from the DB and populate the cache. Writes go to both. `turnCounters` and
- * `pendingTurns` are per-active-request and intentionally in-memory only.
+ * load from the DB and populate the cache. Writes go to both. Pending dice prompts are saved alongside game state.
  */
 const sessions = new Map<string, GameState>();
 const turnCounters = new Map<string, number>();
 const recapsCache = new Map<string, PartyQuestRecap[]>();
-type PendingTurn = { rollId: string; turn: import('@/lib/llm/contracts').DmTurn; aiUsed: boolean; fallbackUsed: boolean; systemPrompt: string };
+type PendingTurn = {
+  rollId: string;
+  context: NonNullable<import('./run-turn').TurnResult['manualRollContext']>;
+  playerInput: string;
+  turn: import('@/lib/llm/contracts').DmTurn; aiUsed: boolean; fallbackUsed: boolean; systemPrompt: string };
 const pendingTurns = new Map<string, PendingTurn>();
 
 /** Applies legacy field migrations to a loaded state blob, then normalizes it. */
@@ -71,7 +74,9 @@ export async function getOrCreateSession(sessionId: string): Promise<GameState> 
     try {
       const rows = await db`select state from sessions where session_id = ${sessionId}`;
       if (rows.length > 0) {
-        const migrated = migrateLoaded(sessionId, rows[0].state);
+        const { pendingDice, ...storedState } = rows[0].state as GameState & { pendingDice?: PendingTurn };
+        if (pendingDice) pendingTurns.set(sessionId, pendingDice);
+        const migrated = migrateLoaded(sessionId, storedState);
         sessions.set(sessionId, migrated);
         // Seed the turn counter from stored recaps so numbering survives a cold start.
         try {
@@ -95,12 +100,13 @@ export async function getOrCreateSession(sessionId: string): Promise<GameState> 
 
 export async function saveSession(state: GameState): Promise<void> {
   sessions.set(state.sessionId, state);
+  const pendingDice = getPendingTurn(state.sessionId);
   const db = getDb();
   if (db) {
     try {
       await db`
         insert into sessions (session_id, state, updated_at)
-        values (${state.sessionId}, ${db.json(state as never)}, now())
+        values (${state.sessionId}, ${db.json({ ...state, pendingDice } as never)}, now())
         on conflict (session_id) do update set state = excluded.state, updated_at = now()`;
     } catch (e) {
       console.warn('Failed to persist session to DB', e);

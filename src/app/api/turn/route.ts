@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     typeof body?.adventureId === 'string' && isValidAdventureId(body.adventureId)
       ? body.adventureId
       : undefined;
-  const playerInput = typeof body?.playerInput === 'string' ? body.playerInput.slice(0, 800) : '';
+  let playerInput = typeof body?.playerInput === 'string' ? body.playerInput.slice(0, 800) : '';
   const manualRoll = typeof body?.manualRoll === 'number' ? body.manualRoll : undefined;
   const physicalDice = Boolean(body?.physicalDice);
   if (body?.manualRoll !== undefined) {
@@ -103,7 +103,7 @@ export async function POST(req: Request) {
       ? describeNightstoneBridge(state.adventureId, playerInput)
       : undefined;
     if (pending && manualRoll !== undefined) {
-      ({ turn: rawTurn, aiUsed, fallbackUsed, systemPrompt } = pending);
+      ({ turn: rawTurn, aiUsed, fallbackUsed, systemPrompt, playerInput } = pending);
       clearPendingTurn(sessionId);
     } else if (bridgeDescription) {
       rawTurn = { engineRequests: [], narration: bridgeDescription, needsResultBeforeNarrating: false };
@@ -181,8 +181,8 @@ export async function POST(req: Request) {
     });
 
     const rollId = turn.pendingTurn ? randomUUID() : undefined;
-    if (turn.pendingTurn && rollId) {
-      savePendingTurn(sessionId, { rollId, turn: turn.pendingTurn, aiUsed, fallbackUsed, systemPrompt });
+    if (turn.pendingTurn && rollId && turn.response.manualRollContext) {
+      savePendingTurn(sessionId, { rollId, context: turn.response.manualRollContext, playerInput, turn: turn.pendingTurn, aiUsed, fallbackUsed, systemPrompt });
     }
 
     state = turn.state;

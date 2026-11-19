@@ -3,7 +3,7 @@ import { getOpeningNarration } from '@/lib/game/state';
 import { getAdventure } from '@/lib/game/adventures/registry.server';
 import { getSceneChoices, getSceneGoal } from '@/lib/game/adventures/helpers';
 import { visibleNpcsForScene } from '@/lib/game/adventures/visibility';
-import { getOrCreateSession } from '@/lib/orchestrator/session-store';
+import { getOrCreateSession, getPendingTurn } from '@/lib/orchestrator/session-store';
 
 /** GET session state for reconnect / debug (V0: no auth). */
 export async function GET(req: Request) {
@@ -14,11 +14,14 @@ export async function GET(req: Request) {
   }
 
   const state = await getOrCreateSession(sessionId);
+  const pending = getPendingTurn(sessionId);
   const adventure = getAdventure(state.adventureId);
   const currentSceneStarter = adventure.scenes[state.sceneId]?.starter;
   return NextResponse.json({
     ok: true,
     sessionId,
+    rollId: pending?.rollId,
+    manualRollContext: pending?.context,
     adventureId: state.adventureId,
     adventureTitle: adventure.title,
     opening: getOpeningNarration(state),

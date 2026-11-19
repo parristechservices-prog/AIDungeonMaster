@@ -68,7 +68,7 @@ export default function PlayPage() {
   const showDmPanels = display.showDmViewButton && anyDevPanelSectionEnabled(devPanel);
   const visibleSidebarTab = sidebarTab === 'map' && display.showMapButton || !display.showCharacterButton ? 'map' : 'character';
 
-  async function hydrateSession(nextSessionId: string) {
+  async function hydrateSession(nextSessionId: string, hasSnapshot: boolean) {
     const res = await fetch(`/api/session?sessionId=${encodeURIComponent(nextSessionId)}`);
     const data = await res.json();
     if (!data.ok || !data.state) return;
@@ -78,10 +78,12 @@ export default function PlayPage() {
     setSceneId(data.sceneId);
     setSceneGoal(data.sceneGoal);
     setChoices(data.nextChoices ?? []);
-    setMode(data.mode ?? 'table_rules');
+    if (!hasSnapshot) setMode(data.mode ?? 'table_rules');
+    setRollId(data.rollId);
+    setManualRollContext(data.manualRollContext ?? null);
     setState(data.state);
     const hydratedOpening = data.sceneStarter ?? data.opening;
-    if (typeof hydratedOpening === 'string' && hydratedOpening.trim()) {
+    if (!hasSnapshot && typeof hydratedOpening === 'string' && hydratedOpening.trim()) {
       setHistory([hydratedOpening]);
       setVoiceNarration({ text: hydratedOpening });
     }
@@ -178,9 +180,14 @@ export default function PlayPage() {
       setAdventureTitle(boot.adventureTitle ?? getAdventure(boot.adventureId).title);
       setSceneGoal(boot.sceneGoal);
     }
-    if (!boot.state && boot.sessionId) {
-      hydrateSession(boot.sessionId).catch(() => {
+    if (boot.sessionId) {
+      turnInFlight.current = true;
+      setBusy(true);
+      hydrateSession(boot.sessionId, Boolean(boot.state)).catch(() => {
         // Keep local bootstrap fallback if reconnect state is unavailable.
+      }).finally(() => {
+        turnInFlight.current = false;
+        setBusy(false);
       });
     }
   }, []);

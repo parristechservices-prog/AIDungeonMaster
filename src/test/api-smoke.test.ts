@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { GET as reconnectSession } from '@/app/api/session/route';
 import { POST as startSession } from '@/app/api/session/start/route';
 import { POST as runApiTurn } from '@/app/api/turn/route';
 import { GET as getHealth } from '@/app/api/health/route';
@@ -97,7 +98,16 @@ describe('no-key API smoke flow', () => {
     const request = await (await submit({ playerInput: 'I search for tracks.' })).json();
     expect(request).toMatchObject({ needsManualRoll: true, rollId: expect.any(String) });
 
-    const payload = { manualRoll: 17, rollId: request.rollId };
+    const reconnect = await (await reconnectSession(new Request(
+      `http://localhost/api/session?sessionId=${sessionId}`,
+    ))).json();
+    expect(reconnect).toMatchObject({
+      rollId: request.rollId,
+      manualRollContext: request.manualRollContext,
+    });
+    expect(reconnect.state).not.toHaveProperty('pendingDice');
+
+    const payload = { manualRoll: 17, rollId: reconnect.rollId };
     const accepted = await (await submit(payload)).json();
     expect(accepted).toMatchObject({ ok: true, recap: { turnNumber: 2 } });
     const replay = await submit(payload);
