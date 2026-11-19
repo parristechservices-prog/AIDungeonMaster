@@ -58,6 +58,7 @@ export default function PlayPage() {
   const [ambient, setAmbient] = useState<TurnResponse['ambient']>('none');
   const [physicalDice, setPhysicalDice] = useState(false);
   const [manualRollContext, setManualRollContext] = useState<TurnResponse['manualRollContext'] | null>(null);
+  const browserSave = useRef<string | undefined>(undefined);
   const [rollId, setRollId] = useState<string>();
   const [showMobileCharacterSheet, setShowMobileCharacterSheet] = useState(false);
   const [showMobileMap, setShowMobileMap] = useState(false);
@@ -130,6 +131,7 @@ export default function PlayPage() {
     const boot = readPlayBootstrap();
     setSessionId(boot.sessionId);
     const last = isFeatureEnabled('clientSessionSnapshot') ? loadClientSnapshot(boot.sessionId) : null;
+    browserSave.current = last?.browserSave;
     setVoiceNarration({ text: last
       ? [last.sceneStarter, last.narration, last.nextHook].filter(Boolean).join(' ')
       : boot.history[0] ?? '' });
@@ -137,7 +139,7 @@ export default function PlayPage() {
     const openingRaw = sessionStorage.getItem('partyquest-opening');
     if (openingRaw) {
       try {
-        const { sessionId: openingSessionId, opening, title, adventureId: openingAdventureId, state: openingState, sceneId: openingSceneId, sceneGoal: openingSceneGoal, nextChoices } = JSON.parse(openingRaw) as {
+        const { sessionId: openingSessionId, opening, title, adventureId: openingAdventureId, state: openingState, sceneId: openingSceneId, sceneGoal: openingSceneGoal, nextChoices, browserSave: openingSave } = JSON.parse(openingRaw) as {
           sessionId?: string;
           opening: string;
           title: string;
@@ -146,8 +148,10 @@ export default function PlayPage() {
           sceneId?: TurnResponse['sceneId'];
           sceneGoal?: string;
           nextChoices?: string[];
+          browserSave?: string;
         };
         sessionStorage.removeItem('partyquest-opening');
+        browserSave.current = openingSave ?? browserSave.current;
         if (openingSessionId) setSessionId(openingSessionId);
         setAdventureTitle(title);
         setHistory([opening]);
@@ -224,7 +228,7 @@ export default function PlayPage() {
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
             sessionId,
-            browserSave: loadClientSnapshot(sessionId)?.browserSave,
+            browserSave: browserSave.current,
             adventureId,
             playerInput: nextInput,
             physicalDice,
@@ -268,9 +272,8 @@ export default function PlayPage() {
           setManualRollContext(null);
         }
 
-        if (isFeatureEnabled('clientSessionSnapshot')) {
-          saveClientSnapshot(sessionId, data);
-        }
+        browserSave.current = data.browserSave;
+        const savedLocally = isFeatureEnabled('clientSessionSnapshot') && saveClientSnapshot(sessionId, data);
 
         // Internal engine availability refusals (e.g. an AI tactical request in a
         // non-combat scene) must not surface as player narration — they are not
@@ -281,7 +284,9 @@ export default function PlayPage() {
           ...(data.sceneStarter ? [`— ${data.sceneStarter}`] : []),
           data.narration,
           ...(data.engineResults?.filter((r) => !isInternalRefusal(r.summary)).map((r) => `• ${r.summary}`) ?? []),
-          data.browserSave ? `Turn ${data.recap.turnNumber} saved on this browser.` : `Turn ${data.recap.turnNumber} saved.`,
+          data.browserSave
+            ? savedLocally ? `Turn ${data.recap.turnNumber} saved on this browser.` : 'Browser storage is unavailable. This turn can only continue in the current tab.'
+            : `Turn ${data.recap.turnNumber} saved.`,
           data.nextHook,
         ];
         setHistory((h) => [...h, ...lines]);

@@ -136,6 +136,7 @@ function StartContent() {
           sceneGoal: data.sceneGoal,
           nextChoices: data.nextChoices,
           state: data.state,
+          browserSave: data.browserSave,
         }),
       );
       router.push('/play');

@@ -83,5 +83,5 @@ export type TurnResponse = {
     exploration?: GameState['exploration'];
     log: string[];
   };
-  recap: { turnNumber: number };
+  recap: import('@/lib/game/recap').PartyQuestRecap;
 };

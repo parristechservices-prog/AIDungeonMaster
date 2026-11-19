@@ -2,15 +2,16 @@ import type { TurnResponse } from '@/lib/play/types';
 
 const SNAPSHOT_KEY = 'partyquest-last-turn';
 
-export function saveClientSnapshot(sessionId: string, turn: TurnResponse): void {
-  if (typeof window === 'undefined') return;
+export function saveClientSnapshot(sessionId: string, turn: TurnResponse): boolean {
+  if (typeof window === 'undefined') return false;
   try {
     localStorage.setItem(
       SNAPSHOT_KEY,
       JSON.stringify({ sessionId, savedAt: new Date().toISOString(), turn }),
     );
+    return true;
   } catch {
-    // Quota or private mode — ignore
+    return false;
   }
 }
 
