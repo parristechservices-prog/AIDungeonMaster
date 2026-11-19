@@ -180,7 +180,10 @@ export default function PlayPage() {
       setAdventureTitle(boot.adventureTitle ?? getAdventure(boot.adventureId).title);
       setSceneGoal(boot.sceneGoal);
     }
-    if (boot.sessionId) {
+    if (last?.browserSave) {
+      setRollId(last.rollId);
+      setManualRollContext(last.manualRollContext ?? null);
+    } else if (boot.sessionId) {
       turnInFlight.current = true;
       setBusy(true);
       hydrateSession(boot.sessionId, Boolean(boot.state)).catch(() => {
@@ -221,6 +224,7 @@ export default function PlayPage() {
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
             sessionId,
+            browserSave: loadClientSnapshot(sessionId)?.browserSave,
             adventureId,
             playerInput: nextInput,
             physicalDice,
@@ -277,7 +281,7 @@ export default function PlayPage() {
           ...(data.sceneStarter ? [`— ${data.sceneStarter}`] : []),
           data.narration,
           ...(data.engineResults?.filter((r) => !isInternalRefusal(r.summary)).map((r) => `• ${r.summary}`) ?? []),
-          `Turn ${data.recap.turnNumber} saved.`,
+          data.browserSave ? `Turn ${data.recap.turnNumber} saved on this browser.` : `Turn ${data.recap.turnNumber} saved.`,
           data.nextHook,
         ];
         setHistory((h) => [...h, ...lines]);

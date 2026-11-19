@@ -3,7 +3,8 @@ import { getOpeningNarration } from '@/lib/game/state';
 import { getAdventure, isValidAdventureId } from '@/lib/game/adventures/registry.server';
 import { getSceneChoices, getSceneGoal } from '@/lib/game/adventures/helpers';
 import { visibleMonstersForScene, visibleNpcsForScene } from '@/lib/game/adventures/visibility';
-import { startNewGame } from '@/lib/orchestrator/session-store';
+import { sealBrowserSave } from '@/lib/orchestrator/browser-save';
+import { isSessionDurable, startNewGame } from '@/lib/orchestrator/session-store';
 
 const VALID_CHARACTERS = new Set(['fighter', 'wizard', 'rogue', 'cleric', 'paladin', 'ranger']);
 const VALID_BACKGROUNDS = new Set(['soldier', 'scholar', 'criminal', 'acolyte']);
@@ -70,6 +71,7 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     ok: true,
+    browserSave: isSessionDurable(sessionId) ? undefined : sealBrowserSave({ state, recaps: [], turnNumber: 0 }),
     sessionId,
     adventureId,
     characterIds: state.characterTemplateIds,

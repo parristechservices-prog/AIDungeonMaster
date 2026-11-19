@@ -119,6 +119,39 @@ describe('no-key API smoke flow', () => {
     expect(next.recap.turnNumber).toBe(3);
   });
 
+  it('continues a browser-saved party and rejects altered or borrowed saves', async () => {
+    process.env.PARTYQUEST_BROWSER_SAVE_SECRET = 'browser-save-smoke-test-private-secret';
+    const sessionId = 'api-browser-save';
+    const adventureId = 'skt-nightstone-chapter1';
+    const started = await (await startSession(jsonRequest('http://localhost/api/session/start', {
+      sessionId, adventureId, characterIds: ['wizard', 'rogue'],
+    }))).json();
+    const submit = (body: Record<string, unknown>) => runApiTurn(jsonRequest(
+      'http://localhost/api/turn', { sessionId, adventureId, ...body },
+    ));
+    expect(started.browserSave).toEqual(expect.any(String));
+    const ids = started.state.party.map((hero: { id: string }) => hero.id);
+    expect((await submit({
+      browserSave: started.browserSave, sessionId: 'wrong-session', playerInput: 'Look around.',
+    })).status).toBe(422);
+    const altered = (started.browserSave[0] === 'A' ? 'B' : 'A') + started.browserSave.slice(1);
+    expect((await submit({ browserSave: altered, playerInput: 'Look around.' })).status).toBe(422);
+
+    const pending = await (await submit({
+      browserSave: started.browserSave, playerInput: 'I search for tracks.', physicalDice: true,
+    })).json();
+    expect(pending).toMatchObject({ ok: true, needsManualRoll: true, recap: { turnNumber: 1 } });
+    expect(pending.state.party.map((hero: { id: string }) => hero.id)).toEqual(ids);
+    const resolved = await (await submit({
+      browserSave: pending.browserSave, rollId: pending.rollId, manualRoll: 17,
+    })).json();
+    expect(resolved).toMatchObject({ ok: true, needsManualRoll: false, recap: { turnNumber: 2 } });
+    expect(resolved.state.party.map((hero: { id: string }) => hero.id)).toEqual(ids);
+    expect((await submit({
+      browserSave: resolved.browserSave, rollId: pending.rollId, manualRoll: 17,
+    })).status).toBe(409);
+  });
+
   it('reports secret-safe health information', async () => {
     const response = await getHealth(new Request('http://localhost/api/health'));
     expect(await response.json()).toMatchObject({

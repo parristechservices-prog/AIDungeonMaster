@@ -16,7 +16,7 @@ const sessions = new Map<string, GameState>();
 const durableSessions = new Set<string>();
 const turnCounters = new Map<string, number>();
 const recapsCache = new Map<string, PartyQuestRecap[]>();
-type PendingTurn = {
+export type PendingTurn = {
   rollId: string;
   context: NonNullable<import('./run-turn').TurnResult['manualRollContext']>;
   playerInput: string;
@@ -137,6 +137,10 @@ export function nextTurnNumber(sessionId: string): number {
 
 export function getTurnCount(sessionId: string): number {
   return turnCounters.get(sessionId) ?? 0;
+}
+
+export function isSessionDurable(sessionId: string): boolean {
+  return durableSessions.has(sessionId);
 }
 
 export function getSessionStorageMode(): 'postgres' | 'memory' {
