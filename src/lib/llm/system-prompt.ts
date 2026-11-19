@@ -15,7 +15,12 @@ export function buildSystemPrompt(state: GameState): string {
   const spatialContext = buildSpatialPromptBlock(state);
   const tacticalContext = buildTacticalPromptBlock(state);
 
-  const partyDescription = state.party.map(p => {
+  const roster = state.party.map((p) => {
+    const areaId = state.exploration?.locations[p.id];
+    const area = areaId ? state.exploration?.graph.areas[areaId]?.name : undefined;
+    return `${p.name} (${p.className}, ID ${p.id}${area ? `, at ${area}` : ''})`;
+  }).join('; ');
+  const characterSheets = state.party.map(p => {
     const featuresList = p.features.map((f) => `${f.name} (${f.usesRemaining}/${f.usesMax})`).join(', ');
     const slotsList = Object.entries(p.spellSlots)
       .map(([lvl, s]) => `Lvl ${lvl}: ${s.remaining}/${s.max}`)
@@ -48,7 +53,11 @@ export function buildSystemPrompt(state: GameState): string {
     sceneMeta,
     spatialContext,
     tacticalContext,
-    partyDescription,
+    [
+      `Current party roster (${state.party.length}): ${roster}.`,
+      'The active hero is the default speaker, but is only one party member. Resolve references such as "the rogue" against the roster. When one hero scouts alone, use that hero’s ID and leave other heroes in their areas.',
+      characterSheets,
+    ].join('\n\n'),
     adventure.levelRange ? 'Frontier fantasy with giant-related threats. Use names and facts from the campaign guide and canon log only. Do not invent HP or dice.' : undefined,
     adventure.campaignGuide
   );

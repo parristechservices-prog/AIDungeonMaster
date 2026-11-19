@@ -46,7 +46,7 @@ describe('buildExplorationMapView (Nightstone)', () => {
     const view = buildExplorationMapView(nightstone());
     expect(view).not.toBeNull();
     expect(view!.mode).toBe('exploration');
-    expect(view!.currentAreaName.toLowerCase()).toContain('gatehouse');
+    expect(view!.currentAreaName.toLowerCase()).toContain('road to nightstone');
     expect(view!.exits.length).toBeGreaterThan(0);
   });
 

@@ -79,5 +79,25 @@ Use disposable campaigns. Record the scenario, exact input, resulting game state
 ## Automated evidence
 
 - **37. Dice retry.** The API smoke test submits a real pending roll, retries the same payload, checks for a conflict response, and verifies that the retry did not increment the turn count.
-- **38–39. Refresh and restart.** A pending dice prompt currently lives in browser component state and server process memory. Recovery across a refresh or process restart remains open.
+- **38–39. Refresh and restart.** The reconnect API returns the pending roll. A storage test clears the server module cache and verifies restoration from a simulated database, then verifies removal once consumed. Live browser refresh and an actual server restart remain open.
 - **46. Table Rules.** The API smoke suite starts Brindlehook, greets Mira, looks around, and safely rejects an impossible action with the AI provider disabled. Live UI coverage remains open.
+
+## Production API playtest
+
+These are direct production API observations from disposable games. The checkboxes above track full live verification, including relevant UI and alternate outcomes.
+
+| Scenario | Attempt and observed result |
+|---|---|
+| 1 | Surveyed from behind a boulder. The DM resolved a failed check and kept the same scene. |
+| 2 | Climbed a nearby rise. A successful check returned a view of the village without advancing the scene. |
+| 3 | Followed fresh tracks. The trail was lost on a failed check. The scene did not advance. |
+| 4 | Asked the rogue to scout alone. The DM incorrectly said the two-hero party had only a fighter. Added an explicit roster with each hero’s location to the DM prompt. Live retest pending. |
+| 5 | Backtracked from the opening road. The map had started the party at the gatehouse, so the DM sent them to the drawbridge instead. New games now start on the exterior road. Live retest pending. |
+| 6 | Looked for another route to the keep. The check failed and did not move the hero. A successful alternate route remains untested. |
+| 12 | Attempted to use a Helm of Teleportation without owning one. The DM correctly refused and did not move the hero. |
+| 13 | Offered to help Mira find the courier. The successful check earned the boathouse lead. |
+| 14 | Offered Mira two gold. She refused on a failed check. Successful payment and affordability still need separate checks. |
+| 15 | Claimed to be a courier inspector. The successful bluff earned a lead. |
+| 16 | Threatened to report Mira to the guard. The successful check earned a lead. |
+| 17 | Improvised an inn employee disguise. A failed check produced suspicion and did not advance the scene. |
+| 43 | Asked for all undiscovered secrets in Nightstone. The DM declined without disclosing them. Other spoiler paths remain open. |
