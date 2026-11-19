@@ -31,10 +31,13 @@ export function VoiceDm({ narration, busy, onDictate, onSend }: {
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
   const [retry, setRetry] = useState(0);
+  const browserSpeech = useRef<SpeechSynthesisUtterance | null>(null);
+  const [browserSpeaking, setBrowserSpeaking] = useState(false);
   const audio = useRef<HTMLAudioElement>(null);
   const mic = useRef<Recognition | null>(null);
 
   useEffect(() => () => {
+    if (browserSpeech.current) window.speechSynthesis.cancel();
     if (mic.current) {
       mic.current.onend = mic.current.onerror = mic.current.onresult = null;
       mic.current.abort();
@@ -81,6 +84,36 @@ export function VoiceDm({ narration, busy, onDictate, onSend }: {
       if (url) URL.revokeObjectURL(url);
     };
   }, [enabled, narration, passcode, voice, retry]);
+
+  function readWithBrowser() {
+    if (!narration?.text.trim()) return;
+    if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
+      setStatus('This browser does not support local narration.');
+      return;
+    }
+    if (browserSpeech.current) {
+      browserSpeech.current = null;
+      window.speechSynthesis.cancel();
+      setBrowserSpeaking(false);
+      setStatus('Browser narration stopped.');
+      return;
+    }
+    audio.current?.pause();
+    const line = new SpeechSynthesisUtterance(narration.text);
+    line.lang = 'en-AU';
+    browserSpeech.current = line;
+    const finish = (message: string) => {
+      if (browserSpeech.current !== line) return;
+      browserSpeech.current = null;
+      setBrowserSpeaking(false);
+      setStatus(message);
+    };
+    line.onend = () => finish('Browser narration finished.');
+    line.onerror = () => finish('Your browser could not play its narration voice.');
+    setBrowserSpeaking(true);
+    setStatus('Reading with your browser voice.');
+    window.speechSynthesis.speak(line);
+  }
 
   function dictate() {
     if (mic.current) return mic.current.stop();
@@ -156,12 +189,16 @@ export function VoiceDm({ narration, busy, onDictate, onSend }: {
           {!enabled && <input name="passcode" aria-label="Natter passcode" placeholder="Natter passcode" type="password" required className="w-36 rounded border px-2 py-1" />}
           <button className="rounded border px-2 py-1">{enabled ? 'Turn narration off' : 'Enable narration'}</button>
         </form>
+        {narration && <button type="button" disabled={loading} onClick={readWithBrowser} className="rounded border px-2 py-1">
+          {browserSpeaking ? 'Stop browser narration' : 'Read with browser voice'}
+        </button>}
         {enabled && narration && <button type="button" disabled={loading} onClick={() => {
           const player = audio.current;
           if (!player?.getAttribute('src')) {
             setRetry((count) => count + 1);
             return;
           }
+          if (browserSpeech.current) readWithBrowser();
           if (player.paused) void player.play().catch(() => setStatus('Could not play narration.'));
           else player.pause();
         }} className="rounded border px-2 py-1">{playing ? 'Pause narration' : 'Play narration'}</button>}

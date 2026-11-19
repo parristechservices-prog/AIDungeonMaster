@@ -29,7 +29,7 @@ import type { EngineLogEntry } from '@/lib/play/dev-panel-format';
 import { isFeatureEnabled } from '@/lib/config/features';
 import { DEFAULT_ADVENTURE_ID, getAdventure, getFirstPlayableSceneId, getSceneGoal } from '@/lib/game/adventures';
 import type { TurnResponse } from '@/lib/play/types';
-import { saveClientSnapshot } from '@/lib/persistence/client-snapshot';
+import { loadClientSnapshot, saveClientSnapshot } from '@/lib/persistence/client-snapshot';
 import type { RollBreakdown } from '@/lib/engine/types';
 import { readPlayBootstrap } from '@/lib/play/bootstrap';
 
@@ -82,6 +82,7 @@ export default function PlayPage() {
     const hydratedOpening = data.sceneStarter ?? data.opening;
     if (typeof hydratedOpening === 'string' && hydratedOpening.trim()) {
       setHistory([hydratedOpening]);
+      setVoiceNarration({ text: hydratedOpening });
     }
   }
 
@@ -125,6 +126,10 @@ export default function PlayPage() {
   useEffect(() => {
     const boot = readPlayBootstrap();
     setSessionId(boot.sessionId);
+    const last = isFeatureEnabled('clientSessionSnapshot') ? loadClientSnapshot(boot.sessionId) : null;
+    setVoiceNarration({ text: last
+      ? [last.sceneStarter, last.narration, last.nextHook].filter(Boolean).join(' ')
+      : boot.history[0] ?? '' });
 
     const openingRaw = sessionStorage.getItem('partyquest-opening');
     if (openingRaw) {
@@ -143,6 +148,7 @@ export default function PlayPage() {
         if (openingSessionId) setSessionId(openingSessionId);
         setAdventureTitle(title);
         setHistory([opening]);
+        setVoiceNarration({ text: opening });
         if (openingAdventureId) setAdventureId(openingAdventureId);
         if (openingState) setState(openingState);
         if (openingSceneId) setSceneId(openingSceneId);
